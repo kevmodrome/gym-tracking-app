@@ -28,7 +28,7 @@ A client-side SPA for tracking workouts, exercises, and progress. Uses React + V
   - Add timer functionality for rest periods
   - Implement workout completion and save to client storage
 
-- [ ] **Create workout history view**
+- [x] **Create workout history view**
   - Build workout list view with shadcn cards/table
   - Implement workout detail view
   - Add filtering and sorting options with shadcn dropdowns
