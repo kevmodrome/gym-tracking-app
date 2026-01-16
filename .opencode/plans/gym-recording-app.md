@@ -44,7 +44,7 @@ A client-side SPA for tracking workouts, exercises, and progress. Uses React + V
   - Add install prompt UI with shadcn components
   - Configure app icons and splash screens
 
-- [ ] **Polish UI/UX**
+- [x] **Polish UI/UX**
   - Implement responsive SPA routing (React Router)
   - Add dark/light mode theme support (next-themes)
   - Optimize mobile and PWA experience
