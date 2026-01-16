@@ -17,7 +17,7 @@ A client-side SPA for tracking workouts, exercises, and progress. Uses React + V
   - Create custom hooks for data management (useWorkouts, useLocalStorage)
   - Set up data migration/versioning strategy
 
-- [ ] **Build exercise library**
+- [x] **Build exercise library**
   - Create exercise database/common exercises
   - Build exercise selection interface with shadcn components (dialog, combobox)
   - Add ability to add custom exercises with shadcn forms
