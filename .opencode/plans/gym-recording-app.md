@@ -33,7 +33,7 @@ A client-side SPA for tracking workouts, exercises, and progress. Uses React + V
   - Implement workout detail view
   - Add filtering and sorting options with shadcn dropdowns
 
-- [ ] **Add progress tracking**
+- [x] **Add progress tracking**
   - Create exercise progress visualization (charts)
   - Build personal records tracking
   - Implement progress trends over time
