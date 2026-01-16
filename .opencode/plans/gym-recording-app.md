@@ -22,7 +22,7 @@ A client-side SPA for tracking workouts, exercises, and progress. Uses React + V
   - Build exercise selection interface with shadcn components (dialog, combobox)
   - Add ability to add custom exercises with shadcn forms
 
-- [ ] **Implement workout logging**
+- [x] **Implement workout logging**
   - Create workout session interface
   - Build set tracking (weight, reps, RPE) using shadcn inputs and forms
   - Add timer functionality for rest periods
