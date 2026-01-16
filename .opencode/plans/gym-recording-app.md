@@ -11,7 +11,7 @@ A client-side SPA for tracking workouts, exercises, and progress. Uses React + V
   - Set up PWA configuration (vite-plugin-pwa: manifest, service worker)
   - Install dependencies (React hooks, local storage utilities)
 
-- [ ] **Create data models and types**
+- [x] **Create data models and types**
   - Define TypeScript interfaces for Workout, Exercise, Set, etc.
   - Implement localStorage/IndexedDB persistence utilities
   - Create custom hooks for data management (useWorkouts, useLocalStorage)
