@@ -38,7 +38,7 @@ A client-side SPA for tracking workouts, exercises, and progress. Uses React + V
   - Build personal records tracking
   - Implement progress trends over time
 
-- [ ] **Configure PWA features**
+- [x] **Configure PWA features**
   - Configure vite-plugin-pwa with manifest and service worker
   - Set up offline caching strategies for SPA
   - Add install prompt UI with shadcn components
