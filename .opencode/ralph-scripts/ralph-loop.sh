@@ -26,7 +26,7 @@ WARN_THRESHOLD=70000    # Tokens: send wrapup warning
 ROTATE_THRESHOLD=80000  # Tokens: force rotation
 
 # Model selection (override with RALPH_MODEL env var)
-DEFAULT_MODEL="synthetic/hf:zai-org/GLM-4.7"
+DEFAULT_MODEL="synthetic/zai-org/GLM-4.7"
 MODEL="${RALPH_MODEL:-$DEFAULT_MODEL}"
 
 # =============================================================================
