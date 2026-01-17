@@ -9,6 +9,7 @@
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
 	import CreateExerciseModal from '$lib/components/CreateExerciseModal.svelte';
 	import CreateWorkoutModal from '$lib/components/CreateWorkoutModal.svelte';
+	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 
 	let exercises = $state<Exercise[]>([]);
 	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
@@ -17,6 +18,7 @@
 	let selectedMuscle = $state<MuscleGroup | undefined>(undefined);
 	let showCreateModal = $state(false);
 	let showWorkoutModal = $state(false);
+	let showImportModal = $state(false);
 
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
@@ -103,6 +105,13 @@
 				>
 					<PlusIcon class="w-5 h-5" />
 					Create Workout
+				</button>
+				<button
+					onclick={() => (showImportModal = true)}
+					class="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+					type="button"
+				>
+					📥 Import
 				</button>
 				<button
 					onclick={() => (showCreateModal = true)}
@@ -273,4 +282,8 @@
 		onWorkoutCreated={handleWorkoutCreated}
 		onClose={() => (showWorkoutModal = false)}
 	/>
+{/if}
+
+{#if showImportModal}
+	<ImportBackupModal onClose={() => (showImportModal = false)} />
 {/if}
