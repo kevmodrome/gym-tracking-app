@@ -3,9 +3,20 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#ff3e00" />
+		<meta name="description" content="Track your workouts, create custom exercises, and build workout routines" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<link rel="icon" type="image/svg+xml" href="/icon-192x192.svg" />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
+		<script>
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker.register('/service-worker.js')
+					.then(() => console.log('Service Worker registered'))
+					.catch((err) => console.log('Service Worker registration failed', err));
+			}
+		</script>
 	</body>
 </html>
