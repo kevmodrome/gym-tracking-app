@@ -39,6 +39,7 @@ export interface Workout {
 export interface ExerciseSet {
 	reps: number;
 	weight: number;
+	rpe?: number;
 	completed: boolean;
 	notes?: string;
 }

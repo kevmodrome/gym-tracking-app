@@ -32,6 +32,11 @@
 	let deletedSet = $state<{ exerciseIndex: number; setIndex: number; set: ExerciseSet } | null>(null);
 	let undoTimeout: number | null = null;
 	let showUndoToast = $state(false);
+	let editingSetReps = $state<number>(0);
+	let editingSetWeight = $state<number>(0);
+	let editingSetRPE = $state<number | undefined>(undefined);
+	let showSaveError = $state(false);
+	let saveErrorMessage = $state('');
 
 	onMount(async () => {
 		workouts = await db.workouts.toArray();
@@ -245,15 +250,45 @@
 	}
 
 	function editSet(setIndex: number) {
+		if (!currentExercise) return;
+		
+		const set = currentExercise.sets[setIndex];
+		editingSetReps = set.reps;
+		editingSetWeight = set.weight;
+		editingSetRPE = set.rpe;
 		currentSetIndex = setIndex;
 		showTimer = false;
 		editingSetIndex = setIndex;
+		showSaveError = false;
 	}
 
 	function saveSetEdit() {
-		editingSetIndex = null;
-		sessionExercises = [...sessionExercises];
-		saveSessionProgress();
+		if (editingSetIndex === null || !currentExercise) return;
+
+		const validation = validateSetValues(editingSetReps, editingSetWeight, editingSetRPE);
+		
+		if (!validation.valid) {
+			showSaveError = true;
+			saveErrorMessage = validation.error || 'Invalid values';
+			return;
+		}
+
+		try {
+			currentExercise.sets[editingSetIndex].reps = editingSetReps;
+			currentExercise.sets[editingSetIndex].weight = editingSetWeight;
+			currentExercise.sets[editingSetIndex].rpe = editingSetRPE || undefined;
+			
+			sessionExercises = [...sessionExercises];
+			saveSessionProgress();
+			
+			editingSetIndex = null;
+			showSaveError = false;
+			toastStore.showSuccess('Set updated successfully');
+		} catch (error) {
+			console.error('Failed to save set:', error);
+			showSaveError = true;
+			saveErrorMessage = 'Failed to save set. Please try again.';
+		}
 	}
 
 	function cancelSetEdit() {
@@ -499,6 +534,42 @@
 		deletingSetIndex = null;
 	}
 
+	function validateSetValues(reps: number, weight: number, rpe?: number): { valid: boolean; error?: string } {
+		if (reps < 0 || isNaN(reps)) {
+			return { valid: false, error: 'Reps must be a non-negative number' };
+		}
+		if (weight < 0 || isNaN(weight)) {
+			return { valid: false, error: 'Weight must be a non-negative number' };
+		}
+		if (rpe !== undefined && (rpe < 1 || rpe > 10 || isNaN(rpe))) {
+			return { valid: false, error: 'RPE must be between 1 and 10' };
+		}
+		return { valid: true };
+	}
+
+	function handleSetBlur() {
+		if (editingSetIndex !== null) {
+			saveSetEdit();
+		}
+	}
+
+	function handleSetKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			saveSetEdit();
+		} else if (e.key === 'Escape') {
+			cancelSetEdit();
+		}
+	}
+
+	function calculateSessionVolume(): number {
+		return sessionExercises.reduce((total, exercise) => {
+			return total + exercise.sets.reduce((exerciseTotal, set) => {
+				return exerciseTotal + (set.reps * set.weight);
+			}, 0);
+		}, 0);
+	}
+
 	function undoDeleteSet() {
 		if (!deletedSet || !currentExercise) return;
 
@@ -527,7 +598,8 @@
 			toastStore.showError('Failed to undo deletion');
 		}
 	}
-</script>
+
+	</script>
 
 <div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-4xl mx-auto w-full">
@@ -812,32 +884,104 @@
 												<path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
 											</svg>
 										</div>
-										<button
-											onclick={() => editSet(idx)}
-											class="flex-1 flex items-center gap-2 text-left min-h-[44px]"
-											type="button"
-										>
-											<span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium {set.completed
-												? 'bg-green-500 text-white'
-												: idx === currentSetIndex
-													? 'bg-blue-500 text-white'
-													: 'bg-gray-300 text-gray-600'}">
-												{set.completed ? '✓' : idx + 1}
-											</span>
-											<div class="flex-1 min-w-0">
-												<p class="text-xs sm:text-sm text-gray-700">
-													{set.reps} reps @ {set.weight} lbs
-												</p>
-												{#if set.notes}
-													<p class="text-xs text-gray-500 truncate">{set.notes}</p>
+										{#if editingSetIndex === idx}
+											<div class="flex-1 flex flex-col gap-2">
+												<div class="grid grid-cols-3 gap-2">
+													<div>
+														<label class="block text-xs text-gray-600 mb-1">Reps</label>
+														<input
+															type="number"
+															min="0"
+															bind:value={editingSetReps}
+															onblur={handleSetBlur}
+															onkeydown={handleSetKeyDown}
+															class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[32px]"
+														/>
+													</div>
+													<div>
+														<label class="block text-xs text-gray-600 mb-1">Weight (lbs)</label>
+														<input
+															type="number"
+															min="0"
+															step="0.5"
+															bind:value={editingSetWeight}
+															onblur={handleSetBlur}
+															onkeydown={handleSetKeyDown}
+															class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[32px]"
+														/>
+													</div>
+													<div>
+														<label class="block text-xs text-gray-600 mb-1">RPE (1-10)</label>
+														<input
+															type="number"
+															min="1"
+															max="10"
+															step="0.5"
+															bind:value={editingSetRPE}
+															onblur={handleSetBlur}
+															onkeydown={handleSetKeyDown}
+															class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[32px]"
+														/>
+													</div>
+												</div>
+												{#if showSaveError}
+													<div class="p-2 bg-red-50 border border-red-200 rounded">
+														<p class="text-xs text-red-700">{saveErrorMessage}</p>
+													</div>
 												{/if}
+												<div class="flex items-center gap-2">
+													<button
+														onclick={(e) => { e.stopPropagation(); saveSetEdit(); }}
+														class="px-3 py-1.5 bg-green-500 text-white rounded text-xs hover:bg-green-600 min-w-[32px] min-h-[32px]"
+														type="button"
+														aria-label="Save"
+													>
+														Save
+													</button>
+													<button
+														onclick={(e) => { e.stopPropagation(); cancelSetEdit(); }}
+														class="px-3 py-1.5 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 min-w-[32px] min-h-[32px]"
+														type="button"
+														aria-label="Cancel"
+													>
+														Cancel
+													</button>
+													<span class="text-xs text-gray-600 ml-auto">
+														Volume: {calculateSessionVolume().toLocaleString()} lbs
+													</span>
+												</div>
 											</div>
-											{#if set.completed && idx !== currentSetIndex}
-												<span class="text-xs text-green-600 font-medium">Edit</span>
-											{:else if !set.completed && idx === currentSetIndex}
-												<span class="text-xs text-blue-600 font-medium">Current</span>
-											{/if}
-										</button>
+										{:else}
+											<button
+												onclick={() => editSet(idx)}
+												class="flex-1 flex items-center gap-2 text-left min-h-[44px]"
+												type="button"
+											>
+												<span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium {set.completed
+													? 'bg-green-500 text-white'
+													: idx === currentSetIndex
+														? 'bg-blue-500 text-white'
+														: 'bg-gray-300 text-gray-600'}">
+													{set.completed ? '✓' : idx + 1}
+												</span>
+												<div class="flex-1 min-w-0">
+													<p class="text-xs sm:text-sm text-gray-700">
+														{set.reps} reps @ {set.weight} lbs
+														{#if set.rpe}
+															<span class="text-gray-500">· RPE {set.rpe}</span>
+														{/if}
+													</p>
+													{#if set.notes}
+														<p class="text-xs text-gray-500 truncate">{set.notes}</p>
+													{/if}
+												</div>
+												{#if set.completed && idx !== currentSetIndex}
+													<span class="text-xs text-green-600 font-medium">Edit</span>
+												{:else if !set.completed && idx === currentSetIndex}
+													<span class="text-xs text-blue-600 font-medium">Current</span>
+												{/if}
+											</button>
+										{/if}
 										<button
 											onclick={(e) => { e.stopPropagation(); confirmDeleteSet(idx); }}
 											class="px-2 py-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors min-w-[32px] min-h-[32px]"
@@ -876,6 +1020,9 @@
 								</p>
 								<p class="text-sm text-blue-800">
 									Sets: {sessionExercises.reduce((acc, ex) => acc + ex.sets.length, 0)}
+								</p>
+								<p class="text-sm text-blue-800">
+									Total Volume: {calculateSessionVolume().toLocaleString()} lbs
 								</p>
 							</div>
 
