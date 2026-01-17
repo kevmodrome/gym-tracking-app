@@ -84,6 +84,19 @@ export interface AppSettings {
 	vibrationEnabled: boolean;
 }
 
+export type Theme = 'light' | 'dark' | 'system';
+
+export type WeightUnit = 'kg' | 'lb';
+
+export type DistanceUnit = 'km' | 'miles';
+
+export interface AppPreferences {
+	theme: Theme;
+	weightUnit: WeightUnit;
+	distanceUnit: DistanceUnit;
+	decimalPlaces: number;
+}
+
 export interface NotificationPreferences {
 	workoutReminders: boolean;
 	prAchievements: boolean;

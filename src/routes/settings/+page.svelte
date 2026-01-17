@@ -1,12 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { AppSettings, UserProfile, NotificationPreferences } from '$lib/types';
+	import type { AppSettings, UserProfile, NotificationPreferences, AppPreferences } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
 		soundEnabled: true,
 		vibrationEnabled: true
+	});
+
+	let appPreferences = $state<AppPreferences>({
+		theme: 'system',
+		weightUnit: 'kg',
+		distanceUnit: 'km',
+		decimalPlaces: 1
 	});
 
 	let userProfile = $state<UserProfile>({
@@ -35,6 +42,7 @@
 		loadSettings();
 		loadUserProfile();
 		loadNotificationPreferences();
+		loadAppPreferences();
 	});
 
 	function loadSettings() {
@@ -73,11 +81,35 @@
 		}
 	}
 
+	function loadAppPreferences() {
+		const saved = localStorage.getItem('gym-app-preferences');
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				appPreferences = { ...appPreferences, ...parsed };
+			} catch (e) {
+				console.error('Failed to parse app preferences:', e);
+			}
+		}
+	}
+
 	function saveSettings() {
 		localStorage.setItem('gym-app-settings', JSON.stringify(settings));
 		localStorage.setItem('gym-app-user-profile', JSON.stringify(userProfile));
 		localStorage.setItem('gym-app-notification-prefs', JSON.stringify(notificationPreferences));
+		localStorage.setItem('gym-app-preferences', JSON.stringify(appPreferences));
 
+		showSavedMessage = true;
+		if (messageTimeout) {
+			clearTimeout(messageTimeout);
+		}
+		messageTimeout = window.setTimeout(() => {
+			showSavedMessage = false;
+		}, 3000);
+	}
+
+	function saveAppPreferences() {
+		localStorage.setItem('gym-app-preferences', JSON.stringify(appPreferences));
 		showSavedMessage = true;
 		if (messageTimeout) {
 			clearTimeout(messageTimeout);
@@ -385,6 +417,86 @@
 							class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
 						></div>
 					</label>
+				</div>
+			</div>
+		</div>
+
+		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+			<h2 class="text-xl font-bold text-gray-900 mb-4">App Preferences</h2>
+
+			<div class="space-y-4">
+				<div>
+					<label for="theme" class="block text-sm font-medium text-gray-700 mb-1">
+						Theme
+					</label>
+					<select
+						id="theme"
+						bind:value={appPreferences.theme}
+						onchange={saveAppPreferences}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					>
+						<option value="light">Light</option>
+						<option value="dark">Dark</option>
+						<option value="system">System Default</option>
+					</select>
+					<p class="mt-1 text-sm text-gray-500">
+						Choose your preferred color scheme
+					</p>
+				</div>
+
+				<div class="border-t border-gray-200 pt-4">
+					<label for="weight-unit" class="block text-sm font-medium text-gray-700 mb-1">
+						Weight Unit
+					</label>
+					<select
+						id="weight-unit"
+						bind:value={appPreferences.weightUnit}
+						onchange={saveAppPreferences}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					>
+						<option value="kg">Kilograms (kg)</option>
+						<option value="lb">Pounds (lb)</option>
+					</select>
+					<p class="mt-1 text-sm text-gray-500">
+						Unit for displaying weight values
+					</p>
+				</div>
+
+				<div class="border-t border-gray-200 pt-4">
+					<label for="distance-unit" class="block text-sm font-medium text-gray-700 mb-1">
+						Distance Unit
+					</label>
+					<select
+						id="distance-unit"
+						bind:value={appPreferences.distanceUnit}
+						onchange={saveAppPreferences}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					>
+						<option value="km">Kilometers (km)</option>
+						<option value="miles">Miles</option>
+					</select>
+					<p class="mt-1 text-sm text-gray-500">
+						Unit for displaying distance values
+					</p>
+				</div>
+
+				<div class="border-t border-gray-200 pt-4">
+					<label for="decimal-places" class="block text-sm font-medium text-gray-700 mb-1">
+						Decimal Places
+					</label>
+					<select
+						id="decimal-places"
+						bind:value={appPreferences.decimalPlaces}
+						onchange={saveAppPreferences}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					>
+						<option value={0}>0 decimal places (whole numbers)</option>
+						<option value={1}>1 decimal place</option>
+						<option value={2}>2 decimal places</option>
+					</select>
+					<p class="mt-1 text-sm text-gray-500">
+						Precision for displaying numeric values
+					</p>
 				</div>
 			</div>
 		</div>
