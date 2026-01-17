@@ -19,6 +19,7 @@
 	let showCompleteModal = $state(false);
 	let sessionDuration = $state(0);
 	let durationInterval: number | null = null;
+	let editingSetIndex = $state<number | null>(null);
 
 	onMount(async () => {
 		workouts = await db.workouts.toArray();
@@ -66,30 +67,59 @@
 		);
 	});
 
-	async function selectWorkout(workout: Workout) {
+	function selectWorkout(workout: Workout) {
 		selectedWorkout = workout;
-		sessionExercises = workout.exercises.map((routine) => {
-			const exercise = exercises.find((e) => e.id === routine.exerciseId);
-			const sets: ExerciseSet[] = [];
-			for (let i = 0; i < routine.targetSets; i++) {
-				sets.push({
-					reps: routine.targetReps,
-					weight: routine.targetWeight,
-					completed: false
-				});
-			}
+		loadSessionProgress();
 
-			return {
-				exerciseId: routine.exerciseId,
-				exerciseName: routine.exerciseName,
-				primaryMuscle: exercise?.primary_muscle || '',
-				sets
-			};
-		});
+		if (sessionExercises.length === 0 || sessionExercises.every((ex) => ex.sets.length === 0)) {
+			sessionExercises = workout.exercises.map((routine) => {
+				const exercise = exercises.find((e) => e.id === routine.exerciseId);
+				const sets: ExerciseSet[] = [];
+				for (let i = 0; i < routine.targetSets; i++) {
+					sets.push({
+						reps: routine.targetReps,
+						weight: routine.targetWeight,
+						completed: false,
+						notes: ''
+					});
+				}
+
+				return {
+					exerciseId: routine.exerciseId,
+					exerciseName: routine.exerciseName,
+					primaryMuscle: exercise?.primary_muscle || '',
+					sets
+				};
+			});
+		}
 
 		showWorkoutSelector = false;
-		sessionStartTime = Date.now();
-		startDurationTracking();
+		if (sessionStartTime === 0) {
+			sessionStartTime = Date.now();
+			startDurationTracking();
+		}
+	}
+
+	async function completeSession() {
+		if (!selectedWorkout) return;
+
+		const session: Session = {
+			id: Date.now().toString(),
+			workoutId: selectedWorkout.id,
+			workoutName: selectedWorkout.name,
+			exercises: sessionExercises,
+			date: new Date().toISOString(),
+			duration: sessionDuration,
+			notes: sessionNotes.trim() || undefined,
+			createdAt: new Date().toISOString()
+		};
+
+		await db.sessions.add(session);
+		await calculatePersonalRecords();
+
+		localStorage.removeItem(`gym-app-session-${selectedWorkout.id}`);
+
+		window.location.href = '/';
 	}
 
 	function startDurationTracking() {
@@ -110,6 +140,7 @@
 
 		currentSet.completed = true;
 		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
 
 		if (isLastSetInExercise) {
 			if (isLastExercise) {
@@ -124,6 +155,64 @@
 			currentSetIndex++;
 			showTimer = true;
 		}
+	}
+
+	function saveSessionProgress() {
+		if (!selectedWorkout) return;
+		localStorage.setItem(
+			`gym-app-session-${selectedWorkout.id}`,
+			JSON.stringify({
+				sessionExercises,
+				currentExerciseIndex,
+				currentSetIndex,
+				sessionStartTime,
+				sessionDuration
+			})
+		);
+	}
+
+	function loadSessionProgress() {
+		if (!selectedWorkout) return;
+		const saved = localStorage.getItem(`gym-app-session-${selectedWorkout.id}`);
+		if (saved) {
+			try {
+				const data = JSON.parse(saved);
+				sessionExercises = data.sessionExercises || sessionExercises;
+				currentExerciseIndex = data.currentExerciseIndex || 0;
+				currentSetIndex = data.currentSetIndex || 0;
+				if (data.sessionStartTime) {
+					sessionStartTime = data.sessionStartTime;
+					startDurationTracking();
+				}
+				if (data.sessionDuration !== undefined) {
+					sessionDuration = data.sessionDuration;
+				}
+			} catch (e) {
+				console.error('Failed to load session progress:', e);
+			}
+		}
+	}
+
+	function editSet(setIndex: number) {
+		currentSetIndex = setIndex;
+		showTimer = false;
+		editingSetIndex = setIndex;
+	}
+
+	function saveSetEdit() {
+		editingSetIndex = null;
+		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
+	}
+
+	function cancelSetEdit() {
+		editingSetIndex = null;
+	}
+
+	function updateSetNotes(e: Event) {
+		if (!currentSet) return;
+		const textarea = e.target as HTMLTextAreaElement;
+		currentSet.notes = textarea.value;
 	}
 
 	function skipCurrentSet() {
@@ -177,26 +266,6 @@
 			currentExerciseIndex++;
 			currentSetIndex = 0;
 		}
-	}
-
-	async function completeSession() {
-		if (!selectedWorkout) return;
-
-		const session: Session = {
-			id: Date.now().toString(),
-			workoutId: selectedWorkout.id,
-			workoutName: selectedWorkout.name,
-			exercises: sessionExercises,
-			date: new Date().toISOString(),
-			duration: sessionDuration,
-			notes: sessionNotes.trim() || undefined,
-			createdAt: new Date().toISOString()
-		};
-
-		await db.sessions.add(session);
-		await calculatePersonalRecords();
-
-		window.location.href = '/';
 	}
 
 	function goBack() {
@@ -351,10 +420,24 @@
 								</div>
 							</div>
 
+							<div class="mb-4">
+								<label for="set-notes" class="block text-sm font-medium text-gray-700 mb-1">
+									Notes (optional)
+								</label>
+								<textarea
+									id="set-notes"
+									bind:value={currentSet.notes}
+									oninput={updateSetNotes}
+									placeholder="Add notes about this set..."
+									rows="2"
+									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+								></textarea>
+							</div>
+
 							<div class="flex gap-3">
 								<button
 									onclick={completeSet}
-									class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+									class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
 									type="button"
 								>
 									✓ Complete Set
@@ -377,15 +460,21 @@
 					{/if}
 
 					<div class="mt-4">
-						<h4 class="text-sm font-medium text-gray-700 mb-2">Progress</h4>
+						<div class="flex items-center justify-between mb-2">
+							<h4 class="text-sm font-medium text-gray-700">
+								Progress ({currentExercise.sets.filter((s) => s.completed).length} / {currentExercise.sets.length} sets)
+							</h4>
+						</div>
 						<div class="space-y-1">
 							{#each currentExercise.sets as set, idx}
-								<div
-									class="flex items-center gap-2 p-2 rounded {set.completed
-										? 'bg-green-50 border border-green-200'
+								<button
+									onclick={() => editSet(idx)}
+									class="w-full flex items-center gap-2 p-3 rounded {set.completed
+										? 'bg-green-50 border border-green-200 hover:bg-green-100'
 										: idx === currentSetIndex
 											? 'bg-blue-50 border border-blue-200'
-											: 'bg-gray-50 border border-gray-200'}"
+											: 'bg-gray-50 border border-gray-200 hover:bg-gray-100'} transition-colors text-left"
+									type="button"
 								>
 									<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed
 										? 'bg-green-500 text-white'
@@ -394,15 +483,20 @@
 											: 'bg-gray-300 text-gray-600'}">
 										{set.completed ? '✓' : idx + 1}
 									</span>
-									<div class="flex-1">
+									<div class="flex-1 min-w-0">
 										<p class="text-sm text-gray-700">
 											{set.reps} reps @ {set.weight} lbs
 										</p>
+										{#if set.notes}
+											<p class="text-xs text-gray-500 truncate">{set.notes}</p>
+										{/if}
 									</div>
-									{#if !set.completed && idx === currentSetIndex}
+									{#if set.completed && idx !== currentSetIndex}
+										<span class="text-xs text-green-600 font-medium">Edit</span>
+									{:else if !set.completed && idx === currentSetIndex}
 										<span class="text-xs text-blue-600 font-medium">Current</span>
 									{/if}
-								</div>
+								</button>
 							{/each}
 						</div>
 					</div>
