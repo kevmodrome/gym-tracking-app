@@ -4,6 +4,7 @@
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
 	import { syncManager } from '$lib/syncUtils';
 	import XIcon from '$lib/components/XIcon.svelte';
+	import { Button, Modal, TextInput, Select, InfoBox } from '$lib/ui';
 
 	let { onCreate, onClose } = $props<{
 		onCreate: (exercise: Exercise) => void;
@@ -19,6 +20,16 @@
 
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
+
+	const categoryOptions = [
+		{ value: '', label: 'Select category' },
+		...categories.map(c => ({ value: c, label: formatLabel(c) }))
+	];
+
+	const muscleOptions = [
+		{ value: '', label: 'Select primary muscle group' },
+		...muscles.map(m => ({ value: m, label: formatLabel(m) }))
+	];
 
 	let validationError = $derived.by(() => {
 		if (!name.trim()) return 'Exercise name is required';
@@ -67,91 +78,33 @@
 	}
 </script>
 
-<div
-	class="fixed inset-0 bg-black-50 bg-opacity-50 flex items-center justify-center p-4 z-50"
-	onclick={onClose}
-	onkeydown={(e) => e.key === 'Escape' && onClose()}
->
-	<div
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="modal-title"
-		tabindex="-1"
-		class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6"
-		onclick={(e) => e.stopPropagation()}
-		onkeydown={(e) => {
-			if (e.key === 'Escape') {
-				e.stopPropagation();
-				onClose();
-			}
-		}}
-	>
-		<div class="flex items-center justify-between mb-6">
-			<h2 id="modal-title" class="text-2xl font-bold text-gray-900">Create Custom Exercise</h2>
-			<button
-				onclick={onClose}
-				class="p-2 hover:bg-gray-100 rounded-full transition-colors"
-				type="button"
-			>
-				<XIcon class="w-6 h-6 text-gray-500" />
-			</button>
-		</div>
-
+<Modal open={true} title="Create Custom Exercise" size="lg" onclose={onClose}>
+	{#snippet children()}
 		<div class="space-y-4">
 			{#if validationError}
-				<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+				<InfoBox variant="error">
 					{validationError}
-				</div>
+				</InfoBox>
 			{/if}
 
-			<div>
-				<label for="exercise-name" class="block text-sm font-medium text-gray-700 mb-2">
-					Exercise Name *
-				</label>
-				<!-- svelte-ignore a11y_autofocus -->
-				<!-- User-initiated modal: autofocus on first field reduces tabbing -->
-				<input
-					id="exercise-name"
-					type="text"
-					bind:value={name}
-					placeholder="e.g., Incline Barbell Bench Press"
-					autofocus
-					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
-				/>
+			<TextInput
+				label="Exercise Name *"
+				bind:value={name}
+				placeholder="e.g., Incline Barbell Bench Press"
+				autofocus
+			/>
 
-			</div>
+			<Select
+				label="Category *"
+				bind:value={category}
+				options={categoryOptions}
+			/>
 
-			<div>
-				<label for="category" class="block text-sm font-medium text-gray-700 mb-2">
-					Category *
-				</label>
-				<select
-					id="category"
-					bind:value={category}
-					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
-				>
-					<option value="">Select category</option>
-					{#each categories as cat}
-						<option value={cat}>{formatLabel(cat)}</option>
-					{/each}
-				</select>
-			</div>
-
-			<div>
-				<label for="primary-muscle" class="block text-sm font-medium text-gray-700 mb-2">
-					Primary Muscle Group *
-				</label>
-				<select
-					id="primary-muscle"
-					bind:value={primaryMuscle}
-					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
-				>
-					<option value="">Select primary muscle group</option>
-					{#each muscles as muscle}
-						<option value={muscle}>{formatLabel(muscle)}</option>
-					{/each}
-				</select>
-			</div>
+			<Select
+				label="Primary Muscle Group *"
+				bind:value={primaryMuscle}
+				options={muscleOptions}
+			/>
 
 			<fieldset class="border-none p-0 m-0">
 				<legend class="text-sm font-medium text-gray-700 mb-2 block">Secondary Muscle Groups</legend>
@@ -163,14 +116,13 @@
 						placeholder="e.g., triceps (press Enter to add)"
 						class="flex-1 px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					/>
-					<button
+					<Button
+						variant="secondary"
 						onclick={addSecondaryMuscle}
 						disabled={!newSecondaryMuscle.trim()}
-						type="button"
-						class="px-4 py-3 text-base bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[80px]"
 					>
 						Add
-					</button>
+					</Button>
 				</div>
 				{#if secondaryMuscles.length > 0}
 					<div class="flex flex-wrap gap-2">
@@ -193,36 +145,19 @@
 				{/if}
 			</fieldset>
 
-			<div>
-				<label for="equipment" class="block text-sm font-medium text-gray-700 mb-2">
-					Equipment (optional)
-				</label>
-				<input
-					id="equipment"
-					type="text"
-					bind:value={equipment}
-					placeholder="e.g., Barbell, Dumbbells, Cable Machine"
-					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
-				/>
-			</div>
+			<TextInput
+				label="Equipment (optional)"
+				bind:value={equipment}
+				placeholder="e.g., Barbell, Dumbbells, Cable Machine"
+			/>
 		</div>
-
-		<div class="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-			<button
-				onclick={onClose}
-				type="button"
-				class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px]"
-			>
-				Cancel
-			</button>
-			<button
-				onclick={handleSubmit}
-				disabled={!isFormValid}
-				type="button"
-				class="flex-1 px-4 py-3 text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
-			>
-				Create Exercise
-			</button>
-		</div>
-	</div>
-</div>
+	{/snippet}
+	{#snippet footer()}
+		<Button variant="ghost" onclick={onClose}>
+			Cancel
+		</Button>
+		<Button variant="primary" onclick={handleSubmit} disabled={!isFormValid}>
+			Create Exercise
+		</Button>
+	{/snippet}
+</Modal>

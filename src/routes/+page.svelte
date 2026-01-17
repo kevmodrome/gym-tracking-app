@@ -11,12 +11,13 @@
 	import CreateWorkoutModal from '$lib/components/CreateWorkoutModal.svelte';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
+	import { Button, Card, SearchInput, Select, Modal } from '$lib/ui';
 
 	let exercises = $state<Exercise[]>([]);
 	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
 	let searchQuery = $state('');
-	let selectedCategory = $state<ExerciseCategory | undefined>(undefined);
-	let selectedMuscle = $state<MuscleGroup | undefined>(undefined);
+	let selectedCategory = $state<ExerciseCategory | ''>('');
+	let selectedMuscle = $state<MuscleGroup | ''>('');
 	let showCreateModal = $state(false);
 	let showWorkoutModal = $state(false);
 	let showImportModal = $state(false);
@@ -26,6 +27,16 @@
 
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
+
+	const categoryOptions = [
+		{ value: '', label: 'All Categories' },
+		...categories.map(c => ({ value: c, label: formatMuscle(c) }))
+	];
+
+	const muscleOptions = [
+		{ value: '', label: 'All Muscle Groups' },
+		...muscles.map(m => ({ value: m, label: formatMuscle(m) }))
+	];
 
 	const filteredExercises = $derived.by(() => {
 		return exercises.filter((exercise) => {
@@ -70,8 +81,8 @@
 
 	function clearFilters() {
 		searchQuery = '';
-		selectedCategory = undefined;
-		selectedMuscle = undefined;
+		selectedCategory = '';
+		selectedMuscle = '';
 	}
 
 	function formatMuscle(muscle: string): string {
@@ -100,215 +111,167 @@
 		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
 			<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Browse Exercises</h1>
 			<div class="flex flex-wrap gap-2 sm:gap-3">
-				<a
-					href="/settings"
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm min-h-[44px]"
-				>
+				<Button variant="secondary" href="/settings" class="bg-gray-700 hover:bg-gray-800">
 					⚙️ <span class="hidden sm:inline">Settings</span>
-				</a>
-				<a
-					href="/history"
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm min-h-[44px]"
-				>
+				</Button>
+				<Button variant="secondary" href="/history" class="bg-gray-600 hover:bg-gray-700">
 					📜 <span class="hidden sm:inline">History</span>
-				</a>
-				<a
-					href="/progress"
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm min-h-[44px]"
-				>
+				</Button>
+				<Button variant="secondary" href="/progress" class="bg-indigo-600 hover:bg-indigo-700">
 					📈 <span class="hidden sm:inline">Progress</span>
-				</a>
-				<a
-					href="/pr"
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm min-h-[44px]"
-				>
+				</Button>
+				<Button variant="secondary" href="/pr" class="bg-yellow-600 hover:bg-yellow-700">
 					🏆 <span class="hidden sm:inline">PRs</span>
-				</a>
-				<a
-					href="/dashboard"
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm min-h-[44px]"
-				>
+				</Button>
+				<Button variant="secondary" href="/dashboard" class="bg-purple-600 hover:bg-purple-700">
 					📊 <span class="hidden sm:inline">Dashboard</span>
-				</a>
-				<button
-					onclick={() => (showWorkoutModal = true)}
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm min-h-[44px]"
-					type="button"
-				>
+				</Button>
+				<Button variant="success" onclick={() => (showWorkoutModal = true)}>
 					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
 					<span class="hidden sm:inline">Create Workout</span>
-				</button>
-				<a
-					href="/workout"
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm min-h-[44px]"
-				>
+				</Button>
+				<Button variant="success" href="/workout" class="bg-emerald-600 hover:bg-emerald-700">
 					▶ <span class="hidden sm:inline">Start Workout</span>
-				</a>
-				<button
-					onclick={() => (showImportModal = true)}
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm min-h-[44px]"
-					type="button"
-				>
+				</Button>
+				<Button variant="secondary" onclick={() => (showImportModal = true)} class="bg-orange-600 hover:bg-orange-700">
 					📥 <span class="hidden sm:inline">Import</span>
-				</button>
-				<button
-					onclick={handleExport}
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm min-h-[44px]"
-					type="button"
-				>
+				</Button>
+				<Button variant="secondary" onclick={handleExport} class="bg-teal-600 hover:bg-teal-700">
 					📤 <span class="hidden sm:inline">Export</span>
-				</button>
-				<button
-					onclick={() => (showCreateModal = true)}
-					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm min-h-[44px]"
-					type="button"
-				>
+				</Button>
+				<Button variant="primary" onclick={() => (showCreateModal = true)}>
 					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
 					<span class="hidden sm:inline">Create Exercise</span>
-				</button>
+				</Button>
 			</div>
 		</div>
 
-		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-				<div class="relative">
-					<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-					<input
-						type="text"
-						bind:value={searchQuery}
-						placeholder="Search exercises..."
-						class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+		<Card class="mb-6">
+			{#snippet children()}
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div class="relative">
+						<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder="Search exercises..."
+							class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						/>
+					</div>
+
+					<Select
+						label="Category"
+						bind:value={selectedCategory}
+						options={categoryOptions}
+					/>
+
+					<Select
+						label="Muscle Group"
+						bind:value={selectedMuscle}
+						options={muscleOptions}
 					/>
 				</div>
 
-				<div>
-					<label for="category-filter" class="block text-sm font-medium text-gray-700 mb-1">
-						Category
-					</label>
-					<select
-						id="category-filter"
-						bind:value={selectedCategory}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					>
-						<option value="">All Categories</option>
-						{#each categories as category}
-							<option value={category}>{formatMuscle(category)}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div>
-					<label for="muscle-filter" class="block text-sm font-medium text-gray-700 mb-1">
-						Muscle Group
-					</label>
-					<select
-						id="muscle-filter"
-						bind:value={selectedMuscle}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					>
-						<option value="">All Muscle Groups</option>
-						{#each muscles as muscle}
-							<option value={muscle}>{formatMuscle(muscle)}</option>
-						{/each}
-					</select>
-				</div>
-			</div>
-
-			{#if searchQuery || selectedCategory || selectedMuscle}
-				<div class="mt-4 flex items-center justify-between">
-					<p class="text-sm text-gray-600">
-						Showing {filteredExercises.length} of {exercises.length} exercises
-					</p>
-					<button
-						onclick={clearFilters}
-						class="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-					>
-						<XIcon class="w-4 h-4" />
-						Clear Filters
-					</button>
-				</div>
-			{/if}
-		</div>
+				{#if searchQuery || selectedCategory || selectedMuscle}
+					<div class="mt-4 flex items-center justify-between">
+						<p class="text-sm text-gray-600">
+							Showing {filteredExercises.length} of {exercises.length} exercises
+						</p>
+						<button
+							onclick={clearFilters}
+							class="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+						>
+							<XIcon class="w-4 h-4" />
+							Clear Filters
+						</button>
+					</div>
+				{/if}
+			{/snippet}
+		</Card>
 
 		{#if filteredExercises.length === 0}
-			<div class="bg-white rounded-lg shadow-md p-12 text-center">
-				<div class="text-gray-400 mb-4">
-					<SearchIcon class="w-16 h-16 mx-auto" />
-				</div>
-				<h2 class="text-xl font-semibold text-gray-900 mb-2">No exercises found</h2>
-				<p class="text-gray-600">
-					{#if searchQuery || selectedCategory || selectedMuscle}
-						Try adjusting your search or filters
-					{:else}
-						No exercises available yet
-					{/if}
-				</p>
-			</div>
+			<Card class="text-center" padding="lg">
+				{#snippet children()}
+					<div class="text-gray-400 mb-4">
+						<SearchIcon class="w-16 h-16 mx-auto" />
+					</div>
+					<h2 class="text-xl font-semibold text-gray-900 mb-2">No exercises found</h2>
+					<p class="text-gray-600">
+						{#if searchQuery || selectedCategory || selectedMuscle}
+							Try adjusting your search or filters
+						{:else}
+							No exercises available yet
+						{/if}
+					</p>
+				{/snippet}
+			</Card>
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				{#each filteredExercises as exercise}
-					<div class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow">
-						<div class="flex items-start justify-between mb-3">
-							<h3 class="text-lg font-semibold text-gray-900">{exercise.name}</h3>
-							{#if exercise.is_custom}
-								<span
-									class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-									>Custom</span
-								>
-							{/if}
-						</div>
-
-						{#if exercisePRs.has(exercise.id)}
-							<div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3 mb-3">
-								<div class="flex items-center gap-2 mb-2">
-									<span class="text-xl">🏆</span>
-									<span class="font-semibold text-sm text-gray-800">Personal Records</span>
-								</div>
-								<div class="flex flex-wrap gap-2">
-									{#each exercisePRs.get(exercise.id)?.slice(0, 3) as pr}
-										<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
-											{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
-										</span>
-									{/each}
-									{#if (exercisePRs.get(exercise.id)?.length || 0) > 3}
-										<span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-											+{(exercisePRs.get(exercise.id)?.length || 0) - 3} more
-										</span>
-									{/if}
-								</div>
-							</div>
-						{/if}
-
-						<div class="space-y-2">
-							<div class="flex items-center gap-2">
-								<span class="text-sm font-medium text-gray-500">Category:</span>
-								<span class="text-sm text-gray-700 capitalize">{exercise.category}</span>
+					<Card hover>
+						{#snippet children()}
+							<div class="flex items-start justify-between mb-3">
+								<h3 class="text-lg font-semibold text-gray-900">{exercise.name}</h3>
+								{#if exercise.is_custom}
+									<span
+										class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+										>Custom</span
+									>
+								{/if}
 							</div>
 
-							<div class="flex items-center gap-2">
-								<span class="text-sm font-medium text-gray-500">Primary:</span>
-								<span class="text-sm text-gray-700 capitalize">{exercise.primary_muscle}</span>
-							</div>
-
-							{#if exercise.secondary_muscles.length > 0}
-								<div class="flex flex-wrap items-center gap-2">
-									<span class="text-sm font-medium text-gray-500">Secondary:</span>
-									<div class="flex flex-wrap gap-1">
-										{#each exercise.secondary_muscles as muscle}
-											<span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-												{muscle}
+							{#if exercisePRs.has(exercise.id)}
+								<div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3 mb-3">
+									<div class="flex items-center gap-2 mb-2">
+										<span class="text-xl">🏆</span>
+										<span class="font-semibold text-sm text-gray-800">Personal Records</span>
+									</div>
+									<div class="flex flex-wrap gap-2">
+										{#each exercisePRs.get(exercise.id)?.slice(0, 3) as pr}
+											<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
+												{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
 											</span>
 										{/each}
+										{#if (exercisePRs.get(exercise.id)?.length || 0) > 3}
+											<span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+												+{(exercisePRs.get(exercise.id)?.length || 0) - 3} more
+											</span>
+										{/if}
 									</div>
 								</div>
 							{/if}
 
-							<div class="flex items-center gap-2">
-								<span class="text-sm font-medium text-gray-500">Equipment:</span>
-								<span class="text-sm text-gray-700">{exercise.equipment}</span>
+							<div class="space-y-2">
+								<div class="flex items-center gap-2">
+									<span class="text-sm font-medium text-gray-500">Category:</span>
+									<span class="text-sm text-gray-700 capitalize">{exercise.category}</span>
+								</div>
+
+								<div class="flex items-center gap-2">
+									<span class="text-sm font-medium text-gray-500">Primary:</span>
+									<span class="text-sm text-gray-700 capitalize">{exercise.primary_muscle}</span>
+								</div>
+
+								{#if exercise.secondary_muscles.length > 0}
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="text-sm font-medium text-gray-500">Secondary:</span>
+										<div class="flex flex-wrap gap-1">
+											{#each exercise.secondary_muscles as muscle}
+												<span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+													{muscle}
+												</span>
+											{/each}
+										</div>
+									</div>
+								{/if}
+
+								<div class="flex items-center gap-2">
+									<span class="text-sm font-medium text-gray-500">Equipment:</span>
+									<span class="text-sm text-gray-700">{exercise.equipment}</span>
+								</div>
 							</div>
-						</div>
-					</div>
+						{/snippet}
+					</Card>
 				{/each}
 			</div>
 		{/if}
@@ -333,46 +296,45 @@
 	<ImportBackupModal onClose={() => (showImportModal = false)} />
 {/if}
 
-{#if showExportModal}
-	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-		<div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-			<div class="flex items-center justify-between mb-4">
-				<h2 class="text-xl font-bold text-gray-900">Exporting Workout Data</h2>
+<Modal
+	open={showExportModal}
+	title="Exporting Workout Data"
+	size="sm"
+	onclose={() => showExportModal = false}
+>
+	{#snippet children()}
+		{#if exportResult === null}
+			<div class="space-y-4">
+				<div class="flex items-center gap-2">
+					<div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+						<div
+							class="bg-blue-600 h-full transition-all duration-300"
+							style:width={exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%'}
+						></div>
+					</div>
+					<span class="text-sm text-gray-600">
+						{exportProgress.total > 0 ? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%` : '0%'}
+					</span>
+				</div>
+				<p class="text-sm text-gray-600">{exportProgress.stage}</p>
 			</div>
-
-			{#if exportResult === null}
-				<div class="space-y-4">
-					<div class="flex items-center gap-2">
-						<div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-							<div
-								class="bg-blue-600 h-full transition-all duration-300"
-								style:width={exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%'}
-							></div>
-						</div>
-						<span class="text-sm text-gray-600">
-							{exportProgress.total > 0 ? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%` : '0%'}
-						</span>
-					</div>
-					<p class="text-sm text-gray-600">{exportProgress.stage}</p>
+		{:else if exportResult.success}
+			<div class="space-y-3">
+				<div class="flex items-center gap-2 text-green-600">
+					<span class="text-2xl">✓</span>
+					<p class="font-medium">Export Complete!</p>
 				</div>
-			{:else if exportResult.success}
-				<div class="space-y-3">
-					<div class="flex items-center gap-2 text-green-600">
-						<span class="text-2xl">✓</span>
-						<p class="font-medium">Export Complete!</p>
-					</div>
-					<p class="text-sm text-gray-600">{exportResult.message}</p>
-					<p class="text-sm text-gray-500">File has been downloaded to your default download location.</p>
+				<p class="text-sm text-gray-600">{exportResult.message}</p>
+				<p class="text-sm text-gray-500">File has been downloaded to your default download location.</p>
+			</div>
+		{:else}
+			<div class="space-y-3">
+				<div class="flex items-center gap-2 text-red-600">
+					<span class="text-2xl">✗</span>
+					<p class="font-medium">Export Failed</p>
 				</div>
-			{:else}
-				<div class="space-y-3">
-					<div class="flex items-center gap-2 text-red-600">
-						<span class="text-2xl">✗</span>
-						<p class="font-medium">Export Failed</p>
-					</div>
-					<p class="text-sm text-gray-600">{exportResult.message}</p>
-				</div>
-			{/if}
-		</div>
-	</div>
-{/if}
+				<p class="text-sm text-gray-600">{exportResult.message}</p>
+			</div>
+		{/if}
+	{/snippet}
+</Modal>

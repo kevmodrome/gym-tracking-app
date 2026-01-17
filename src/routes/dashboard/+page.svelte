@@ -2,17 +2,18 @@
 	import { onMount } from 'svelte';
 	import { db, liveQuery } from '$lib/db';
 	import type { Session, Exercise } from '$lib/types';
-		import {
-			filterSessionsByDateRange,
-			calculateDashboardMetrics,
-			calculateVolumeTrends,
-			calculateMuscleBreakdown,
-			calculateDailyWorkouts,
-			calculateDailyMetrics,
-			getLastWorkoutDate,
-			calculateWeeklyComparison,
-			calculateMonthlyComparison
-		} from '$lib/dashboardMetrics';
+	import {
+		filterSessionsByDateRange,
+		calculateDashboardMetrics,
+		calculateVolumeTrends,
+		calculateMuscleBreakdown,
+		calculateDailyWorkouts,
+		calculateDailyMetrics,
+		getLastWorkoutDate,
+		calculateWeeklyComparison,
+		calculateMonthlyComparison
+	} from '$lib/dashboardMetrics';
+	import { Button, Card, MetricCard, ButtonGroup, TextInput } from '$lib/ui';
 
 	let sessions = $state<Session[]>([]);
 	let allExercises = $state<Exercise[]>([]);
@@ -142,456 +143,378 @@
 			return segment;
 		});
 	});
+
+	const dateFilterOptions = [
+		{ value: 'week', label: 'Week' },
+		{ value: 'month', label: 'Month' },
+		{ value: 'year', label: 'Year' },
+		{ value: 'custom', label: 'Custom' }
+	];
+
+	const periodOptions = [
+		{ value: 'week', label: 'Week' },
+		{ value: 'month', label: 'Month' }
+	];
 </script>
 
 <div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
 		{#if sessions.length === 0}
-			<div class="bg-white rounded-lg shadow-md p-6 sm:p-8 mb-4 sm:mb-6 text-center">
-				<div class="w-20 h-20 sm:w-24 sm:h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-					<span class="text-4xl sm:text-5xl">🏋️</span>
-				</div>
-				<h1 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Your Gym Dashboard!</h1>
-				<p class="text-gray-600 mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
-				<a
-					href="/"
-					class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
-				>
-					Start Your First Workout
-				</a>
-			</div>
+			<Card class="mb-4 sm:mb-6 text-center" padding="lg">
+				{#snippet children()}
+					<div class="w-20 h-20 sm:w-24 sm:h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<span class="text-4xl sm:text-5xl">🏋️</span>
+					</div>
+					<h1 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Your Gym Dashboard!</h1>
+					<p class="text-gray-600 mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
+					<Button href="/">
+						Start Your First Workout
+					</Button>
+				{/snippet}
+			</Card>
 		{:else}
 			<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 sm:mb-6">
 				<div class="flex items-center gap-4">
-				<a
-					href="/"
-					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] flex items-center"
-				>
-					← Back
-				</a>
-				<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Analytics</h1>
+					<Button variant="ghost" href="/">
+						← Back
+					</Button>
+					<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Analytics</h1>
+				</div>
+				<Button variant="success" href="/pr" class="bg-yellow-600 hover:bg-yellow-700">
+					🏆 PRs
+				</Button>
+				<ButtonGroup
+					options={dateFilterOptions}
+					bind:value={dateFilter}
+					onchange={(v) => dateFilter = v as typeof dateFilter}
+				/>
 			</div>
-			<a
-				href="/pr"
-				class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm sm:text-base min-h-[44px]"
-			>
-				🏆 PRs
-			</a>
-			<div class="flex gap-1 sm:gap-2 overflow-x-auto pb-1 lg:pb-0">
-				<button
-					onclick={() => (dateFilter = 'week')}
-					class:active={dateFilter === 'week'}
-					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'week'
-						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
-					type="button"
-				>
-					Week
-				</button>
-				<button
-					onclick={() => (dateFilter = 'month')}
-					class:active={dateFilter === 'month'}
-					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'month'
-						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
-					type="button"
-				>
-					Month
-				</button>
-				<button
-					onclick={() => (dateFilter = 'year')}
-					class:active={dateFilter === 'year'}
-					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'year'
-						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
-					type="button"
-				>
-					Year
-				</button>
-				<button
-					onclick={() => (dateFilter = 'custom')}
-					class:active={dateFilter === 'custom'}
-					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'custom'
-						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
-					type="button"
-				>
-					Custom
-				</button>
-			</div>
-		</div>
 		{/if}
 
 		{#if dateFilter === 'custom'}
-			<div class="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-4 sm:mb-6">
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-					<div>
-						<label for="start-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-							Start Date
-						</label>
-						<input
-							id="start-date"
-							type="date"
-							bind:value={customStartDate}
-							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
-						/>
+			<Card class="mb-4 sm:mb-6" padding="sm">
+				{#snippet children()}
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+						<div>
+							<label for="start-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+								Start Date
+							</label>
+							<input
+								id="start-date"
+								type="date"
+								bind:value={customStartDate}
+								class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
+							/>
+						</div>
+						<div>
+							<label for="end-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+								End Date
+							</label>
+							<input
+								id="end-date"
+								type="date"
+								bind:value={customEndDate}
+								class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
+							/>
+						</div>
 					</div>
-					<div>
-						<label for="end-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-							End Date
-						</label>
-						<input
-							id="end-date"
-							type="date"
-							bind:value={customEndDate}
-							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
-						/>
-					</div>
-				</div>
-			</div>
+				{/snippet}
+			</Card>
 		{/if}
 
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-xs sm:text-sm font-medium text-gray-500">Sessions</p>
-						<p class="text-2xl sm:text-3xl font-bold text-gray-900">{totalSessions}</p>
-					</div>
-					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center">
-						<span class="text-xl sm:text-2xl">📊</span>
-					</div>
-				</div>
-			</div>
-
-			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-xs sm:text-sm font-medium text-gray-500">Time</p>
-						<p class="text-2xl sm:text-3xl font-bold text-gray-900">{formatTime(totalTrainingTime)}</p>
-					</div>
-					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center">
-						<span class="text-xl sm:text-2xl">⏱️</span>
-					</div>
-				</div>
-			</div>
-
-			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-xs sm:text-sm font-medium text-gray-500">Volume</p>
-						<p class="text-xl sm:text-3xl font-bold text-gray-900">{formatVolume(totalVolume)} lbs</p>
-					</div>
-					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center">
-						<span class="text-xl sm:text-2xl">🏋️</span>
-					</div>
-				</div>
-			</div>
-
-			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-xs sm:text-sm font-medium text-gray-500">Avg Duration</p>
-						<p class="text-2xl sm:text-3xl font-bold text-gray-900">
-							{totalSessions > 0 ? formatTime(totalTrainingTime / totalSessions) : '0m'}
-						</p>
-					</div>
-					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center">
-						<span class="text-xl sm:text-2xl">📈</span>
-					</div>
-				</div>
-			</div>
+			<MetricCard label="Sessions" value={totalSessions} icon="📊" iconBgColor="bg-blue-100" />
+			<MetricCard label="Time" value={formatTime(totalTrainingTime)} icon="⏱️" iconBgColor="bg-green-100" />
+			<MetricCard label="Volume" value="{formatVolume(totalVolume)} lbs" icon="🏋️" iconBgColor="bg-purple-100" />
+			<MetricCard
+				label="Avg Duration"
+				value={totalSessions > 0 ? formatTime(totalTrainingTime / totalSessions) : '0m'}
+				icon="📈"
+				iconBgColor="bg-orange-100"
+			/>
 		</div>
 
-		<div class="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-4 sm:mb-6">
-			<div class="flex items-center justify-between mb-3 sm:mb-4">
-				<h2 class="text-lg sm:text-xl font-bold text-gray-900">Training Aggregates</h2>
-				<div class="flex gap-1">
-					<button
-						onclick={() => (selectedPeriod = 'week')}
-						class:active={selectedPeriod === 'week'}
-						class="px-3 py-1.5 rounded transition-colors text-sm {selectedPeriod === 'week'
-							? 'bg-blue-600 text-white'
-							: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-						type="button"
-					>
-						Week
-					</button>
-					<button
-						onclick={() => (selectedPeriod = 'month')}
-						class:active={selectedPeriod === 'month'}
-						class="px-3 py-1.5 rounded transition-colors text-sm {selectedPeriod === 'month'
-							? 'bg-blue-600 text-white'
-							: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-						type="button"
-					>
-						Month
-					</button>
+		<Card class="mb-4 sm:mb-6" padding="sm">
+			{#snippet children()}
+				<div class="flex items-center justify-between mb-3 sm:mb-4">
+					<h2 class="text-lg sm:text-xl font-bold text-gray-900">Training Aggregates</h2>
+					<ButtonGroup
+						options={periodOptions}
+						bind:value={selectedPeriod}
+						onchange={(v) => selectedPeriod = v as typeof selectedPeriod}
+						size="sm"
+					/>
 				</div>
-			</div>
 
-			{#if selectedPeriod === 'week'}
-				<div class="space-y-3 sm:space-y-4">
-					<div class="grid grid-cols-2 gap-3 sm:gap-4">
-						<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-xs sm:text-sm text-gray-600">Volume</span>
-								<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(weeklyComparison.current.startDate, weeklyComparison.current.endDate)}</span>
+				{#if selectedPeriod === 'week'}
+					<div class="space-y-3 sm:space-y-4">
+						<div class="grid grid-cols-2 gap-3 sm:gap-4">
+							<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs sm:text-sm text-gray-600">Volume</span>
+									<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(weeklyComparison.current.startDate, weeklyComparison.current.endDate)}</span>
+								</div>
+								<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(weeklyComparison.current.volume)} lbs</p>
+								<div class="flex items-center gap-1 mt-1">
+									{#if weeklyComparison.volumeChange > 0}
+										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-green-600 text-xs sm:text-sm font-medium">
+											{weeklyComparison.volumeChangePercent > 0 ? '+' : ''}{weeklyComparison.volumeChangePercent.toFixed(1)}%
+										</span>
+									{:else if weeklyComparison.volumeChange < 0}
+										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-red-600 text-xs sm:text-sm font-medium">
+											{weeklyComparison.volumeChangePercent.toFixed(1)}%
+										</span>
+									{:else}
+										<span class="text-gray-500 text-xs sm:text-sm">-</span>
+									{/if}
+								</div>
 							</div>
-							<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(weeklyComparison.current.volume)} lbs</p>
-							<div class="flex items-center gap-1 mt-1">
-								{#if weeklyComparison.volumeChange > 0}
-									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-									<span class="text-green-600 text-xs sm:text-sm font-medium">
-										{weeklyComparison.volumeChangePercent > 0 ? '+' : ''}{weeklyComparison.volumeChangePercent.toFixed(1)}%
-									</span>
-								{:else if weeklyComparison.volumeChange < 0}
-									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-									<span class="text-red-600 text-xs sm:text-sm font-medium">
-										{weeklyComparison.volumeChangePercent.toFixed(1)}%
-									</span>
-								{:else}
-									<span class="text-gray-500 text-xs sm:text-sm">-</span>
-								{/if}
+
+							<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
+									<span class="text-[10px] sm:text-xs text-gray-500">vs. previous week</span>
+								</div>
+								<p class="text-lg sm:text-2xl font-bold text-gray-900">{weeklyComparison.current.workoutCount}</p>
+								<div class="flex items-center gap-1 mt-1">
+									{#if weeklyComparison.workoutCountChange > 0}
+										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-green-600 text-xs sm:text-sm font-medium">
+											+{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent > 0 ? '+' : ''}{weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+										</span>
+									{:else if weeklyComparison.workoutCountChange < 0}
+										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-red-600 text-xs sm:text-sm font-medium">
+											{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+										</span>
+									{:else}
+										<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
+									{/if}
+								</div>
 							</div>
 						</div>
 
-						<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
-								<span class="text-[10px] sm:text-xs text-gray-500">vs. previous week</span>
-							</div>
-							<p class="text-lg sm:text-2xl font-bold text-gray-900">{weeklyComparison.current.workoutCount}</p>
-							<div class="flex items-center gap-1 mt-1">
-								{#if weeklyComparison.workoutCountChange > 0}
-									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-									<span class="text-green-600 text-xs sm:text-sm font-medium">
-										+{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent > 0 ? '+' : ''}{weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
-									</span>
-								{:else if weeklyComparison.workoutCountChange < 0}
-									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-									<span class="text-red-600 text-xs sm:text-sm font-medium">
-										{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
-									</span>
-								{:else}
-									<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
-								{/if}
-							</div>
+						<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
+							<span class="text-xs text-gray-500">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.workoutCount} workouts</span>
 						</div>
 					</div>
-
-					<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
-						<span class="text-xs text-gray-500">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.workoutCount} workouts</span>
-					</div>
-				</div>
-			{:else}
-				<div class="space-y-3 sm:space-y-4">
-					<div class="grid grid-cols-2 gap-3 sm:gap-4">
-						<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-xs sm:text-sm text-gray-600">Volume</span>
-								<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(monthlyComparison.current.startDate, monthlyComparison.current.endDate)}</span>
+				{:else}
+					<div class="space-y-3 sm:space-y-4">
+						<div class="grid grid-cols-2 gap-3 sm:gap-4">
+							<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs sm:text-sm text-gray-600">Volume</span>
+									<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(monthlyComparison.current.startDate, monthlyComparison.current.endDate)}</span>
+								</div>
+								<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(monthlyComparison.current.volume)} lbs</p>
+								<div class="flex items-center gap-1 mt-1">
+									{#if monthlyComparison.volumeChange > 0}
+										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-green-600 text-xs sm:text-sm font-medium">
+											{monthlyComparison.volumeChangePercent > 0 ? '+' : ''}{monthlyComparison.volumeChangePercent.toFixed(1)}%
+										</span>
+									{:else if monthlyComparison.volumeChange < 0}
+										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-red-600 text-xs sm:text-sm font-medium">
+											{monthlyComparison.volumeChangePercent.toFixed(1)}%
+										</span>
+									{:else}
+										<span class="text-gray-500 text-xs sm:text-sm">-</span>
+									{/if}
+								</div>
 							</div>
-							<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(monthlyComparison.current.volume)} lbs</p>
-							<div class="flex items-center gap-1 mt-1">
-								{#if monthlyComparison.volumeChange > 0}
-									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-									<span class="text-green-600 text-xs sm:text-sm font-medium">
-										{monthlyComparison.volumeChangePercent > 0 ? '+' : ''}{monthlyComparison.volumeChangePercent.toFixed(1)}%
-									</span>
-								{:else if monthlyComparison.volumeChange < 0}
-									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-									<span class="text-red-600 text-xs sm:text-sm font-medium">
-										{monthlyComparison.volumeChangePercent.toFixed(1)}%
-									</span>
-								{:else}
-									<span class="text-gray-500 text-xs sm:text-sm">-</span>
-								{/if}
+
+							<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
+									<span class="text-[10px] sm:text-xs text-gray-500">vs. previous month</span>
+								</div>
+								<p class="text-lg sm:text-2xl font-bold text-gray-900">{monthlyComparison.current.workoutCount}</p>
+								<div class="flex items-center gap-1 mt-1">
+									{#if monthlyComparison.workoutCountChange > 0}
+										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-green-600 text-xs sm:text-sm font-medium">
+											+{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent > 0 ? '+' : ''}{monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+										</span>
+									{:else if monthlyComparison.workoutCountChange < 0}
+										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-red-600 text-xs sm:text-sm font-medium">
+											{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+										</span>
+									{:else}
+										<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
+									{/if}
+								</div>
 							</div>
 						</div>
 
-						<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
-								<span class="text-[10px] sm:text-xs text-gray-500">vs. previous month</span>
-							</div>
-							<p class="text-lg sm:text-2xl font-bold text-gray-900">{monthlyComparison.current.workoutCount}</p>
-							<div class="flex items-center gap-1 mt-1">
-								{#if monthlyComparison.workoutCountChange > 0}
-									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-									<span class="text-green-600 text-xs sm:text-sm font-medium">
-										+{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent > 0 ? '+' : ''}{monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
-									</span>
-								{:else if monthlyComparison.workoutCountChange < 0}
-									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-									<span class="text-red-600 text-xs sm:text-sm font-medium">
-										{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
-									</span>
-								{:else}
-									<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
-								{/if}
-							</div>
+						<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
+							<span class="text-xs text-gray-500">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.workoutCount} workouts</span>
 						</div>
 					</div>
-
-					<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
-						<span class="text-xs text-gray-500">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.workoutCount} workouts</span>
-					</div>
-				</div>
-			{/if}
-		</div>
+				{/if}
+			{/snippet}
+		</Card>
 
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Daily Metrics</h2>
-				{#if dailyMetrics.length > 0}
-					<div class="space-y-2 max-h-64 overflow-y-auto">
-						<div class="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600 border-b pb-2">
-							<span>Date</span>
-							<span class="text-center">Workouts</span>
-							<span class="text-right">Volume</span>
-						</div>
-						{#each [...dailyMetrics].reverse() as metric}
-							<div
-								class="grid grid-cols-3 gap-2 text-xs sm:text-sm py-1 {isLastWorkoutDate(metric.date)
-									? 'bg-blue-50 border-l-4 border-blue-600'
-									: 'bg-gray-50'} rounded"
-							>
-								<span class="truncate">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-								<span class="text-center {metric.workoutCount === 0 ? 'text-gray-400' : 'font-semibold'}">{metric.workoutCount}</span>
-								<span class="text-right {metric.volume === 0 ? 'text-gray-400' : 'font-semibold text-blue-600'}">
-									{formatVolume(metric.volume)} lbs
-								</span>
+			<Card>
+				{#snippet children()}
+					<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Daily Metrics</h2>
+					{#if dailyMetrics.length > 0}
+						<div class="space-y-2 max-h-64 overflow-y-auto">
+							<div class="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600 border-b pb-2">
+								<span>Date</span>
+								<span class="text-center">Workouts</span>
+								<span class="text-right">Volume</span>
 							</div>
-						{/each}
-					</div>
-					{#if lastWorkoutDate}
-						<div class="mt-3 text-xs text-gray-500">
-							Last workout: {lastWorkoutDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+							{#each [...dailyMetrics].reverse() as metric}
+								<div
+									class="grid grid-cols-3 gap-2 text-xs sm:text-sm py-1 {isLastWorkoutDate(metric.date)
+										? 'bg-blue-50 border-l-4 border-blue-600'
+										: 'bg-gray-50'} rounded"
+								>
+									<span class="truncate">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+									<span class="text-center {metric.workoutCount === 0 ? 'text-gray-400' : 'font-semibold'}">{metric.workoutCount}</span>
+									<span class="text-right {metric.volume === 0 ? 'text-gray-400' : 'font-semibold text-blue-600'}">
+										{formatVolume(metric.volume)} lbs
+									</span>
+								</div>
+							{/each}
 						</div>
+						{#if lastWorkoutDate}
+							<div class="mt-3 text-xs text-gray-500">
+								Last workout: {lastWorkoutDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+							</div>
+						{/if}
+					{:else}
+						<p class="text-gray-500 text-center py-4 text-sm">No workout data available</p>
 					{/if}
-				{:else}
-					<p class="text-gray-500 text-center py-4 text-sm">No workout data available</p>
-				{/if}
-			</div>
+				{/snippet}
+			</Card>
 
-			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Muscle Breakdown</h2>
-				{#if muscleGroupBreakdown.length > 0}
-					<div class="flex items-center justify-center mb-3 sm:mb-4">
-						<svg viewBox="0 0 100 100" class="w-32 h-32 sm:w-48 sm:h-48">
-							{#each pieChartData as segment}
-								{#if segment.percentage > 0}
-									<path
-										d="M 50 50 L {
-											50 +
-											45 *
-											Math.cos(
-												(segment.startAngle - 90) * (Math.PI / 180)
-											)
-										} {
-											50 +
-											45 *
-											Math.sin(
-												(segment.startAngle - 90) * (Math.PI / 180)
-											)
-										} A 45 45 0 {
-											segment.percentage > 50 ? 1 : 0
-										} 1 {
-											50 +
-											45 *
-											Math.cos(
-												(segment.endAngle - 90) * (Math.PI / 180)
-											)
-										} {
-											50 +
-											45 *
-											Math.sin(
-												(segment.endAngle - 90) * (Math.PI / 180)
-											)
-										} Z"
-										fill={[
-											'#3b82f6',
-											'#10b981',
-											'#f59e0b',
-											'#ef4444',
-											'#8b5cf6',
-											'#ec4899',
-											'#06b6d4'
-										][muscleGroupBreakdown.findIndex((item) => item.muscle === segment.muscle)]}
-										stroke="white"
-										stroke-width="1"
+			<Card>
+				{#snippet children()}
+					<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Muscle Breakdown</h2>
+					{#if muscleGroupBreakdown.length > 0}
+						<div class="flex items-center justify-center mb-3 sm:mb-4">
+							<svg viewBox="0 0 100 100" class="w-32 h-32 sm:w-48 sm:h-48">
+								{#each pieChartData as segment}
+									{#if segment.percentage > 0}
+										<path
+											d="M 50 50 L {
+												50 +
+												45 *
+												Math.cos(
+													(segment.startAngle - 90) * (Math.PI / 180)
+												)
+											} {
+												50 +
+												45 *
+												Math.sin(
+													(segment.startAngle - 90) * (Math.PI / 180)
+												)
+											} A 45 45 0 {
+												segment.percentage > 50 ? 1 : 0
+											} 1 {
+												50 +
+												45 *
+												Math.cos(
+													(segment.endAngle - 90) * (Math.PI / 180)
+												)
+											} {
+												50 +
+												45 *
+												Math.sin(
+													(segment.endAngle - 90) * (Math.PI / 180)
+												)
+											} Z"
+											fill={[
+												'#3b82f6',
+												'#10b981',
+												'#f59e0b',
+												'#ef4444',
+												'#8b5cf6',
+												'#ec4899',
+												'#06b6d4'
+											][muscleGroupBreakdown.findIndex((item) => item.muscle === segment.muscle)]}
+											stroke="white"
+											stroke-width="1"
+										/>
+									{/if}
+								{/each}
+							</svg>
+						</div>
+						<div class="grid grid-cols-2 gap-1 sm:gap-2">
+							{#each muscleGroupBreakdown.slice(0, 6) as { muscle, count }}
+								<div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+									<span class="capitalize text-xs sm:text-sm">{muscle}</span>
+									<span class="font-semibold text-xs sm:text-sm">{count} ({(
+										pieChartData.find((s) => s.muscle === muscle)?.percentage || 0
+									).toFixed(0)}%)</span>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No workout data available</p>
+					{/if}
+				{/snippet}
+			</Card>
+		</div>
+
+		<Card>
+			{#snippet children()}
+				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Volume Trends</h2>
+				{#if volumeTrends.some((t) => t.volume > 0)}
+					<div class="h-48 sm:h-64">
+						<svg viewBox="0 0 800 200" class="w-full h-full">
+							{#each volumeTrends as trend, i}
+								{#if trend.volume > 0}
+									<line
+										x1={i * (800 / volumeTrends.length)}
+										y1={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
+										x2={(i + 1) * (800 / volumeTrends.length)}
+										y2={200 -
+											(volumeTrends[i + 1]?.volume || trend.volume) /
+												Math.max(...volumeTrends.map((t) => t.volume)) * 180}
+										stroke="#3b82f6"
+										stroke-width="2"
+									/>
+									<circle
+										cx={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
+										cy={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
+										r="4"
+										fill="#3b82f6"
 									/>
 								{/if}
 							{/each}
+							{#each volumeTrends as trend, i}
+								<text
+									x={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
+									y={195}
+									text-anchor="middle"
+									class="text-xs"
+									fill="#6b7280"
+								>
+									{i % 2 === 0 ? trend.date : ''}
+								</text>
+							{/each}
 						</svg>
 					</div>
-					<div class="grid grid-cols-2 gap-1 sm:gap-2">
-						{#each muscleGroupBreakdown.slice(0, 6) as { muscle, count }}
-							<div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-								<span class="capitalize text-xs sm:text-sm">{muscle}</span>
-								<span class="font-semibold text-xs sm:text-sm">{count} ({(
-									pieChartData.find((s) => s.muscle === muscle)?.percentage || 0
-								).toFixed(0)}%)</span>
+					<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+						{#each volumeTrends.slice(-4).reverse() as trend}
+							<div class="text-xs sm:text-sm">
+								<p class="text-gray-500">{trend.date}</p>
+								<p class="font-semibold">{formatVolume(trend.volume)} lbs</p>
+								<p class="text-[10px] sm:text-xs text-gray-400">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
 							</div>
 						{/each}
 					</div>
 				{:else}
-					<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No workout data available</p>
+					<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No volume data available</p>
 				{/if}
-			</div>
-		</div>
-
-		<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-			<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Volume Trends</h2>
-			{#if volumeTrends.some((t) => t.volume > 0)}
-				<div class="h-48 sm:h-64">
-					<svg viewBox="0 0 800 200" class="w-full h-full">
-						{#each volumeTrends as trend, i}
-							{#if trend.volume > 0}
-								<line
-									x1={i * (800 / volumeTrends.length)}
-									y1={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
-									x2={(i + 1) * (800 / volumeTrends.length)}
-									y2={200 -
-										(volumeTrends[i + 1]?.volume || trend.volume) /
-											Math.max(...volumeTrends.map((t) => t.volume)) * 180}
-									stroke="#3b82f6"
-									stroke-width="2"
-								/>
-								<circle
-									cx={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
-									cy={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
-									r="4"
-									fill="#3b82f6"
-								/>
-							{/if}
-						{/each}
-						{#each volumeTrends as trend, i}
-							<text
-								x={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
-								y={195}
-								text-anchor="middle"
-								class="text-xs"
-								fill="#6b7280"
-							>
-								{i % 2 === 0 ? trend.date : ''}
-							</text>
-						{/each}
-					</svg>
-				</div>
-				<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-					{#each volumeTrends.slice(-4).reverse() as trend}
-						<div class="text-xs sm:text-sm">
-							<p class="text-gray-500">{trend.date}</p>
-							<p class="font-semibold">{formatVolume(trend.volume)} lbs</p>
-							<p class="text-[10px] sm:text-xs text-gray-400">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
-						</div>
-					{/each}
-				</div>
-			{:else}
-				<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No volume data available</p>
-			{/if}
-		</div>
+			{/snippet}
+		</Card>
 	</div>
 </div>
