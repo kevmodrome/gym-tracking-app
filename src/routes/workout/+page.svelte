@@ -8,6 +8,8 @@
 	import RestTimer from '$lib/components/RestTimer.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import EditWorkoutModal from '$lib/components/EditWorkoutModal.svelte';
+	import { toastStore } from '$lib/stores/toast';
+	import { Trash2, Undo } from 'lucide-svelte';
 
 	let workouts = $state<Workout[]>([]);
 	let exercises = $state<Exercise[]>([]);
@@ -25,6 +27,11 @@
 	let editingSetIndex = $state<number | null>(null);
 	let showEditModal = $state(false);
 	let editingWorkout = $state<Workout | null>(null);
+	let showDeleteConfirm = $state(false);
+	let deletingSetIndex = $state<number | null>(null);
+	let deletedSet = $state<{ exerciseIndex: number; setIndex: number; set: ExerciseSet } | null>(null);
+	let undoTimeout: number | null = null;
+	let showUndoToast = $state(false);
 
 	onMount(async () => {
 		workouts = await db.workouts.toArray();
@@ -439,6 +446,87 @@
 		draggedSetIndex = null;
 		draggedOverSetIndex = null;
 	}
+
+	function confirmDeleteSet(setIndex: number) {
+		deletingSetIndex = setIndex;
+		showDeleteConfirm = true;
+	}
+
+	function deleteSet() {
+		if (deletingSetIndex === null || !currentExercise) return;
+
+		const setToDelete = currentExercise.sets[deletingSetIndex];
+		deletedSet = {
+			exerciseIndex: currentExerciseIndex,
+			setIndex: deletingSetIndex,
+			set: { ...setToDelete }
+		};
+
+		currentExercise.sets.splice(deletingSetIndex, 1);
+
+		if (currentSetIndex >= currentExercise.sets.length) {
+			currentSetIndex = Math.max(0, currentExercise.sets.length - 1);
+		}
+		if (currentExercise.sets.length === 0) {
+			currentSetIndex = 0;
+		}
+
+		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
+		showDeleteConfirm = false;
+		showUndoToast = true;
+		deletingSetIndex = null;
+
+		undoTimeout = window.setTimeout(() => {
+			showUndoToast = false;
+			deletedSet = null;
+			undoTimeout = null;
+		}, 30000);
+
+		if (currentExercise.sets.length === 0 && sessionExercises.length > 1) {
+			if (confirm(`All sets removed from ${currentExercise.exerciseName}. Delete this exercise?`)) {
+				sessionExercises.splice(currentExerciseIndex, 1);
+				currentExerciseIndex = Math.max(0, currentExerciseIndex - 1);
+				currentSetIndex = 0;
+				sessionExercises = [...sessionExercises];
+				saveSessionProgress();
+			}
+		}
+	}
+
+	function cancelDeleteSet() {
+		showDeleteConfirm = false;
+		deletingSetIndex = null;
+	}
+
+	function undoDeleteSet() {
+		if (!deletedSet || !currentExercise) return;
+
+		if (undoTimeout) {
+			clearTimeout(undoTimeout);
+			undoTimeout = null;
+		}
+
+		try {
+			if (deletedSet.exerciseIndex === currentExerciseIndex) {
+				currentExercise.sets.splice(deletedSet.setIndex, 0, deletedSet.set);
+				currentSetIndex = deletedSet.setIndex;
+			} else {
+				const exercise = sessionExercises[deletedSet.exerciseIndex];
+				if (exercise) {
+					exercise.sets.splice(deletedSet.setIndex, 0, deletedSet.set);
+				}
+			}
+			sessionExercises = [...sessionExercises];
+			saveSessionProgress();
+			showUndoToast = false;
+			deletedSet = null;
+			toastStore.showSuccess('Set restored successfully');
+		} catch (error) {
+			console.error('Failed to undo deletion:', error);
+			toastStore.showError('Failed to undo deletion');
+		}
+	}
 </script>
 
 <div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
@@ -750,6 +838,14 @@
 												<span class="text-xs text-blue-600 font-medium">Current</span>
 											{/if}
 										</button>
+										<button
+											onclick={(e) => { e.stopPropagation(); confirmDeleteSet(idx); }}
+											class="px-2 py-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors min-w-[32px] min-h-[32px]"
+											type="button"
+											aria-label="Delete set"
+										>
+											<Trash2 class="w-4 h-4 sm:w-5 sm:h-5" />
+										</button>
 									</div>
 								</div>
 							{/each}
@@ -813,6 +909,65 @@
 								Save Workout
 							</button>
 						</div>
+					</div>
+				</div>
+			{/if}
+
+			{#if showDeleteConfirm}
+				<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+						<div class="flex items-center justify-between mb-4">
+							<h2 class="text-xl font-bold text-gray-900">Delete Set</h2>
+							<button
+								onclick={cancelDeleteSet}
+								type="button"
+							>
+								<XIcon class="w-6 h-6 text-gray-500" />
+							</button>
+						</div>
+						<p class="text-gray-700 mb-6">
+							Are you sure you want to delete {deletedSet?.set.reps || currentExercise?.sets[deletingSetIndex || 0]?.reps} reps @ {deletedSet?.set.weight || currentExercise?.sets[deletingSetIndex || 0]?.weight} lbs?
+						</p>
+						<div class="flex gap-3">
+							<button
+								onclick={cancelDeleteSet}
+								class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 min-h-[44px]"
+								type="button"
+							>
+								Cancel
+							</button>
+							<button
+								onclick={deleteSet}
+								class="flex-1 px-4 py-3 text-base bg-red-600 text-white rounded-lg hover:bg-red-700 min-h-[44px]"
+								type="button"
+							>
+								Delete Set
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			{#if showUndoToast}
+				<div class="fixed bottom-4 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
+					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-amber-50 border-amber-200 text-amber-800">
+						<Undo class="w-5 h-5 flex-shrink-0 text-amber-500" />
+						<span class="text-sm font-medium flex-1">Set deleted. Undo available for 30 seconds</span>
+						<button
+							onclick={undoDeleteSet}
+							class="flex-shrink-0 px-3 py-1 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-700 min-h-[32px]"
+							type="button"
+						>
+							Undo
+						</button>
+						<button
+							onclick={() => showUndoToast = false}
+							class="flex-shrink-0 p-1 rounded hover:bg-amber-100 transition-colors"
+							aria-label="Dismiss"
+							type="button"
+						>
+							<XIcon class="w-4 h-4" />
+						</button>
 					</div>
 				</div>
 			{/if}
