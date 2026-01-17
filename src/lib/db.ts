@@ -1,11 +1,12 @@
 import Dexie, { liveQuery } from 'dexie';
 import type { Table } from 'dexie';
-import type { Exercise, Workout, Session } from './types';
+import type { Exercise, Workout, Session, PersonalRecord } from './types';
 
 export class GymDB extends Dexie {
 	exercises!: Table<Exercise>;
 	workouts!: Table<Workout>;
 	sessions!: Table<Session>;
+	personalRecords!: Table<PersonalRecord>;
 
 	constructor() {
 		super('gym-recording-app-db');
@@ -15,6 +16,9 @@ export class GymDB extends Dexie {
 		});
 		this.version(2).stores({
 			sessions: 'id, workoutId, date, createdAt'
+		});
+		this.version(3).stores({
+			personalRecords: 'id, exerciseId, reps, weight, achievedDate'
 		});
 	}
 }

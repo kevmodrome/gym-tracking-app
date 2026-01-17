@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { db, initializeExercises } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
+	import { getPersonalRecordsForExercise, getRepRangeLabel } from '$lib/prUtils';
+	import type { PersonalRecord } from '$lib/types';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
@@ -9,6 +11,7 @@
 	import CreateWorkoutModal from '$lib/components/CreateWorkoutModal.svelte';
 
 	let exercises = $state<Exercise[]>([]);
+	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
 	let searchQuery = $state('');
 	let selectedCategory = $state<ExerciseCategory | undefined>(undefined);
 	let selectedMuscle = $state<MuscleGroup | undefined>(undefined);
@@ -37,7 +40,19 @@
 	onMount(async () => {
 		await initializeExercises();
 		exercises = await db.exercises.toArray();
+		await loadPersonalRecords();
 	});
+
+	async function loadPersonalRecords() {
+		const prMap = new Map<string, PersonalRecord[]>();
+		for (const exercise of exercises) {
+			const prs = await getPersonalRecordsForExercise(exercise.id);
+			if (prs.length > 0) {
+				prMap.set(exercise.id, prs);
+			}
+		}
+		exercisePRs = prMap;
+	}
 
 	async function handleExerciseCreated(newExercise: Exercise) {
 		exercises = await db.exercises.toArray();
@@ -63,6 +78,12 @@
 		<div class="flex items-center justify-between mb-6">
 			<h1 class="text-3xl font-bold text-gray-900">Browse Exercises</h1>
 			<div class="flex gap-3">
+				<a
+					href="/pr"
+					class="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+				>
+					🏆 Personal Records
+				</a>
 				<a
 					href="/dashboard"
 					class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -176,6 +197,27 @@
 								>
 							{/if}
 						</div>
+
+						{#if exercisePRs.has(exercise.id)}
+							<div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3 mb-3">
+								<div class="flex items-center gap-2 mb-2">
+									<span class="text-xl">🏆</span>
+									<span class="font-semibold text-sm text-gray-800">Personal Records</span>
+								</div>
+								<div class="flex flex-wrap gap-2">
+									{#each exercisePRs.get(exercise.id)?.slice(0, 3) as pr}
+										<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
+											{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+										</span>
+									{/each}
+									{#if (exercisePRs.get(exercise.id)?.length || 0) > 3}
+										<span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+											+{(exercisePRs.get(exercise.id)?.length || 0) - 3} more
+										</span>
+									{/if}
+								</div>
+							</div>
+						{/if}
 
 						<div class="space-y-2">
 							<div class="flex items-center gap-2">

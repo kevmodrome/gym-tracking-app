@@ -196,6 +196,12 @@
 				</a>
 				<h1 class="text-3xl font-bold text-gray-900">Workout Analytics Dashboard</h1>
 			</div>
+			<a
+				href="/pr"
+				class="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+			>
+				🏆 Personal Records
+			</a>
 			<div class="flex gap-2">
 				<button
 					onclick={() => (dateFilter = 'week')}

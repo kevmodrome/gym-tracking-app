@@ -59,3 +59,20 @@ export interface Session {
 	notes?: string;
 	createdAt: string;
 }
+
+export interface PersonalRecord {
+	id: string;
+	exerciseId: string;
+	exerciseName: string;
+	reps: number;
+	weight: number;
+	achievedDate: string;
+	sessionId: string;
+}
+
+export interface PRHistory {
+	reps: number;
+	weight: number;
+	achievedDate: string;
+	sessionId: string;
+}
