@@ -193,6 +193,26 @@
 		}
 	}
 
+	async function copyWorkout(workout: Workout) {
+		const copiedWorkout: Workout = {
+			id: Date.now().toString(),
+			name: `${workout.name} (Copy)`,
+			exercises: workout.exercises.map((exercise) => ({
+				exerciseId: exercise.exerciseId,
+				exerciseName: exercise.exerciseName,
+				targetSets: exercise.targetSets,
+				targetReps: exercise.targetReps,
+				targetWeight: exercise.targetWeight
+			})),
+			notes: workout.notes,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
+		};
+
+		await db.workouts.add(copiedWorkout);
+		workouts = await db.workouts.toArray();
+	}
+
 	function editSet(setIndex: number) {
 		currentSetIndex = setIndex;
 		showTimer = false;
@@ -321,16 +341,33 @@
 				{:else}
 					<div class="space-y-3">
 						{#each workouts as workout}
-							<button
-								onclick={() => selectWorkout(workout)}
-								class="w-full p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors text-left"
-								type="button"
-							>
-								<h3 class="font-semibold text-gray-900">{workout.name}</h3>
-								<p class="text-sm text-gray-600">
-									{workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
-								</p>
-							</button>
+							<div class="border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+								<div class="p-4 flex items-center justify-between">
+									<button
+										onclick={() => selectWorkout(workout)}
+										class="flex-1 text-left"
+										type="button"
+									>
+										<div>
+											<h3 class="font-semibold text-gray-900">{workout.name}</h3>
+											<p class="text-sm text-gray-600">
+												{workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
+											</p>
+										</div>
+									</button>
+									<button
+										onclick={(e) => {
+											e.stopPropagation();
+											copyWorkout(workout);
+										}}
+										class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium ml-4"
+										type="button"
+										title="Copy workout"
+									>
+										Copy
+									</button>
+								</div>
+							</div>
 						{/each}
 					</div>
 				{/if}
