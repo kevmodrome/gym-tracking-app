@@ -544,6 +544,72 @@
 		deletingSetIndex = null;
 	}
 
+	function confirmDeleteExercise(exerciseIndex: number) {
+		deletingExerciseIndex = exerciseIndex;
+		showDeleteExerciseConfirm = true;
+	}
+
+	function deleteExercise() {
+		if (deletingExerciseIndex === null) return;
+
+		const exerciseToDelete = sessionExercises[deletingExerciseIndex];
+		deletedExercise = {
+			exerciseIndex: deletingExerciseIndex,
+			exercise: { ...exerciseToDelete }
+		};
+
+		sessionExercises.splice(deletingExerciseIndex, 1);
+
+		if (currentExerciseIndex >= sessionExercises.length) {
+			currentExerciseIndex = Math.max(0, sessionExercises.length - 1);
+		}
+		currentSetIndex = 0;
+
+		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
+		showDeleteExerciseConfirm = false;
+		showExerciseUndoToast = true;
+		deletingExerciseIndex = null;
+
+		exerciseUndoTimeout = window.setTimeout(() => {
+			showExerciseUndoToast = false;
+			deletedExercise = null;
+			exerciseUndoTimeout = null;
+		}, 30000);
+
+		if (sessionExercises.length === 0) {
+			showCompleteModal = true;
+			stopDurationTracking();
+		}
+	}
+
+	function cancelDeleteExercise() {
+		showDeleteExerciseConfirm = false;
+		deletingExerciseIndex = null;
+	}
+
+	function undoDeleteExercise() {
+		if (!deletedExercise || exerciseUndoTimeout === null) return;
+
+		clearTimeout(exerciseUndoTimeout);
+		exerciseUndoTimeout = null;
+
+		try {
+			sessionExercises.splice(deletedExercise.exerciseIndex, 0, deletedExercise.exercise);
+			currentExerciseIndex = deletedExercise.exerciseIndex;
+			currentSetIndex = 0;
+
+			sessionExercises = [...sessionExercises];
+			saveSessionProgress();
+			showExerciseUndoToast = false;
+			deletedExercise = null;
+			toastStore.showSuccess('Exercise restored successfully');
+		} catch (error) {
+			console.error('Failed to undo deletion:', error);
+			toastStore.showError('Failed to undo deletion');
+		}
+	}
+
 	function validateSetValues(reps: number, weight: number, rpe?: number): { valid: boolean; error?: string } {
 		if (reps < 0 || isNaN(reps)) {
 			return { valid: false, error: 'Reps must be a non-negative number' };
@@ -658,6 +724,11 @@
 	}
 
 	let exerciseSaveRetries = $state(0);
+	let showDeleteExerciseConfirm = $state(false);
+	let deletingExerciseIndex = $state<number | null>(null);
+	let deletedExercise = $state<{ exerciseIndex: number; exercise: SessionExercise } | null>(null);
+	let exerciseUndoTimeout: number | null = null;
+	let showExerciseUndoToast = $state(false);
 
 	async function saveExerciseEditWithRetry(): Promise<boolean> {
 		if (editingExerciseIndex === null) return false;
@@ -827,6 +898,14 @@
 									aria-label="Edit exercise"
 								>
 									Edit
+								</button>
+								<button
+									onclick={() => confirmDeleteExercise(currentExerciseIndex)}
+									class="px-3 py-1.5 text-xs sm:text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors font-medium min-h-[36px] sm:min-h-[44px]"
+									type="button"
+									aria-label="Delete exercise"
+								>
+									Delete
 								</button>
 							{/if}
 						</div>
@@ -1291,6 +1370,44 @@
 				</div>
 			{/if}
 
+			{#if showDeleteExerciseConfirm}
+				<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+						<div class="flex items-center justify-between mb-4">
+							<h2 class="text-xl font-bold text-gray-900">Delete Exercise</h2>
+							<button
+								onclick={cancelDeleteExercise}
+								type="button"
+							>
+								<XIcon class="w-6 h-6 text-gray-500" />
+							</button>
+						</div>
+						<p class="text-gray-700 mb-4">
+							Are you sure you want to delete <strong>{deletedExercise?.exercise.exerciseName || currentExercise?.exerciseName}</strong>?
+						</p>
+						<p class="text-sm text-gray-600 mb-6">
+							This will remove all sets from this exercise. You can undo this action within 30 seconds.
+						</p>
+						<div class="flex gap-3">
+							<button
+								onclick={cancelDeleteExercise}
+								class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 min-h-[44px]"
+								type="button"
+							>
+								Cancel
+							</button>
+							<button
+								onclick={deleteExercise}
+								class="flex-1 px-4 py-3 text-base bg-red-600 text-white rounded-lg hover:bg-red-700 min-h-[44px]"
+								type="button"
+							>
+								Delete Exercise
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
+
 			{#if showUndoToast}
 				<div class="fixed bottom-4 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
 					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-amber-50 border-amber-200 text-amber-800">
@@ -1305,6 +1422,30 @@
 						</button>
 						<button
 							onclick={() => showUndoToast = false}
+							class="flex-shrink-0 p-1 rounded hover:bg-amber-100 transition-colors"
+							aria-label="Dismiss"
+							type="button"
+						>
+							<XIcon class="w-4 h-4" />
+						</button>
+					</div>
+				</div>
+			{/if}
+
+			{#if showExerciseUndoToast}
+				<div class="fixed bottom-4 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
+					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-amber-50 border-amber-200 text-amber-800">
+						<Undo class="w-5 h-5 flex-shrink-0 text-amber-500" />
+						<span class="text-sm font-medium flex-1">Exercise deleted. Undo available for 30 seconds</span>
+						<button
+							onclick={undoDeleteExercise}
+							class="flex-shrink-0 px-3 py-1 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-700 min-h-[32px]"
+							type="button"
+						>
+							Undo
+						</button>
+						<button
+							onclick={() => showExerciseUndoToast = false}
 							class="flex-shrink-0 p-1 rounded hover:bg-amber-100 transition-colors"
 							aria-label="Dismiss"
 							type="button"
