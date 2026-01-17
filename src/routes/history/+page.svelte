@@ -19,10 +19,14 @@
 	let itemsPerPage = $state(10);
 	let showSessionDetail = $state<Session | null>(null);
 	let showDeleteConfirm = $state(false);
+	let showEditModal = $state(false);
 	let showUndoToast = $state(false);
 	let deletedSession = $state<Session | null>(null);
 	let undoTimeout: number | null = null;
 	let deleteError = $state<string | null>(null);
+	let editForm = $state<{ date: string; name: string; notes: string }>({ date: '', name: '', notes: '' });
+	let originalSession = $state<Session | null>(null);
+	let saveError = $state<string | null>(null);
 
 	onMount(async () => {
 		allWorkouts = (await db.workouts.toArray()).map((w) => ({ id: w.id, name: w.name }));
@@ -161,6 +165,55 @@
 		showDeleteConfirm = false;
 		deleteError = null;
 	}
+
+	function openEditModal() {
+		if (!showSessionDetail) return;
+		originalSession = { ...showSessionDetail };
+		const date = new Date(showSessionDetail.date);
+		editForm = {
+			date: date.toISOString().split('T')[0],
+			name: showSessionDetail.workoutName,
+			notes: showSessionDetail.notes || ''
+		};
+		showEditModal = true;
+	}
+
+	function closeEditModal() {
+		showEditModal = false;
+		editForm = { date: '', name: '', notes: '' };
+		originalSession = null;
+		saveError = null;
+	}
+
+	async function saveSessionChanges() {
+		if (!showSessionDetail || !editForm.date) {
+			saveError = 'Please select a date';
+			return;
+		}
+
+		try {
+			const updatedSession: Session = {
+				...showSessionDetail,
+				date: new Date(editForm.date).toISOString(),
+				workoutName: editForm.name.trim() || showSessionDetail.workoutName,
+				notes: editForm.notes.trim() || undefined
+			};
+
+			await db.sessions.update(showSessionDetail.id, {
+				date: updatedSession.date,
+				workoutName: updatedSession.workoutName,
+				notes: updatedSession.notes
+			});
+
+			showSessionDetail = updatedSession;
+			showEditModal = false;
+			editForm = { date: '', name: '', notes: '' };
+			originalSession = null;
+			saveError = null;
+		} catch (error) {
+			saveError = error instanceof Error ? error.message : 'Failed to save changes';
+		}
+	}
 </script>
 
 <div class="min-h-screen bg-gray-100 p-4 md:p-8">
@@ -262,88 +315,9 @@
 							bind:value={customEndDate}
 							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						/>
-		</div>
-	</div>
-
-	{#if showDeleteConfirm}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-			<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h2 class="text-xl font-bold text-gray-900">Delete Workout</h2>
-					<button
-						onclick={closeDeleteConfirm}
-						type="button"
-					>
-						<XIcon class="w-6 h-6 text-gray-500" />
-					</button>
-				</div>
-
-				<div class="space-y-4">
-					<div class="bg-red-50 border border-red-200 rounded-lg p-4">
-						<p class="text-red-900 font-medium mb-2">Are you sure?</p>
-						<p class="text-sm text-red-800">
-							This will permanently delete "{showSessionDetail?.workoutName}" from
-							{formatDate(showSessionDetail?.date || '')}. This action cannot be undone.
-						</p>
-					</div>
-
-					{#if deleteError}
-						<div class="bg-red-100 border border-red-300 rounded-lg p-3">
-							<p class="text-sm text-red-800">{deleteError}</p>
-						</div>
-					{/if}
-
-					<div class="flex gap-3">
-						<button
-							onclick={closeDeleteConfirm}
-							class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-							type="button"
-						>
-							Cancel
-						</button>
-						<button
-							onclick={confirmDelete}
-							class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-							type="button"
-						>
-							Delete Workout
-						</button>
 					</div>
 				</div>
-			</div>
-		</div>
-	{/if}
-{/if}
-
-{#if showUndoToast}
-	<div class="fixed bottom-4 right-4 bg-gray-900 text-white rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
-		<div class="flex-1">
-			<p class="font-medium mb-1">Workout deleted</p>
-			<p class="text-sm text-gray-300 mb-2">
-				"{deletedSession?.workoutName}" has been removed from your history.
-			</p>
-			<button
-				onclick={undoDelete}
-				class="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
-				type="button"
-			>
-				Undo
-			</button>
-		</div>
-		<button
-			onclick={() => {
-				showUndoToast = false;
-				if (undoTimeout) clearTimeout(undoTimeout);
-				undoTimeout = null;
-				deletedSession = null;
-			}}
-			class="text-gray-400 hover:text-white"
-			type="button"
-		>
-			<XIcon class="w-5 h-5" />
-		</button>
-	</div>
-{/if}
+			{/if}
 		</div>
 
 		{#if filteredSessions.length === 0}
@@ -433,6 +407,13 @@
 							<p class="text-sm text-gray-500">Duration</p>
 							<p class="text-lg font-semibold">{formatDuration(showSessionDetail.duration)}</p>
 						</div>
+						<button
+							onclick={openEditModal}
+							class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+							type="button"
+						>
+							Edit
+						</button>
 						<button
 							onclick={() => (showDeleteConfirm = true)}
 							class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
@@ -557,6 +538,85 @@
 							Delete Workout
 						</button>
 					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	{#if showEditModal}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+			<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+				<div class="flex items-center justify-between mb-4">
+					<h2 class="text-xl font-bold text-gray-900">Edit Workout</h2>
+					<button
+						onclick={closeEditModal}
+						type="button"
+					>
+						<XIcon class="w-6 h-6 text-gray-500" />
+					</button>
+				</div>
+
+				<div class="space-y-4 mb-6">
+					<div>
+						<label for="edit-date" class="block text-sm font-medium text-gray-700 mb-1">
+							Date <span class="text-red-500">*</span>
+						</label>
+						<input
+							id="edit-date"
+							type="date"
+							bind:value={editForm.date}
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						/>
+					</div>
+
+					<div>
+						<label for="edit-name" class="block text-sm font-medium text-gray-700 mb-1">
+							Workout Name
+						</label>
+						<input
+							id="edit-name"
+							type="text"
+							bind:value={editForm.name}
+							placeholder="Workout name"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						/>
+					</div>
+
+					<div>
+						<label for="edit-notes" class="block text-sm font-medium text-gray-700 mb-1">
+							Notes
+						</label>
+						<textarea
+							id="edit-notes"
+							bind:value={editForm.notes}
+							placeholder="Add notes about your workout..."
+							rows="3"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+						></textarea>
+					</div>
+
+					{#if saveError}
+						<div class="bg-red-100 border border-red-300 rounded-lg p-3">
+							<p class="text-sm text-red-800">{saveError}</p>
+						</div>
+					{/if}
+				</div>
+
+				<div class="flex gap-3">
+					<button
+						onclick={closeEditModal}
+						class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+						type="button"
+					>
+						Cancel
+					</button>
+					<button
+						onclick={saveSessionChanges}
+						class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+						type="button"
+					>
+						Save Changes
+					</button>
 				</div>
 			</div>
 		</div>
