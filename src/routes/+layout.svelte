@@ -12,6 +12,16 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="apple-touch-icon" sizes="180x180" href="/icon-512x512.svg" />
+	<link rel="apple-touch-icon" sizes="152x152" href="/icon-512x512.svg" />
+	<link rel="apple-touch-icon" sizes="120x120" href="/icon-192x192.svg" />
+	<link rel="apple-touch-icon" sizes="76x76" href="/icon-192x192.svg" />
+	<link rel="apple-touch-icon" sizes="60x60" href="/icon-192x192.svg" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<meta name="apple-mobile-web-app-title" content="GymTrack" />
+	<meta name="mobile-web-app-capable" content="yes" />
+	<link rel="manifest" href="/manifest.webmanifest" />
 </svelte:head>
 
 <Toast />
