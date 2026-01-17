@@ -158,9 +158,9 @@
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<h3 class="block text-sm font-medium text-gray-700 mb-2">
 						Exercises ({workoutExercises.length})
-					</label>
+					</h3>
 					<div class="border border-gray-200 rounded-lg divide-y divide-gray-100">
 						{#each workoutExercises as exercise, index (exercise.exerciseId + index)}
 							<div class="p-4 flex items-center gap-4">
@@ -196,8 +196,9 @@
 									<h4 class="font-medium text-gray-900 mb-2">{exercise.exerciseName}</h4>
 									<div class="grid grid-cols-3 gap-2">
 										<div>
-											<label class="block text-xs font-medium text-gray-500 mb-1">Sets</label>
+											<label for="exercise-sets-{index}" class="block text-xs font-medium text-gray-500 mb-1">Sets</label>
 											<input
+												id="exercise-sets-{index}"
 												type="number"
 												min="1"
 												inputmode="numeric"
@@ -207,8 +208,9 @@
 											/>
 										</div>
 										<div>
-											<label class="block text-xs font-medium text-gray-500 mb-1">Reps</label>
+											<label for="exercise-reps-{index}" class="block text-xs font-medium text-gray-500 mb-1">Reps</label>
 											<input
+												id="exercise-reps-{index}"
 												type="number"
 												min="1"
 												inputmode="numeric"
@@ -218,8 +220,9 @@
 											/>
 										</div>
 										<div>
-											<label class="block text-xs font-medium text-gray-500 mb-1">Weight</label>
+											<label for="exercise-weight-{index}" class="block text-xs font-medium text-gray-500 mb-1">Weight</label>
 											<input
+												id="exercise-weight-{index}"
 												type="number"
 												min="0"
 												inputmode="numeric"

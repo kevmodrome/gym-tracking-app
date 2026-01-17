@@ -1163,8 +1163,9 @@
 											<div class="flex-1 flex flex-col gap-2">
 												<div class="grid grid-cols-3 gap-2">
 													<div>
-														<label class="block text-xs text-gray-600 mb-1">Reps</label>
+														<label for="edit-set-reps" class="block text-xs text-gray-600 mb-1">Reps</label>
 														<input
+															id="edit-set-reps"
 															type="number"
 															min="0"
 															bind:value={editingSetReps}
@@ -1174,8 +1175,9 @@
 														/>
 													</div>
 													<div>
-														<label class="block text-xs text-gray-600 mb-1">Weight (lbs)</label>
+														<label for="edit-set-weight" class="block text-xs text-gray-600 mb-1">Weight (lbs)</label>
 														<input
+															id="edit-set-weight"
 															type="number"
 															min="0"
 															step="0.5"
@@ -1186,8 +1188,9 @@
 														/>
 													</div>
 													<div>
-														<label class="block text-xs text-gray-600 mb-1">RPE (1-10)</label>
+														<label for="edit-set-rpe" class="block text-xs text-gray-600 mb-1">RPE (1-10)</label>
 														<input
+															id="edit-set-rpe"
 															type="number"
 															min="1"
 															max="10"

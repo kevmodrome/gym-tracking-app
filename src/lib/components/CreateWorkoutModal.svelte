@@ -278,9 +278,9 @@
 
 				{#if workoutExercises.length > 0}
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<h3 class="block text-sm font-medium text-gray-700 mb-2">
 							Exercises ({workoutExercises.length})
-						</label>
+						</h3>
 						<div class="border border-gray-200 rounded-lg divide-y divide-gray-100">
 							{#each workoutExercises as exercise, index (exercise.exerciseId + index)}
 								<div class="p-4 flex items-center gap-4">

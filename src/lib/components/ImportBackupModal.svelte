@@ -177,22 +177,23 @@
 
 			{#if !backupData}
 				<div class="space-y-4">
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
-							Select Backup File (JSON)
-						</label>
-						<p class="text-sm text-gray-500 mb-3">
-							Choose a JSON backup file previously exported from this app.
-						</p>
-						<input
-							bind:this={fileInput}
-							type="file"
-							accept=".json,application/json"
-							onchange={handleFileSelect}
-							disabled={isParsing || isImporting}
-							class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-						/>
-					</div>
+				<div>
+					<label for="backup-file" class="block text-sm font-medium text-gray-700 mb-2">
+						Select Backup File (JSON)
+					</label>
+					<p class="text-sm text-gray-500 mb-3">
+						Choose a JSON backup file previously exported from this app.
+					</p>
+					<input
+						id="backup-file"
+						bind:this={fileInput}
+						type="file"
+						accept=".json,application/json"
+						onchange={handleFileSelect}
+						disabled={isParsing || isImporting}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+					/>
+				</div>
 
 					{#if isParsing || isDetecting}
 						<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -259,10 +260,11 @@
 							<div class="space-y-4">
 								{#if duplicates?.exercises.length}
 									<div>
-										<label class="block text-sm font-medium text-gray-700 mb-2">
+										<label for="resolution-exercises" class="block text-sm font-medium text-gray-700 mb-2">
 											Exercises ({duplicates.exercises.length})
 										</label>
 										<select
+											id="resolution-exercises"
 											bind:value={resolution.exercises}
 											class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
 										>
@@ -279,10 +281,11 @@
 
 								{#if duplicates?.workouts.length}
 									<div>
-										<label class="block text-sm font-medium text-gray-700 mb-2">
+										<label for="resolution-workouts" class="block text-sm font-medium text-gray-700 mb-2">
 											Workouts ({duplicates.workouts.length})
 										</label>
 										<select
+											id="resolution-workouts"
 											bind:value={resolution.workouts}
 											class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
 										>
@@ -299,10 +302,11 @@
 
 								{#if duplicates?.sessions.length}
 									<div>
-										<label class="block text-sm font-medium text-gray-700 mb-2">
+										<label for="resolution-sessions" class="block text-sm font-medium text-gray-700 mb-2">
 											Sessions ({duplicates.sessions.length})
 										</label>
 										<select
+											id="resolution-sessions"
 											bind:value={resolution.sessions}
 											class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
 										>
@@ -319,10 +323,11 @@
 
 								{#if duplicates?.personalRecords.length}
 									<div>
-										<label class="block text-sm font-medium text-gray-700 mb-2">
+										<label for="resolution-personal-records" class="block text-sm font-medium text-gray-700 mb-2">
 											Personal Records ({duplicates.personalRecords.length})
 										</label>
 										<select
+											id="resolution-personal-records"
 											bind:value={resolution.personalRecords}
 											class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
 										>
