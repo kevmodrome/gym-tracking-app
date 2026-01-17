@@ -32,6 +32,81 @@ export interface DuplicateResolution {
 	personalRecords: 'replace' | 'skip' | 'merge';
 }
 
+export interface ExportResult {
+	success: boolean;
+	totalItems: number;
+	message: string;
+}
+
+export async function exportBackupData(
+	onProgress?: (current: number, total: number, stage: string) => void
+): Promise<ExportResult> {
+	let totalItems = 0;
+	let currentItems = 0;
+
+	try {
+		onProgress?.(0, 0, 'Loading exercises...');
+		const exercises = await db.exercises.toArray();
+		currentItems += exercises.length;
+		totalItems += exercises.length;
+		onProgress?.(currentItems, totalItems, 'Loading exercises...');
+
+		onProgress?.(currentItems, totalItems, 'Loading workouts...');
+		const workouts = await db.workouts.toArray();
+		currentItems += workouts.length;
+		totalItems += workouts.length;
+		onProgress?.(currentItems, totalItems, 'Loading workouts...');
+
+		onProgress?.(currentItems, totalItems, 'Loading sessions...');
+		const sessions = await db.sessions.toArray();
+		currentItems += sessions.length;
+		totalItems += sessions.length;
+		onProgress?.(currentItems, totalItems, 'Loading sessions...');
+
+		onProgress?.(currentItems, totalItems, 'Loading personal records...');
+		const personalRecords = await db.personalRecords.toArray();
+		currentItems += personalRecords.length;
+		totalItems += personalRecords.length;
+		onProgress?.(currentItems, totalItems, 'Loading personal records...');
+
+		const backup: BackupData = {
+			version: '1.0.0',
+			exportedAt: new Date().toISOString(),
+			exercises,
+			workouts,
+			sessions,
+			personalRecords
+		};
+
+		onProgress?.(totalItems, totalItems, 'Generating file...');
+		const jsonString = JSON.stringify(backup, null, 2);
+
+		onProgress?.(totalItems, totalItems, 'Downloading...');
+		const blob = new Blob([jsonString], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+		a.download = `gym-workout-backup-${timestamp}.json`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+
+		return {
+			success: true,
+			totalItems,
+			message: `Successfully exported ${totalItems} items (${exercises.length} exercises, ${workouts.length} workouts, ${sessions.length} sessions, ${personalRecords.length} personal records)`
+		};
+	} catch (error) {
+		return {
+			success: false,
+			totalItems,
+			message: error instanceof Error ? error.message : 'Unknown error occurred during export'
+		};
+	}
+}
+
 export async function validateBackupData(data: unknown): Promise<BackupData | null> {
 	if (!data || typeof data !== 'object') {
 		return null;

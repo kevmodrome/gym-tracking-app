@@ -10,6 +10,7 @@
 	import CreateExerciseModal from '$lib/components/CreateExerciseModal.svelte';
 	import CreateWorkoutModal from '$lib/components/CreateWorkoutModal.svelte';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
+	import { exportBackupData } from '$lib/backupUtils';
 
 	let exercises = $state<Exercise[]>([]);
 	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
@@ -19,6 +20,9 @@
 	let showCreateModal = $state(false);
 	let showWorkoutModal = $state(false);
 	let showImportModal = $state(false);
+	let showExportModal = $state(false);
+	let exportProgress = $state({ current: 0, total: 0, stage: '' });
+	let exportResult = $state<{ success: boolean; message: string } | null>(null);
 
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
@@ -73,6 +77,22 @@
 	function formatMuscle(muscle: string): string {
 		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
 	}
+
+	async function handleExport() {
+		showExportModal = true;
+		exportResult = null;
+		exportProgress = { current: 0, total: 0, stage: 'Starting...' };
+
+		const result = await exportBackupData((current: number, total: number, stage: string) => {
+			exportProgress = { current, total, stage };
+		});
+
+		exportResult = result;
+
+		setTimeout(() => {
+			showExportModal = false;
+		}, 3000);
+	}
 </script>
 
 <div class="min-h-screen bg-gray-100 p-4 md:p-8">
@@ -112,6 +132,13 @@
 					type="button"
 				>
 					📥 Import
+				</button>
+				<button
+					onclick={handleExport}
+					class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+					type="button"
+				>
+					📤 Export
 				</button>
 				<button
 					onclick={() => (showCreateModal = true)}
@@ -286,4 +313,48 @@
 
 {#if showImportModal}
 	<ImportBackupModal onClose={() => (showImportModal = false)} />
+{/if}
+
+{#if showExportModal}
+	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+		<div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-xl font-bold text-gray-900">Exporting Workout Data</h2>
+			</div>
+
+			{#if exportResult === null}
+				<div class="space-y-4">
+					<div class="flex items-center gap-2">
+						<div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+							<div
+								class="bg-blue-600 h-full transition-all duration-300"
+								style:width={exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%'}
+							></div>
+						</div>
+						<span class="text-sm text-gray-600">
+							{exportProgress.total > 0 ? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%` : '0%'}
+						</span>
+					</div>
+					<p class="text-sm text-gray-600">{exportProgress.stage}</p>
+				</div>
+			{:else if exportResult.success}
+				<div class="space-y-3">
+					<div class="flex items-center gap-2 text-green-600">
+						<span class="text-2xl">✓</span>
+						<p class="font-medium">Export Complete!</p>
+					</div>
+					<p class="text-sm text-gray-600">{exportResult.message}</p>
+					<p class="text-sm text-gray-500">File has been downloaded to your default download location.</p>
+				</div>
+			{:else}
+				<div class="space-y-3">
+					<div class="flex items-center gap-2 text-red-600">
+						<span class="text-2xl">✗</span>
+						<p class="font-medium">Export Failed</p>
+					</div>
+					<p class="text-sm text-gray-600">{exportResult.message}</p>
+				</div>
+			{/if}
+		</div>
+	</div>
 {/if}
