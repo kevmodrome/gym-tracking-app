@@ -83,3 +83,18 @@ export interface AppSettings {
 	soundEnabled: boolean;
 	vibrationEnabled: boolean;
 }
+
+export interface NotificationPreferences {
+	workoutReminders: boolean;
+	prAchievements: boolean;
+	progressUpdates: boolean;
+	emailNotifications: boolean;
+}
+
+export interface UserProfile {
+	id: string;
+	name: string;
+	email: string;
+	createdAt: string;
+	status: 'active' | 'inactive' | 'suspended';
+}
