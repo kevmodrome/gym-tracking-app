@@ -224,24 +224,24 @@
 	<title>Exercise Progress - Gym Recording App</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-100 p-4 md:p-8">
-	<div class="max-w-6xl mx-auto">
-		<div class="mb-6">
-			<a href="/" class="text-blue-600 hover:text-blue-800">&larr; Back to Exercises</a>
+<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+	<div class="max-w-6xl mx-auto w-full">
+		<div class="mb-4 sm:mb-6">
+			<a href="/" class="text-blue-600 hover:text-blue-800 min-h-[44px] flex items-center">&larr; Back</a>
 		</div>
 
-		<h1 class="text-3xl font-bold text-gray-900 mb-6">Exercise Progress</h1>
+		<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Exercise Progress</h1>
 
-		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+		<div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
 				<div>
-					<label for="exercise-select" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="exercise-select" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 						Select Exercise
 					</label>
 					<select
 						id="exercise-select"
 						onchange={handleExerciseChange}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
 					>
 						<option value="">Choose an exercise</option>
 						{#each exercises as exercise}
@@ -254,13 +254,13 @@
 
 				{#if selectedExercise}
 					<div>
-						<label for="metric-select" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="metric-select" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 							Metric
 						</label>
 						<select
 							id="metric-select"
 							bind:value={selectedMetric}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
 						>
 							<option value="weight">Weight (lbs)</option>
 							<option value="volume">Volume (lbs × reps)</option>
@@ -272,10 +272,10 @@
 		</div>
 
 		{#if !selectedExercise}
-			<div class="bg-white rounded-lg shadow-md p-12 text-center">
-				<div class="text-gray-400 mb-4">
+			<div class="bg-white rounded-lg shadow-md p-8 sm:p-12 text-center">
+				<div class="text-gray-400 mb-3 sm:mb-4">
 					<svg
-						class="w-16 h-16 mx-auto"
+						class="w-12 h-12 sm:w-16 sm:h-16 mx-auto"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -288,14 +288,14 @@
 						/>
 					</svg>
 				</div>
-				<h2 class="text-xl font-semibold text-gray-900 mb-2">Select an Exercise</h2>
-				<p class="text-gray-600">Choose an exercise from the dropdown to view its progress</p>
+				<h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Select an Exercise</h2>
+				<p class="text-sm sm:text-base text-gray-600">Choose an exercise from the dropdown to view its progress</p>
 			</div>
 		{:else if exerciseSessions.length === 0}
-			<div class="bg-white rounded-lg shadow-md p-12 text-center">
-				<div class="text-gray-400 mb-4">
+			<div class="bg-white rounded-lg shadow-md p-8 sm:p-12 text-center">
+				<div class="text-gray-400 mb-3 sm:mb-4">
 					<svg
-						class="w-16 h-16 mx-auto"
+						class="w-12 h-12 sm:w-16 sm:h-16 mx-auto"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -308,54 +308,54 @@
 						/>
 					</svg>
 				</div>
-				<h2 class="text-xl font-semibold text-gray-900 mb-2">No Data Yet</h2>
-				<p class="text-gray-600">
+				<h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No Data Yet</h2>
+				<p class="text-sm sm:text-base text-gray-600">
 					You haven't logged any sessions for <strong>{selectedExercise.name}</strong> yet.
 					Start logging workouts to see your progress!
 				</p>
 			</div>
 		{:else}
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h2 class="text-xl font-semibold text-gray-900">{selectedExercise.name}</h2>
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+				<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+					<h2 class="text-lg sm:text-xl font-semibold text-gray-900">{selectedExercise.name}</h2>
 					<button
 						onclick={resetZoom}
-						class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+						class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm min-h-[44px]"
 						type="button"
 					>
 						Reset Zoom
 					</button>
 				</div>
 
-				<div class="mb-4 text-sm text-gray-600">
+				<div class="mb-4 text-xs sm:text-sm text-gray-600">
 					<p>
 						<strong>{exerciseSessions.length}</strong> sessions logged &bull; Toggle metrics to
 						view different aspects of your progress
 					</p>
 				</div>
 
-				<div class="h-96">
+				<div class="h-64 sm:h-80 md:h-96">
 					<canvas bind:this={chartCanvas}></canvas>
 				</div>
 
-				<div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+				<div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 					{#if chartData}
-						<div class="bg-blue-50 rounded-lg p-4">
-							<p class="text-sm text-blue-600 font-medium mb-1">Latest</p>
-							<p class="text-2xl font-bold text-blue-800">
+						<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm text-blue-600 font-medium mb-1">Latest</p>
+							<p class="text-xl sm:text-2xl font-bold text-blue-800">
 								{chartData[chartData.length - 1].value}{getMetricUnit()}
 							</p>
 						</div>
-						<div class="bg-green-50 rounded-lg p-4">
-							<p class="text-sm text-green-600 font-medium mb-1">Best</p>
-							<p class="text-2xl font-bold text-green-800">
+						<div class="bg-green-50 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm text-green-600 font-medium mb-1">Best</p>
+							<p class="text-xl sm:text-2xl font-bold text-green-800">
 								{Math.max(...chartData.map((d) => d.value))}
 								{getMetricUnit()}
 							</p>
 						</div>
-						<div class="bg-purple-50 rounded-lg p-4">
-							<p class="text-sm text-purple-600 font-medium mb-1">Average</p>
-							<p class="text-2xl font-bold text-purple-800">
+						<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm text-purple-600 font-medium mb-1">Average</p>
+							<p class="text-xl sm:text-2xl font-bold text-purple-800">
 								{Math.round(
 									chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length
 								)}

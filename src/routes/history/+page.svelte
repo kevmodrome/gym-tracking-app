@@ -216,40 +216,40 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-100 p-4 md:p-8">
-	<div class="max-w-7xl mx-auto">
-		<div class="flex items-center justify-between mb-6">
+<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+	<div class="max-w-7xl mx-auto w-full">
+		<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
 			<div class="flex items-center gap-4">
 				<a
 					href="/"
-					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] flex items-center justify-center"
 				>
 					← Back
 				</a>
-				<h1 class="text-3xl font-bold text-gray-900">Workout History</h1>
+				<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Workout History</h1>
 			</div>
 		</div>
 
-		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-			<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+		<div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
 				<div class="relative">
 					<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
 					<input
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search workouts..."
-						class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
 					/>
 				</div>
 
 				<div>
-					<label for="workout-filter" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="workout-filter" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 						Workout Type
 					</label>
 					<select
 						id="workout-filter"
 						bind:value={selectedWorkout}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
 					>
 						<option value="">All Workouts</option>
 						{#each allWorkouts as workout}
@@ -259,13 +259,13 @@
 				</div>
 
 				<div>
-					<label for="date-filter" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="date-filter" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 						Date Range
 					</label>
 					<select
 						id="date-filter"
 						bind:value={dateFilter}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
 					>
 						<option value="all">All Time</option>
 						<option value="week">Last 7 Days</option>
@@ -276,13 +276,13 @@
 				</div>
 
 				<div>
-					<label for="results-count" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="results-count" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 						Showing: {filteredSessions.length} sessions
 					</label>
 					<div class="flex items-center gap-2">
 						<button
 							onclick={clearFilters}
-							class="flex-1 flex items-center justify-center gap-1 text-sm text-gray-600 hover:text-gray-900 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+							class="flex-1 flex items-center justify-center gap-1 text-xs sm:text-sm text-gray-600 hover:text-gray-900 px-3 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px]"
 							type="button"
 						>
 							<XIcon class="w-4 h-4" />
@@ -293,27 +293,27 @@
 			</div>
 
 			{#if dateFilter === 'custom'}
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 pt-4 border-t border-gray-200">
 					<div>
-						<label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="start-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 							Start Date
 						</label>
 						<input
 							id="start-date"
 							type="date"
 							bind:value={customStartDate}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
 						/>
 					</div>
 					<div>
-						<label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="end-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 							End Date
 						</label>
 						<input
 							id="end-date"
 							type="date"
 							bind:value={customEndDate}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
 						/>
 					</div>
 				</div>
@@ -394,36 +394,36 @@
 </div>
 
 {#if showSessionDetail}
-	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-		<div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
-			<div class="sticky top-0 bg-white border-b border-gray-200 p-6">
-				<div class="flex items-center justify-between">
+	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+		<div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] sm:max-h-[95vh] overflow-y-auto my-4 sm:my-8">
+			<div class="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6">
+				<div class="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
 					<div>
-						<h2 class="text-2xl font-bold text-gray-900">{showSessionDetail.workoutName}</h2>
+						<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{showSessionDetail.workoutName}</h2>
 						<p class="text-sm text-gray-600">{formatDate(showSessionDetail.date)}</p>
 					</div>
-					<div class="flex items-center gap-4">
+					<div class="flex items-center gap-2 sm:gap-4">
 						<div class="text-right">
-							<p class="text-sm text-gray-500">Duration</p>
-							<p class="text-lg font-semibold">{formatDuration(showSessionDetail.duration)}</p>
+							<p class="text-xs sm:text-sm text-gray-500">Duration</p>
+							<p class="text-base sm:text-lg font-semibold">{formatDuration(showSessionDetail.duration)}</p>
 						</div>
 						<button
 							onclick={openEditModal}
-							class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+							class="px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm min-h-[44px]"
 							type="button"
 						>
 							Edit
 						</button>
 						<button
 							onclick={() => (showDeleteConfirm = true)}
-							class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+							class="px-3 py-2 sm:px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm min-h-[44px]"
 							type="button"
 						>
 							Delete
 						</button>
 						<button
 							onclick={() => (showSessionDetail = null)}
-							class="p-2 hover:bg-gray-100 rounded-full transition-colors"
+							class="p-2 hover:bg-gray-100 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
 							type="button"
 						>
 							<XIcon class="w-6 h-6 text-gray-500" />
@@ -432,50 +432,69 @@
 				</div>
 			</div>
 
-			<div class="p-6 space-y-6">
+			<div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
 				{#if showSessionDetail.notes}
-					<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-						<h3 class="font-semibold text-blue-900 mb-2">Notes</h3>
-						<p class="text-blue-800">{showSessionDetail.notes}</p>
+					<div class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+						<h3 class="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Notes</h3>
+						<p class="text-blue-800 text-sm sm:text-base">{showSessionDetail.notes}</p>
 					</div>
 				{/if}
 
-				<div class="space-y-4">
+				<div class="space-y-3 sm:space-y-4">
 					{#each showSessionDetail.exercises as exercise}
 						<div class="border border-gray-200 rounded-lg overflow-hidden">
-							<div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
-								<h4 class="font-semibold text-gray-900">{exercise.exerciseName}</h4>
-								<p class="text-sm text-gray-600 capitalize">{exercise.primaryMuscle}</p>
+							<div class="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
+								<h4 class="font-semibold text-gray-900 text-base sm:text-lg">{exercise.exerciseName}</h4>
+								<p class="text-xs sm:text-sm text-gray-600 capitalize">{exercise.primaryMuscle}</p>
 							</div>
-							<div class="p-4">
-								<table class="w-full">
-									<thead>
-										<tr class="border-b border-gray-200">
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Set</th>
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Reps</th>
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Weight</th>
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Status</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#each exercise.sets as set, idx}
-											<tr class:completed={set.completed}>
-												<td class="py-2 text-sm text-gray-700">{idx + 1}</td>
-												<td class="py-2 text-sm text-gray-700">{set.reps}</td>
-												<td class="py-2 text-sm text-gray-700">{set.weight} lbs</td>
-												<td class="py-2 text-sm">
-													<span
-														class="px-2 py-1 rounded-full text-xs font-medium {set.completed
-															? 'bg-green-100 text-green-800'
-															: 'bg-gray-100 text-gray-600'}"
-													>
-														{set.completed ? '✓ Completed' : '— Skipped'}
-													</span>
-												</td>
+							
+							<div class="p-3 sm:p-4">
+								<div class="hidden sm:block">
+									<table class="w-full">
+										<thead>
+											<tr class="border-b border-gray-200">
+												<th class="text-left py-2 text-sm font-medium text-gray-700">Set</th>
+												<th class="text-left py-2 text-sm font-medium text-gray-700">Reps</th>
+												<th class="text-left py-2 text-sm font-medium text-gray-700">Weight</th>
+												<th class="text-left py-2 text-sm font-medium text-gray-700">Status</th>
 											</tr>
-										{/each}
-									</tbody>
-								</table>
+										</thead>
+										<tbody>
+											{#each exercise.sets as set, idx}
+												<tr class:completed={set.completed}>
+													<td class="py-2 text-sm text-gray-700">{idx + 1}</td>
+													<td class="py-2 text-sm text-gray-700">{set.reps}</td>
+													<td class="py-2 text-sm text-gray-700">{set.weight} lbs</td>
+													<td class="py-2 text-sm">
+														<span
+															class="px-2 py-1 rounded-full text-xs font-medium {set.completed
+																? 'bg-green-100 text-green-800'
+																: 'bg-gray-100 text-gray-600'}"
+														>
+															{set.completed ? '✓ Completed' : '— Skipped'}
+														</span>
+													</td>
+												</tr>
+											{/each}
+										</tbody>
+									</table>
+								</div>
+								
+								<div class="sm:hidden space-y-2">
+									{#each exercise.sets as set, idx}
+										<div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg {set.completed ? 'bg-green-50' : 'bg-gray-50'}">
+											<div class="flex items-center gap-3">
+												<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}">{idx + 1}</span>
+												<div>
+													<p class="text-sm font-medium text-gray-900">{set.reps} reps × {set.weight} lbs</p>
+												</div>
+											</div>
+											<span class="text-xs font-medium px-2 py-1 rounded-full {set.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">
+												{set.completed ? 'Done' : 'Skip'}
+											</span>
+										</div>
+									{/each}
+								</div>
 							</div>
 						</div>
 					{/each}
@@ -485,7 +504,7 @@
 			<div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-4 flex justify-end">
 				<button
 					onclick={() => (showSessionDetail = null)}
-					class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+					class="w-full sm:w-auto px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px]"
 					type="button"
 				>
 					Close

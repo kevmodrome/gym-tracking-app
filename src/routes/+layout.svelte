@@ -14,7 +14,7 @@
 
 <PWAInstallPrompt />
 <SwipeHandler />
-<div class="pb-16 md:pb-0">
+<div class="pb-16 md:pb-0 w-full min-w-[320px]">
 	{@render children()}
 </div>
 <Navigation />

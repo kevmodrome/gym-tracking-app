@@ -184,31 +184,31 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-100 p-4 md:p-8">
-	<div class="max-w-7xl mx-auto">
-		<div class="flex items-center justify-between mb-6">
+<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+	<div class="max-w-7xl mx-auto w-full">
+		<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 sm:mb-6">
 			<div class="flex items-center gap-4">
 				<a
 					href="/"
-					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] flex items-center"
 				>
 					← Back
 				</a>
-				<h1 class="text-3xl font-bold text-gray-900">Workout Analytics Dashboard</h1>
+				<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Analytics</h1>
 			</div>
 			<a
 				href="/pr"
-				class="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+				class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm sm:text-base min-h-[44px]"
 			>
-				🏆 Personal Records
+				🏆 PRs
 			</a>
-			<div class="flex gap-2">
+			<div class="flex gap-1 sm:gap-2 overflow-x-auto pb-1 lg:pb-0">
 				<button
 					onclick={() => (dateFilter = 'week')}
 					class:active={dateFilter === 'week'}
-					class="px-4 py-2 rounded-lg transition-colors {dateFilter === 'week'
+					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'week'
 						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'}"
+						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
 					type="button"
 				>
 					Week
@@ -216,9 +216,9 @@
 				<button
 					onclick={() => (dateFilter = 'month')}
 					class:active={dateFilter === 'month'}
-					class="px-4 py-2 rounded-lg transition-colors {dateFilter === 'month'
+					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'month'
 						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'}"
+						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
 					type="button"
 				>
 					Month
@@ -226,9 +226,9 @@
 				<button
 					onclick={() => (dateFilter = 'year')}
 					class:active={dateFilter === 'year'}
-					class="px-4 py-2 rounded-lg transition-colors {dateFilter === 'year'
+					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'year'
 						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'}"
+						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
 					type="button"
 				>
 					Year
@@ -236,9 +236,9 @@
 				<button
 					onclick={() => (dateFilter = 'custom')}
 					class:active={dateFilter === 'custom'}
-					class="px-4 py-2 rounded-lg transition-colors {dateFilter === 'custom'
+					class="px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm {dateFilter === 'custom'
 						? 'bg-blue-600 text-white'
-						: 'bg-white text-gray-700 hover:bg-gray-50'}"
+						: 'bg-white text-gray-700 hover:bg-gray-50'} min-h-[44px]"
 					type="button"
 				>
 					Custom
@@ -247,94 +247,94 @@
 		</div>
 
 		{#if dateFilter === 'custom'}
-			<div class="bg-white rounded-lg shadow-md p-4 mb-6">
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<div class="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-4 sm:mb-6">
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
 					<div>
-						<label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="start-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 							Start Date
 						</label>
 						<input
 							id="start-date"
 							type="date"
 							bind:value={customStartDate}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
 						/>
 					</div>
 					<div>
-						<label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="end-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
 							End Date
 						</label>
 						<input
 							id="end-date"
 							type="date"
 							bind:value={customEndDate}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
 						/>
 					</div>
 				</div>
 			</div>
 		{/if}
 
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-			<div class="bg-white rounded-lg shadow-md p-6">
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-500">Total Sessions</p>
-						<p class="text-3xl font-bold text-gray-900">{totalSessions}</p>
+						<p class="text-xs sm:text-sm font-medium text-gray-500">Sessions</p>
+						<p class="text-2xl sm:text-3xl font-bold text-gray-900">{totalSessions}</p>
 					</div>
-					<div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-						<span class="text-2xl">📊</span>
+					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center">
+						<span class="text-xl sm:text-2xl">📊</span>
 					</div>
 				</div>
 			</div>
 
-			<div class="bg-white rounded-lg shadow-md p-6">
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-500">Total Training Time</p>
-						<p class="text-3xl font-bold text-gray-900">{formatTime(totalTrainingTime)}</p>
+						<p class="text-xs sm:text-sm font-medium text-gray-500">Time</p>
+						<p class="text-2xl sm:text-3xl font-bold text-gray-900">{formatTime(totalTrainingTime)}</p>
 					</div>
-					<div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-						<span class="text-2xl">⏱️</span>
+					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center">
+						<span class="text-xl sm:text-2xl">⏱️</span>
 					</div>
 				</div>
 			</div>
 
-			<div class="bg-white rounded-lg shadow-md p-6">
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-500">Volume Lifted</p>
-						<p class="text-3xl font-bold text-gray-900">{formatVolume(volumeTrends.reduce((acc, t) => acc + t.volume, 0))} lbs</p>
+						<p class="text-xs sm:text-sm font-medium text-gray-500">Volume</p>
+						<p class="text-xl sm:text-3xl font-bold text-gray-900">{formatVolume(volumeTrends.reduce((acc, t) => acc + t.volume, 0))} lbs</p>
 					</div>
-					<div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-						<span class="text-2xl">🏋️</span>
+					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center">
+						<span class="text-xl sm:text-2xl">🏋️</span>
 					</div>
 				</div>
 			</div>
 
-			<div class="bg-white rounded-lg shadow-md p-6">
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-500">Avg Session Duration</p>
-						<p class="text-3xl font-bold text-gray-900">
+						<p class="text-xs sm:text-sm font-medium text-gray-500">Avg Duration</p>
+						<p class="text-2xl sm:text-3xl font-bold text-gray-900">
 							{totalSessions > 0 ? formatTime(totalTrainingTime / totalSessions) : '0m'}
 						</p>
 					</div>
-					<div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-						<span class="text-2xl">📈</span>
+					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center">
+						<span class="text-xl sm:text-2xl">📈</span>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Workout Frequency (Last 30 Days)</h2>
-				<div class="grid grid-cols-7 gap-2">
-					<div class="grid grid-cols-7 gap-2 col-span-7">
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Workout Frequency</h2>
+				<div class="grid grid-cols-7 gap-1 sm:gap-2">
+					<div class="grid grid-cols-7 gap-1 sm:gap-2 col-span-7">
 						{#each Object.entries(workoutCalendar).reverse() as [date, count]}
 							<div
-								class="aspect-square rounded {getCalendarColor(count)} flex items-center justify-center text-xs font-medium"
+								class="aspect-square rounded {getCalendarColor(count)} flex items-center justify-center text-[10px] sm:text-xs font-medium"
 								title="{new Date(date).toLocaleDateString()}: {count} session{count !== 1 ? 's' : ''}"
 							>
 								{count}
@@ -342,23 +342,23 @@
 						{/each}
 					</div>
 				</div>
-				<div class="flex items-center justify-between mt-4 text-sm text-gray-500">
+				<div class="flex items-center justify-between mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">
 					<span>Less</span>
 					<div class="flex gap-1">
-						<div class="w-4 h-4 bg-gray-100 rounded"></div>
-						<div class="w-4 h-4 bg-green-200 rounded"></div>
-						<div class="w-4 h-4 bg-green-400 rounded"></div>
-						<div class="w-4 h-4 bg-green-600 rounded"></div>
+						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 rounded"></div>
+						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-green-200 rounded"></div>
+						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded"></div>
+						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-green-600 rounded"></div>
 					</div>
 					<span>More</span>
 				</div>
 			</div>
 
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Muscle Group Breakdown</h2>
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Muscle Breakdown</h2>
 				{#if muscleGroupBreakdown.length > 0}
-					<div class="flex items-center justify-center mb-4">
-						<svg viewBox="0 0 100 100" class="w-48 h-48">
+					<div class="flex items-center justify-center mb-3 sm:mb-4">
+						<svg viewBox="0 0 100 100" class="w-32 h-32 sm:w-48 sm:h-48">
 							{#each pieChartData as segment}
 								{#if segment.percentage > 0}
 									<path
@@ -405,26 +405,26 @@
 							{/each}
 						</svg>
 					</div>
-					<div class="grid grid-cols-2 gap-2">
+					<div class="grid grid-cols-2 gap-1 sm:gap-2">
 						{#each muscleGroupBreakdown.slice(0, 6) as [muscle, count]}
 							<div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-								<span class="capitalize">{muscle}</span>
-								<span class="font-semibold">{count} ({(
+								<span class="capitalize text-xs sm:text-sm">{muscle}</span>
+								<span class="font-semibold text-xs sm:text-sm">{count} ({(
 									pieChartData.find((s) => s.muscle === muscle)?.percentage || 0
 								).toFixed(0)}%)</span>
 							</div>
 						{/each}
 					</div>
 				{:else}
-					<p class="text-gray-500 text-center py-12">No workout data available</p>
+					<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No workout data available</p>
 				{/if}
 			</div>
 		</div>
 
-		<div class="bg-white rounded-lg shadow-md p-6">
-			<h2 class="text-xl font-bold text-gray-900 mb-4">Volume Trends Over Time</h2>
+		<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+			<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Volume Trends</h2>
 			{#if volumeTrends.some((t) => t.volume > 0)}
-				<div class="h-64">
+				<div class="h-48 sm:h-64">
 					<svg viewBox="0 0 800 200" class="w-full h-full">
 						{#each volumeTrends as trend, i}
 							{#if trend.volume > 0}
@@ -459,17 +459,17 @@
 						{/each}
 					</svg>
 				</div>
-				<div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+				<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
 					{#each volumeTrends.slice(-4).reverse() as trend}
-						<div class="text-sm">
+						<div class="text-xs sm:text-sm">
 							<p class="text-gray-500">{trend.date}</p>
 							<p class="font-semibold">{formatVolume(trend.volume)} lbs</p>
-							<p class="text-xs text-gray-400">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
+							<p class="text-[10px] sm:text-xs text-gray-400">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
 						</div>
 					{/each}
 				</div>
 			{:else}
-				<p class="text-gray-500 text-center py-12">No volume data available</p>
+				<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No volume data available</p>
 			{/if}
 		</div>
 	</div>

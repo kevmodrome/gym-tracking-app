@@ -95,76 +95,76 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-100 p-4 md:p-8">
-	<div class="max-w-6xl mx-auto">
-		<div class="flex items-center justify-between mb-6">
-			<h1 class="text-3xl font-bold text-gray-900">Browse Exercises</h1>
-			<div class="flex gap-3 flex-wrap">
+<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+	<div class="max-w-6xl mx-auto w-full">
+		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+			<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Browse Exercises</h1>
+			<div class="flex flex-wrap gap-2 sm:gap-3">
 				<a
 					href="/settings"
-					class="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm min-h-[44px]"
 				>
-					⚙️ Settings
+					⚙️ <span class="hidden sm:inline">Settings</span>
 				</a>
 				<a
 					href="/history"
-					class="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm min-h-[44px]"
 				>
-					📜 History
+					📜 <span class="hidden sm:inline">History</span>
 				</a>
 				<a
 					href="/progress"
-					class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm min-h-[44px]"
 				>
-					📈 Progress
+					📈 <span class="hidden sm:inline">Progress</span>
 				</a>
 				<a
 					href="/pr"
-					class="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm min-h-[44px]"
 				>
-					🏆 Personal Records
+					🏆 <span class="hidden sm:inline">PRs</span>
 				</a>
 				<a
 					href="/dashboard"
-					class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm min-h-[44px]"
 				>
-					📊 Dashboard
+					📊 <span class="hidden sm:inline">Dashboard</span>
 				</a>
 				<button
 					onclick={() => (showWorkoutModal = true)}
-					class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm min-h-[44px]"
 					type="button"
 				>
-					<PlusIcon class="w-5 h-5" />
-					Create Workout
+					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+					<span class="hidden sm:inline">Create Workout</span>
 				</button>
 				<a
 					href="/workout"
-					class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm min-h-[44px]"
 				>
-					▶ Start Workout
+					▶ <span class="hidden sm:inline">Start Workout</span>
 				</a>
 				<button
 					onclick={() => (showImportModal = true)}
-					class="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm min-h-[44px]"
 					type="button"
 				>
-					📥 Import
+					📥 <span class="hidden sm:inline">Import</span>
 				</button>
 				<button
 					onclick={handleExport}
-					class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm min-h-[44px]"
 					type="button"
 				>
-					📤 Export
+					📤 <span class="hidden sm:inline">Export</span>
 				</button>
 				<button
 					onclick={() => (showCreateModal = true)}
-					class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+					class="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm min-h-[44px]"
 					type="button"
 				>
-					<PlusIcon class="w-5 h-5" />
-					Create Exercise
+					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+					<span class="hidden sm:inline">Create Exercise</span>
 				</button>
 			</div>
 		</div>

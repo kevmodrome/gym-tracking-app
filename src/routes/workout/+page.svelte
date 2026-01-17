@@ -340,13 +340,13 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-100 p-4 md:p-8">
-	<div class="max-w-4xl mx-auto">
+<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+	<div class="max-w-4xl mx-auto w-full">
 		{#if showWorkoutSelector}
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<div class="flex items-center justify-between mb-6">
-					<h1 class="text-2xl font-bold text-gray-900">Select Workout</h1>
-					<a href="/" class="text-blue-600 hover:text-blue-800">Cancel</a>
+			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+				<div class="flex items-center justify-between mb-4 sm:mb-6">
+					<h1 class="text-xl sm:text-2xl font-bold text-gray-900">Select Workout</h1>
+					<a href="/" class="text-blue-600 hover:text-blue-800 min-h-[44px] flex items-center">Cancel</a>
 				</div>
 
 				{#if workouts.length === 0}
@@ -354,7 +354,7 @@
 						<p class="text-gray-600 mb-4">No workouts created yet.</p>
 						<a
 							href="/"
-							class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+							class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 min-h-[44px]"
 						>
 							Create a Workout
 						</a>
@@ -363,14 +363,14 @@
 					<div class="space-y-3">
 						{#each workouts as workout}
 							<div class="border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
-								<div class="p-4 flex items-center justify-between">
+								<div class="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 									<button
 										onclick={() => selectWorkout(workout)}
-										class="flex-1 text-left"
+										class="flex-1 text-left min-h-[44px] flex items-center"
 										type="button"
 									>
 										<div>
-											<h3 class="font-semibold text-gray-900">{workout.name}</h3>
+											<h3 class="font-semibold text-gray-900 text-base sm:text-lg">{workout.name}</h3>
 											<p class="text-sm text-gray-600">
 												{workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
 											</p>
@@ -382,7 +382,7 @@
 												e.stopPropagation();
 												openEditModal(workout);
 											}}
-											class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-sm font-medium"
+											class="px-3 py-1.5 sm:py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-sm font-medium min-h-[44px] min-w-[44px]"
 											type="button"
 											title="Edit workout"
 										>
@@ -393,7 +393,7 @@
 												e.stopPropagation();
 												copyWorkout(workout);
 											}}
-											class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium"
+											class="px-3 py-1.5 sm:py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium min-h-[44px] min-w-[44px]"
 											type="button"
 											title="Copy workout"
 										>
@@ -407,12 +407,12 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="flex items-center justify-between mb-6">
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-6 mb-4 sm:mb-6">
 				<div>
-					<a href="/" class="text-blue-600 hover:text-blue-800">← Exit</a>
+					<a href="/" class="text-blue-600 hover:text-blue-800 min-h-[44px] flex items-center">← Exit</a>
 				</div>
-				<h1 class="text-xl font-bold text-gray-900">{selectedWorkout?.name}</h1>
-				<div class="text-sm text-gray-600">
+				<h1 class="text-lg sm:text-xl font-bold text-gray-900 text-center sm:text-auto">{selectedWorkout?.name}</h1>
+				<div class="text-sm text-gray-600 text-center sm:text-auto min-h-[44px] flex items-center justify-center sm:justify-end">
 					⏱️ {sessionDuration}m
 				</div>
 			</div>
@@ -428,50 +428,50 @@
 			{/if}
 
 			{#if currentExercise}
-				<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-					<div class="flex items-center justify-between mb-4">
-						<h2 class="text-2xl font-bold text-gray-900">{currentExercise.exerciseName}</h2>
-						<p class="text-sm text-gray-600 capitalize">{currentExercise.primaryMuscle}</p>
+				<div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+					<div class="flex items-center justify-between mb-3 sm:mb-4">
+						<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{currentExercise.exerciseName}</h2>
+						<p class="text-xs sm:text-sm text-gray-600 capitalize">{currentExercise.primaryMuscle}</p>
 					</div>
 
 					{#if !showTimer && currentSet}
-						<div class="mb-6">
-							<div class="flex items-center justify-between mb-3">
-								<h3 class="text-lg font-semibold text-gray-900">
+						<div class="mb-4 sm:mb-6">
+							<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+								<h3 class="text-base sm:text-lg font-semibold text-gray-900">
 									Set {currentSetIndex + 1} / {currentExercise.sets.length}
 								</h3>
-								<div class="flex gap-2">
+								<div class="flex gap-2 justify-center sm:justify-start">
 									{#if currentExerciseIndex > 0}
 										<button
 											onclick={goToPreviousExercise}
-											class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+											class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm min-h-[44px]"
 											type="button"
 										>
-											← Prev Exercise
+											← Prev
 										</button>
 									{/if}
 									{#if currentExerciseIndex < sessionExercises.length - 1}
 										<button
 											onclick={goToNextExercise}
-											class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+											class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm min-h-[44px]"
 											type="button"
 										>
-											Next Exercise →
+											Next →
 										</button>
 									{/if}
 								</div>
 							</div>
 
-							<div class="grid grid-cols-2 gap-4 mb-4">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
 								<div>
-									<label for="reps-input" class="block text-sm font-medium text-gray-700 mb-2">
+									<label for="reps-input" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
 										Reps
 									</label>
 									<div class="flex gap-1">
 										<button
 											onclick={() => { if (currentSet) { currentSet.reps = Math.max(0, currentSet.reps - 1); sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
 											type="button"
-											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											class="px-3 sm:px-4 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg sm:text-xl font-semibold"
 											aria-label="Decrease reps"
 										>
 											-
@@ -483,12 +483,12 @@
 											inputmode="numeric"
 											bind:value={currentSet.reps}
 											oninput={updateSetReps}
-											class="flex-1 px-4 py-3 text-2xl font-bold text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500"
+											class="flex-1 px-3 sm:px-4 py-3 text-xl sm:text-2xl font-bold text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
 										/>
 										<button
 											onclick={() => { if (currentSet) { currentSet.reps += 1; sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
 											type="button"
-											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											class="px-3 sm:px-4 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg sm:text-xl font-semibold"
 											aria-label="Increase reps"
 										>
 											+
@@ -496,14 +496,14 @@
 									</div>
 								</div>
 								<div>
-									<label for="weight-input" class="block text-sm font-medium text-gray-700 mb-2">
+									<label for="weight-input" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
 										Weight (lbs)
 									</label>
 									<div class="flex gap-1">
 										<button
 											onclick={() => { if (currentSet) { currentSet.weight = Math.max(0, currentSet.weight - 5); sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
 											type="button"
-											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											class="px-3 sm:px-4 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg sm:text-xl font-semibold"
 											aria-label="Decrease weight"
 										>
 											-
@@ -515,12 +515,12 @@
 											inputmode="numeric"
 											bind:value={currentSet.weight}
 											oninput={updateSetWeight}
-											class="flex-1 px-4 py-3 text-2xl font-bold text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500"
+											class="flex-1 px-3 sm:px-4 py-3 text-xl sm:text-2xl font-bold text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
 										/>
 										<button
 											onclick={() => { if (currentSet) { currentSet.weight += 5; sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
 											type="button"
-											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											class="px-3 sm:px-4 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg sm:text-xl font-semibold"
 											aria-label="Increase weight"
 										>
 											+
@@ -530,7 +530,7 @@
 							</div>
 
 							<div class="mb-4">
-								<label for="set-notes" class="block text-sm font-medium text-gray-700 mb-2">
+								<label for="set-notes" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
 									Notes (optional)
 								</label>
 								<textarea
@@ -539,38 +539,38 @@
 									oninput={updateSetNotes}
 									placeholder="Add notes about this set..."
 									rows="2"
-									class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+									class="w-full px-3 sm:px-4 py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
 								></textarea>
 							</div>
 
-							<div class="flex gap-3">
+							<div class="grid grid-cols-2 gap-3">
 								<button
 									onclick={completeSet}
-									class="flex-1 px-4 py-4 text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 min-h-[48px]"
+									class="flex-1 px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 min-h-[48px]"
 									type="button"
 								>
-									✓ Complete Set
+									✓ <span class="hidden sm:inline">Complete</span>
 								</button>
 								<button
 									onclick={skipCurrentSet}
-									class="flex-1 px-4 py-4 text-base bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium min-h-[48px]"
+									class="flex-1 px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium min-h-[48px]"
 									type="button"
 								>
-									→ Skip Set
+									Skip
 								</button>
 							</div>
 						</div>
 					{:else}
 						<div class="text-center py-4">
-							<p class="text-gray-600">
+							<p class="text-sm sm:text-base text-gray-600">
 								{currentSetIndex} / {currentExercise.sets.length} sets completed
 							</p>
 						</div>
 					{/if}
 
-					<div class="mt-4">
+					<div class="mt-3 sm:mt-4">
 						<div class="flex items-center justify-between mb-2">
-							<h4 class="text-sm font-medium text-gray-700">
+							<h4 class="text-xs sm:text-sm font-medium text-gray-700">
 								Progress ({currentExercise.sets.filter((s) => s.completed).length} / {currentExercise.sets.length} sets)
 							</h4>
 						</div>
@@ -578,14 +578,14 @@
 							{#each currentExercise.sets as set, idx}
 								<button
 									onclick={() => editSet(idx)}
-									class="w-full flex items-center gap-2 p-3 rounded {set.completed
+									class="w-full flex items-center gap-2 p-2 sm:p-3 rounded {set.completed
 										? 'bg-green-50 border border-green-200 hover:bg-green-100'
 										: idx === currentSetIndex
 											? 'bg-blue-50 border border-blue-200'
-											: 'bg-gray-50 border border-gray-200 hover:bg-gray-100'} transition-colors text-left"
+											: 'bg-gray-50 border border-gray-200 hover:bg-gray-100'} transition-colors text-left min-h-[44px]"
 									type="button"
 								>
-									<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed
+									<span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium {set.completed
 										? 'bg-green-500 text-white'
 										: idx === currentSetIndex
 											? 'bg-blue-500 text-white'
@@ -593,7 +593,7 @@
 										{set.completed ? '✓' : idx + 1}
 									</span>
 									<div class="flex-1 min-w-0">
-										<p class="text-sm text-gray-700">
+										<p class="text-xs sm:text-sm text-gray-700">
 											{set.reps} reps @ {set.weight} lbs
 										</p>
 										{#if set.notes}
