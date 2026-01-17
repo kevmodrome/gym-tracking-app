@@ -6,12 +6,14 @@
 	import XIcon from '$lib/components/XIcon.svelte';
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
 	import CreateExerciseModal from '$lib/components/CreateExerciseModal.svelte';
+	import CreateWorkoutModal from '$lib/components/CreateWorkoutModal.svelte';
 
 	let exercises = $state<Exercise[]>([]);
 	let searchQuery = $state('');
 	let selectedCategory = $state<ExerciseCategory | undefined>(undefined);
 	let selectedMuscle = $state<MuscleGroup | undefined>(undefined);
 	let showCreateModal = $state(false);
+	let showWorkoutModal = $state(false);
 
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
@@ -41,6 +43,10 @@
 		exercises = await db.exercises.toArray();
 	}
 
+	function handleWorkoutCreated() {
+		showWorkoutModal = false;
+	}
+
 	function clearFilters() {
 		searchQuery = '';
 		selectedCategory = undefined;
@@ -56,14 +62,24 @@
 	<div class="max-w-6xl mx-auto">
 		<div class="flex items-center justify-between mb-6">
 			<h1 class="text-3xl font-bold text-gray-900">Browse Exercises</h1>
-			<button
-				onclick={() => (showCreateModal = true)}
-				class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-				type="button"
-			>
-				<PlusIcon class="w-5 h-5" />
-				Create Exercise
-			</button>
+			<div class="flex gap-3">
+				<button
+					onclick={() => (showWorkoutModal = true)}
+					class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+					type="button"
+				>
+					<PlusIcon class="w-5 h-5" />
+					Create Workout
+				</button>
+				<button
+					onclick={() => (showCreateModal = true)}
+					class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+					type="button"
+				>
+					<PlusIcon class="w-5 h-5" />
+					Create Exercise
+				</button>
+			</div>
 		</div>
 
 		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -195,5 +211,12 @@
 	<CreateExerciseModal
 		onCreate={handleExerciseCreated}
 		onClose={() => (showCreateModal = false)}
+	/>
+{/if}
+
+{#if showWorkoutModal}
+	<CreateWorkoutModal
+		onWorkoutCreated={handleWorkoutCreated}
+		onClose={() => (showWorkoutModal = false)}
 	/>
 {/if}

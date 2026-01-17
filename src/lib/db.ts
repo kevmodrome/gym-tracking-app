@@ -1,14 +1,16 @@
 import Dexie from 'dexie';
 import type { Table } from 'dexie';
-import type { Exercise } from './types';
+import type { Exercise, Workout } from './types';
 
 export class GymDB extends Dexie {
 	exercises!: Table<Exercise>;
+	workouts!: Table<Workout>;
 
 	constructor() {
 		super('gym-recording-app-db');
 		this.version(1).stores({
-			exercises: 'id, name, category, primary_muscle, is_custom'
+			exercises: 'id, name, category, primary_muscle, is_custom',
+			workouts: 'id, name, createdAt, updatedAt'
 		});
 	}
 }

@@ -17,3 +17,21 @@ export interface ExerciseFilters {
 	category?: ExerciseCategory;
 	primary_muscle?: MuscleGroup;
 }
+
+export interface ExerciseRoutine {
+	exerciseId: string;
+	exerciseName: string;
+	targetSets: number;
+	targetReps: number;
+	targetWeight: number;
+	notes?: string;
+}
+
+export interface Workout {
+	id: string;
+	name: string;
+	exercises: ExerciseRoutine[];
+	notes?: string;
+	createdAt: string;
+	updatedAt: string;
+}
