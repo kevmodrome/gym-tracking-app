@@ -49,6 +49,7 @@ export interface SessionExercise {
 	exerciseName: string;
 	primaryMuscle: string;
 	sets: ExerciseSet[];
+	notes?: string;
 }
 
 export interface Session {

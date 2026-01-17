@@ -37,6 +37,11 @@
 	let editingSetRPE = $state<number | undefined>(undefined);
 	let showSaveError = $state(false);
 	let saveErrorMessage = $state('');
+	let editingExerciseIndex = $state<number | null>(null);
+	let editingExerciseName = $state('');
+	let editingExerciseNotes = $state('');
+	let showExerciseSaveError = $state(false);
+	let exerciseSaveErrorMessage = $state('');
 
 	onMount(async () => {
 		workouts = await db.workouts.toArray();
@@ -105,7 +110,8 @@
 					exerciseId: routine.exerciseId,
 					exerciseName: routine.exerciseName,
 					primaryMuscle: exercise?.primary_muscle || '',
-					sets
+					sets,
+					notes: routine.notes
 				};
 			});
 		}
@@ -196,6 +202,10 @@
 			try {
 				const data = JSON.parse(saved);
 				sessionExercises = data.sessionExercises || sessionExercises;
+				sessionExercises = sessionExercises.map((ex: SessionExercise) => ({
+					...ex,
+					notes: ex.notes || undefined
+				}));
 				currentExerciseIndex = data.currentExerciseIndex || 0;
 				currentSetIndex = data.currentSetIndex || 0;
 				if (data.sessionStartTime) {
@@ -599,6 +609,102 @@
 		}
 	}
 
+	function isLibraryExercise(exerciseId: string): boolean {
+		const exercise = exercises.find((e) => e.id === exerciseId);
+		return exercise ? !exercise.is_custom : false;
+	}
+
+	function editExercise(index: number) {
+		const exercise = sessionExercises[index];
+		if (!exercise) return;
+
+		editingExerciseName = exercise.exerciseName;
+		editingExerciseNotes = exercise.notes || '';
+		editingExerciseIndex = index;
+		showExerciseSaveError = false;
+		showTimer = false;
+	}
+
+	function saveExerciseEdit() {
+		saveExerciseEditWithRetry();
+	}
+
+	function cancelExerciseEdit() {
+		editingExerciseIndex = null;
+		showExerciseSaveError = false;
+		exerciseSaveRetries = 0;
+	}
+
+	function validateExerciseValues(name: string, notes: string): { valid: boolean; error?: string } {
+		if (!name.trim()) {
+			return { valid: false, error: 'Exercise name is required' };
+		}
+		return { valid: true };
+	}
+
+	function handleExerciseBlur() {
+		if (editingExerciseIndex !== null) {
+			saveExerciseEdit();
+		}
+	}
+
+	function handleExerciseKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			saveExerciseEdit();
+		} else if (e.key === 'Escape') {
+			cancelExerciseEdit();
+		}
+	}
+
+	let exerciseSaveRetries = $state(0);
+
+	async function saveExerciseEditWithRetry(): Promise<boolean> {
+		if (editingExerciseIndex === null) return false;
+
+		const exercise = sessionExercises[editingExerciseIndex];
+		if (!exercise) return false;
+
+		const validation = validateExerciseValues(editingExerciseName, editingExerciseNotes);
+		if (!validation.valid) {
+			showExerciseSaveError = true;
+			exerciseSaveErrorMessage = validation.error || 'Invalid values';
+			return false;
+		}
+
+		const maxRetries = 3;
+		let attempt = 0;
+
+		while (attempt < maxRetries) {
+			try {
+				exercise.exerciseName = editingExerciseName.trim();
+				exercise.notes = editingExerciseNotes.trim() || undefined;
+
+				sessionExercises = [...sessionExercises];
+				saveSessionProgress();
+
+				editingExerciseIndex = null;
+				showExerciseSaveError = false;
+				exerciseSaveRetries = 0;
+				toastStore.showSuccess('Exercise updated successfully');
+				return true;
+			} catch (error) {
+				exerciseSaveRetries = attempt + 1;
+				attempt++;
+				console.error(`Failed to save exercise (attempt ${attempt}):`, error);
+
+				if (attempt < maxRetries) {
+					await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+				} else {
+					showExerciseSaveError = true;
+					exerciseSaveErrorMessage = `Failed to save after ${maxRetries} attempts. Please try again.`;
+					toastStore.showError('Failed to save exercise');
+				}
+			}
+		}
+		return false;
+	}
+
 	</script>
 
 <div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
@@ -691,9 +797,99 @@
 			{#if currentExercise}
 				<div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
 					<div class="flex items-center justify-between mb-3 sm:mb-4">
-						<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{currentExercise.exerciseName}</h2>
-						<p class="text-xs sm:text-sm text-gray-600 capitalize">{currentExercise.primaryMuscle}</p>
+						<div class="flex-1 min-w-0">
+							{#if editingExerciseIndex === currentExerciseIndex}
+								<div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+									<input
+										type="text"
+										bind:value={editingExerciseName}
+										onblur={handleExerciseBlur}
+										onkeydown={handleExerciseKeyDown}
+										disabled={isLibraryExercise(currentExercise.exerciseId)}
+										class="flex-1 px-3 py-2 text-lg font-bold border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+										aria-label="Exercise name"
+									/>
+									{#if isLibraryExercise(currentExercise.exerciseId)}
+										<p class="text-xs text-gray-500 italic sm:self-center">Library exercise name cannot be edited</p>
+									{/if}
+								</div>
+							{:else}
+								<h2 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">{currentExercise.exerciseName}</h2>
+							{/if}
+						</div>
+						<div class="flex items-center gap-2 flex-shrink-0">
+							<p class="text-xs sm:text-sm text-gray-600 capitalize">{currentExercise.primaryMuscle}</p>
+							{#if editingExerciseIndex !== currentExerciseIndex}
+								<button
+									onclick={() => editExercise(currentExerciseIndex)}
+									class="px-3 py-1.5 text-xs sm:text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors font-medium min-h-[36px] sm:min-h-[44px]"
+									type="button"
+									aria-label="Edit exercise"
+								>
+									Edit
+								</button>
+							{/if}
+						</div>
 					</div>
+
+					{#if editingExerciseIndex === currentExerciseIndex}
+						<div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+							<div class="space-y-3">
+								<div>
+									<label for="exercise-notes" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+										Exercise Notes (optional)
+									</label>
+									<textarea
+										id="exercise-notes"
+										bind:value={editingExerciseNotes}
+										onblur={handleExerciseBlur}
+										onkeydown={handleExerciseKeyDown}
+										placeholder="Add notes about this exercise..."
+										rows="2"
+										class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+									></textarea>
+								</div>
+								{#if showExerciseSaveError}
+									<div class="p-2 bg-red-50 border border-red-200 rounded">
+										<p class="text-xs text-red-700 mb-2">{exerciseSaveErrorMessage}</p>
+										{#if exerciseSaveRetries > 0}
+											<button
+												onclick={() => saveExerciseEditWithRetry()}
+												class="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 min-h-[28px]"
+												type="button"
+											>
+												Retry ({exerciseSaveRetries}/3)
+											</button>
+										{/if}
+									</div>
+								{/if}
+								<div class="flex items-center gap-2">
+									<button
+										onclick={() => saveExerciseEdit()}
+										class="px-4 py-2 bg-green-500 text-white rounded text-sm font-medium hover:bg-green-600 min-h-[36px]"
+										type="button"
+									>
+										Save
+									</button>
+									<button
+										onclick={() => cancelExerciseEdit()}
+										class="px-4 py-2 bg-gray-400 text-white rounded text-sm font-medium hover:bg-gray-500 min-h-[36px]"
+										type="button"
+									>
+										Cancel
+									</button>
+								</div>
+							</div>
+						</div>
+					{/if}
+
+					{#if currentExercise.notes && editingExerciseIndex !== currentExerciseIndex}
+						<div class="mb-3 sm:mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+							<p class="text-xs sm:text-sm text-yellow-800">
+								<strong>Notes:</strong> {currentExercise.notes}
+							</p>
+						</div>
+					{/if}
 
 					{#if !showTimer && currentSet}
 						<div class="mb-4 sm:mb-6">
