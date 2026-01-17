@@ -108,6 +108,8 @@
 				<label for="exercise-name" class="block text-sm font-medium text-gray-700 mb-2">
 					Exercise Name *
 				</label>
+				<!-- svelte-ignore a11y_autofocus -->
+				<!-- User-initiated modal: autofocus on first field reduces tabbing -->
 				<input
 					id="exercise-name"
 					type="text"
@@ -116,6 +118,7 @@
 					autofocus
 					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 				/>
+
 			</div>
 
 			<div>

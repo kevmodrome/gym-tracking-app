@@ -755,6 +755,8 @@
 							<label for="new-password" class="block text-sm font-medium text-gray-700 mb-2">
 								New Password
 							</label>
+							<!-- svelte-ignore a11y_autofocus -->
+							<!-- User-initiated password change: autofocus guides to primary input -->
 							<input
 								id="new-password"
 								type="password"
@@ -763,6 +765,7 @@
 								autofocus
 								class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 							/>
+
 						</div>
 						<div>
 							<label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-2">
