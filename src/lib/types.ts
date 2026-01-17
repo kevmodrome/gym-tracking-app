@@ -76,3 +76,9 @@ export interface PRHistory {
 	achievedDate: string;
 	sessionId: string;
 }
+
+export interface AppSettings {
+	defaultRestDuration: number;
+	soundEnabled: boolean;
+	vibrationEnabled: boolean;
+}

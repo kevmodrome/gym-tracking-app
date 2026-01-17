@@ -99,7 +99,13 @@
 	<div class="max-w-6xl mx-auto">
 		<div class="flex items-center justify-between mb-6">
 			<h1 class="text-3xl font-bold text-gray-900">Browse Exercises</h1>
-			<div class="flex gap-3">
+			<div class="flex gap-3 flex-wrap">
+				<a
+					href="/settings"
+					class="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors"
+				>
+					⚙️ Settings
+				</a>
 				<a
 					href="/history"
 					class="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -132,6 +138,12 @@
 					<PlusIcon class="w-5 h-5" />
 					Create Workout
 				</button>
+				<a
+					href="/workout"
+					class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+				>
+					▶ Start Workout
+				</a>
 				<button
 					onclick={() => (showImportModal = true)}
 					class="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
