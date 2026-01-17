@@ -326,6 +326,8 @@
 
 	let defaultRestDuration = $state(90);
 	let loadedSettings = $state(false);
+	let draggedSetIndex = $state<number | null>(null);
+	let draggedOverSetIndex = $state<number | null>(null);
 
 	$effect(() => {
 		if (!loadedSettings) {
@@ -341,6 +343,102 @@
 			loadedSettings = true;
 		}
 	});
+
+	function moveSetUp(index: number) {
+		if (index <= 0) return;
+		if (!currentExercise) return;
+
+		const sets = [...currentExercise.sets];
+		[sets[index], sets[index - 1]] = [sets[index - 1], sets[index]];
+		currentExercise.sets = sets;
+		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
+	}
+
+	function moveSetDown(index: number) {
+		if (!currentExercise || index >= currentExercise.sets.length - 1) return;
+
+		const sets = [...currentExercise.sets];
+		[sets[index], sets[index + 1]] = [sets[index + 1], sets[index]];
+		currentExercise.sets = sets;
+		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
+	}
+
+	function handleDragStart(e: DragEvent, index: number) {
+		draggedSetIndex = index;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', index.toString());
+		}
+	}
+
+	function handleDragOver(e: DragEvent, index: number) {
+		e.preventDefault();
+		draggedOverSetIndex = index;
+		if (e.dataTransfer) {
+			e.dataTransfer.dropEffect = 'move';
+		}
+	}
+
+	function handleDrop(e: DragEvent, index: number) {
+		e.preventDefault();
+		if (draggedSetIndex === null || draggedSetIndex === index) {
+			draggedSetIndex = null;
+			draggedOverSetIndex = null;
+			return;
+		}
+
+		if (!currentExercise) return;
+
+		const sets = [...currentExercise.sets];
+		const [movedSet] = sets.splice(draggedSetIndex, 1);
+		sets.splice(index, 0, movedSet);
+
+		currentExercise.sets = sets;
+		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
+
+		draggedSetIndex = null;
+		draggedOverSetIndex = null;
+	}
+
+	function handleDragEnd() {
+		draggedSetIndex = null;
+		draggedOverSetIndex = null;
+	}
+
+	function handleTouchStart(e: TouchEvent, index: number) {
+		if (!currentExercise) return;
+		const touch = e.touches[0];
+		draggedSetIndex = index;
+	}
+
+	function handleTouchMove(e: TouchEvent, index: number) {
+		e.preventDefault();
+		draggedOverSetIndex = index;
+	}
+
+	function handleTouchEnd(e: TouchEvent, index: number) {
+		if (draggedSetIndex === null || draggedSetIndex === index) {
+			draggedSetIndex = null;
+			draggedOverSetIndex = null;
+			return;
+		}
+
+		if (!currentExercise) return;
+
+		const sets = [...currentExercise.sets];
+		const [movedSet] = sets.splice(draggedSetIndex, 1);
+		sets.splice(index, 0, movedSet);
+
+		currentExercise.sets = sets;
+		sessionExercises = [...sessionExercises];
+		saveSessionProgress();
+
+		draggedSetIndex = null;
+		draggedOverSetIndex = null;
+	}
 </script>
 
 <div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
@@ -579,36 +677,81 @@
 						</div>
 						<div class="space-y-1">
 							{#each currentExercise.sets as set, idx}
-								<button
-									onclick={() => editSet(idx)}
-									class="w-full flex items-center gap-2 p-2 sm:p-3 rounded {set.completed
-										? 'bg-green-50 border border-green-200 hover:bg-green-100'
-										: idx === currentSetIndex
-											? 'bg-blue-50 border border-blue-200'
-											: 'bg-gray-50 border border-gray-200 hover:bg-gray-100'} transition-colors text-left min-h-[44px]"
-									type="button"
+								<div
+									draggable={true}
+									ondragstart={(e) => handleDragStart(e, idx)}
+									ondragover={(e) => handleDragOver(e, idx)}
+									ondrop={(e) => handleDrop(e, idx)}
+									ondragend={handleDragEnd}
+									ontouchstart={(e) => handleTouchStart(e, idx)}
+									ontouchmove={(e) => handleTouchMove(e, idx)}
+									ontouchend={(e) => handleTouchEnd(e, idx)}
+									class="{draggedSetIndex === idx ? 'opacity-50' : ''} {draggedOverSetIndex === idx && draggedSetIndex !== null ? 'border-t-2 border-b-2 border-blue-500' : ''}"
 								>
-									<span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium {set.completed
-										? 'bg-green-500 text-white'
-										: idx === currentSetIndex
-											? 'bg-blue-500 text-white'
-											: 'bg-gray-300 text-gray-600'}">
-										{set.completed ? '✓' : idx + 1}
-									</span>
-									<div class="flex-1 min-w-0">
-										<p class="text-xs sm:text-sm text-gray-700">
-											{set.reps} reps @ {set.weight} lbs
-										</p>
-										{#if set.notes}
-											<p class="text-xs text-gray-500 truncate">{set.notes}</p>
-										{/if}
+									<div
+										class="w-full flex items-center gap-2 p-2 sm:p-3 rounded {set.completed
+											? 'bg-green-50 border border-green-200 hover:bg-green-100'
+											: idx === currentSetIndex
+												? 'bg-blue-50 border border-blue-200'
+												: 'bg-gray-50 border border-gray-200 hover:bg-gray-100'} transition-colors"
+									>
+										<div class="flex flex-col gap-1 flex-shrink-0">
+											<button
+												onclick={(e) => { e.stopPropagation(); moveSetUp(idx); }}
+												disabled={idx === 0}
+												class="px-1.5 py-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded {idx === 0 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
+												type="button"
+												aria-label="Move set up"
+											>
+												<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+												</svg>
+											</button>
+											<button
+												onclick={(e) => { e.stopPropagation(); moveSetDown(idx); }}
+												disabled={idx >= currentExercise.sets.length - 1}
+												class="px-1.5 py-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded {idx >= currentExercise.sets.length - 1 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
+												type="button"
+												aria-label="Move set down"
+											>
+												<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+												</svg>
+											</button>
+										</div>
+										<div class="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 text-gray-400 hover:text-gray-600" onmousedown={(e) => e.preventDefault()}>
+											<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+												<path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+											</svg>
+										</div>
+										<button
+											onclick={() => editSet(idx)}
+											class="flex-1 flex items-center gap-2 text-left min-h-[44px]"
+											type="button"
+										>
+											<span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium {set.completed
+												? 'bg-green-500 text-white'
+												: idx === currentSetIndex
+													? 'bg-blue-500 text-white'
+													: 'bg-gray-300 text-gray-600'}">
+												{set.completed ? '✓' : idx + 1}
+											</span>
+											<div class="flex-1 min-w-0">
+												<p class="text-xs sm:text-sm text-gray-700">
+													{set.reps} reps @ {set.weight} lbs
+												</p>
+												{#if set.notes}
+													<p class="text-xs text-gray-500 truncate">{set.notes}</p>
+												{/if}
+											</div>
+											{#if set.completed && idx !== currentSetIndex}
+												<span class="text-xs text-green-600 font-medium">Edit</span>
+											{:else if !set.completed && idx === currentSetIndex}
+												<span class="text-xs text-blue-600 font-medium">Current</span>
+											{/if}
+										</button>
 									</div>
-									{#if set.completed && idx !== currentSetIndex}
-										<span class="text-xs text-green-600 font-medium">Edit</span>
-									{:else if !set.completed && idx === currentSetIndex}
-										<span class="text-xs text-blue-600 font-medium">Current</span>
-									{/if}
-								</button>
+								</div>
 							{/each}
 						</div>
 					</div>
