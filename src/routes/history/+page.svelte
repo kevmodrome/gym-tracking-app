@@ -8,11 +8,12 @@
 	import XIcon from '$lib/components/XIcon.svelte';
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
 	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
+	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox } from '$lib/ui';
 
 	let sessions = $state<Session[]>([]);
 	let allWorkouts = $state<{ id: string; name: string }[]>([]);
 	let searchQuery = $state('');
-	let selectedWorkout = $state<string | undefined>(undefined);
+	let selectedWorkout = $state<string>('');
 	let dateFilter = $state<'all' | 'week' | 'month' | 'year' | 'custom'>('all');
 	let customStartDate = $state('');
 	let customEndDate = $state('');
@@ -28,6 +29,19 @@
 	let editForm = $state<{ date: string; name: string; notes: string }>({ date: '', name: '', notes: '' });
 	let originalSession = $state<Session | null>(null);
 	let saveError = $state<string | null>(null);
+
+	const workoutOptions = $derived([
+		{ value: '', label: 'All Workouts' },
+		...allWorkouts.map(w => ({ value: w.id, label: w.name }))
+	]);
+
+	const dateOptions = [
+		{ value: 'all', label: 'All Time' },
+		{ value: 'week', label: 'Last 7 Days' },
+		{ value: 'month', label: 'Last 30 Days' },
+		{ value: 'year', label: 'Last Year' },
+		{ value: 'custom', label: 'Custom Range' }
+	];
 
 	onMount(async () => {
 		allWorkouts = (await db.workouts.toArray()).map((w) => ({ id: w.id, name: w.name }));
@@ -113,7 +127,7 @@
 
 	function clearFilters() {
 		searchQuery = '';
-		selectedWorkout = undefined;
+		selectedWorkout = '';
 		dateFilter = 'all';
 		customStartDate = '';
 		customEndDate = '';
@@ -224,427 +238,294 @@
 	<div class="max-w-7xl mx-auto w-full">
 		<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
 			<div class="flex items-center gap-4">
-				<a
-					href="/"
-					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] flex items-center justify-center"
-				>
+				<Button variant="secondary" href="/">
 					← Back
-				</a>
+				</Button>
 				<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Workout History</h1>
 			</div>
 		</div>
 
-		<div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
-			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-				<div class="relative">
-					<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-					<input
-						type="text"
-						bind:value={searchQuery}
-						placeholder="Search workouts..."
-						class="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
-					/>
-				</div>
+		<Card class="mb-6">
+			{#snippet children()}
+				<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+					<div class="relative">
+						<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder="Search workouts..."
+							class="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
+						/>
+					</div>
 
-				<div>
-					<label for="workout-filter" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-						Workout Type
-					</label>
-					<select
-						id="workout-filter"
+					<Select
+						label="Workout Type"
 						bind:value={selectedWorkout}
-						class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
-					>
-						<option value="">All Workouts</option>
-						{#each allWorkouts as workout}
-							<option value={workout.id}>{workout.name}</option>
-						{/each}
-					</select>
-				</div>
+						options={workoutOptions}
+					/>
 
-				<div>
-					<label for="date-filter" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-						Date Range
-					</label>
-					<select
-						id="date-filter"
+					<Select
+						label="Date Range"
 						bind:value={dateFilter}
-						class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
-					>
-						<option value="all">All Time</option>
-						<option value="week">Last 7 Days</option>
-						<option value="month">Last 30 Days</option>
-						<option value="year">Last Year</option>
-						<option value="custom">Custom Range</option>
-					</select>
-				</div>
+						options={dateOptions}
+					/>
 
-				<div>
-					<label for="results-count" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-						Showing: {filteredSessions.length} sessions
-					</label>
-					<div class="flex items-center gap-2">
-						<button
-							onclick={clearFilters}
-							class="flex-1 flex items-center justify-center gap-1 text-xs sm:text-sm text-gray-600 hover:text-gray-900 px-3 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px]"
-							type="button"
-						>
+					<div>
+						<label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+							Showing: {filteredSessions.length} sessions
+						</label>
+						<Button variant="ghost" onclick={clearFilters} fullWidth>
 							<XIcon class="w-4 h-4" />
 							Clear
-						</button>
+						</Button>
 					</div>
 				</div>
-			</div>
 
-			{#if dateFilter === 'custom'}
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 pt-4 border-t border-gray-200">
-					<div>
-						<label for="start-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-							Start Date
-						</label>
-						<input
-							id="start-date"
+				{#if dateFilter === 'custom'}
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 pt-4 border-t border-gray-200">
+						<TextInput
+							label="Start Date"
 							type="date"
 							bind:value={customStartDate}
-							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
 						/>
-					</div>
-					<div>
-						<label for="end-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-							End Date
-						</label>
-						<input
-							id="end-date"
+						<TextInput
+							label="End Date"
 							type="date"
 							bind:value={customEndDate}
-							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
 						/>
 					</div>
-				</div>
-			{/if}
-		</div>
+				{/if}
+			{/snippet}
+		</Card>
 
 		{#if filteredSessions.length === 0}
-			<div class="bg-white rounded-lg shadow-md p-12 text-center">
-				<div class="text-gray-400 mb-4">
-					<SearchIcon class="w-16 h-16 mx-auto" />
-				</div>
-				<h2 class="text-xl font-semibold text-gray-900 mb-2">No workout sessions found</h2>
-				<p class="text-gray-600">
-					{#if sessions.length === 0}
-						Start working out to see your history here
-					{:else}
-						Try adjusting your search or filters
-					{/if}
-				</p>
-			</div>
+			<Card class="text-center" padding="lg">
+				{#snippet children()}
+					<div class="text-gray-400 mb-4">
+						<SearchIcon class="w-16 h-16 mx-auto" />
+					</div>
+					<h2 class="text-xl font-semibold text-gray-900 mb-2">No workout sessions found</h2>
+					<p class="text-gray-600">
+						{#if sessions.length === 0}
+							Start working out to see your history here
+						{:else}
+							Try adjusting your search or filters
+						{/if}
+					</p>
+				{/snippet}
+			</Card>
 		{:else}
 			<div class="grid grid-cols-1 gap-4">
 				{#each paginatedSessions as session, index}
-					<button
-						class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow cursor-pointer w-full text-left"
-						onclick={() => (showSessionDetail = session)}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								showSessionDetail = session;
-							}
-						}}
-						type="button"
-					>
-						<div class="flex items-start justify-between">
-							<div class="flex-1">
-								<h3 class="text-xl font-semibold text-gray-900 mb-2">{session.workoutName}</h3>
-								<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-									<div class="flex items-center gap-2">
-										<span class="text-gray-500">📅</span>
-										<span class="text-sm text-gray-700">{formatDate(session.date)}</span>
+					<Card hover>
+						{#snippet children()}
+							<button
+								class="w-full text-left"
+								onclick={() => (showSessionDetail = session)}
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										showSessionDetail = session;
+									}
+								}}
+								type="button"
+							>
+								<div class="flex items-start justify-between">
+									<div class="flex-1">
+										<h3 class="text-xl font-semibold text-gray-900 mb-2">{session.workoutName}</h3>
+										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+											<div class="flex items-center gap-2">
+												<span class="text-gray-500">📅</span>
+												<span class="text-sm text-gray-700">{formatDate(session.date)}</span>
+											</div>
+											<div class="flex items-center gap-2">
+												<span class="text-gray-500">⏱️</span>
+												<span class="text-sm text-gray-700">{formatDuration(session.duration)}</span>
+											</div>
+											<div class="flex items-center gap-2">
+												<span class="text-gray-500">💪</span>
+												<span class="text-sm text-gray-700">{getSessionSummary(session)}</span>
+											</div>
+										</div>
+										{#if session.notes}
+											<p class="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+												{session.notes}
+											</p>
+										{/if}
 									</div>
-									<div class="flex items-center gap-2">
-										<span class="text-gray-500">⏱️</span>
-										<span class="text-sm text-gray-700">{formatDuration(session.duration)}</span>
-									</div>
-									<div class="flex items-center gap-2">
-										<span class="text-gray-500">💪</span>
-										<span class="text-sm text-gray-700">{getSessionSummary(session)}</span>
+									<div class="flex items-center gap-2 ml-4">
+										<ChevronDownIcon class="w-5 h-5 text-gray-400" />
 									</div>
 								</div>
-								{#if session.notes}
-									<p class="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
-										{session.notes}
-									</p>
-								{/if}
-							</div>
-							<div class="flex items-center gap-2 ml-4">
-								<ChevronDownIcon class="w-5 h-5 text-gray-400" />
-							</div>
-						</div>
-					</button>
+							</button>
+						{/snippet}
+					</Card>
 				{/each}
 			</div>
 
 			{#if hasMore}
 				<div class="mt-6 text-center">
-					<button
-						onclick={loadMore}
-						class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-						type="button"
-					>
+					<Button variant="primary" onclick={loadMore}>
 						Load More Sessions
-					</button>
+					</Button>
 				</div>
 			{/if}
 		{/if}
 	</div>
 </div>
 
-{#if showSessionDetail}
-	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
-		<div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] sm:max-h-[95vh] overflow-y-auto my-4 sm:my-8">
-			<div class="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6">
-				<div class="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
-					<div>
-						<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{showSessionDetail.workoutName}</h2>
-						<p class="text-sm text-gray-600">{formatDate(showSessionDetail.date)}</p>
+<Modal
+	open={showSessionDetail !== null}
+	title={showSessionDetail?.workoutName || ''}
+	size="xl"
+	onclose={() => (showSessionDetail = null)}
+>
+	{#snippet children()}
+		{#if showSessionDetail}
+			<div class="flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-4">
+				<p class="text-sm text-gray-600">{formatDate(showSessionDetail.date)}</p>
+				<div class="flex items-center gap-2 sm:gap-4">
+					<div class="text-right">
+						<p class="text-xs sm:text-sm text-gray-500">Duration</p>
+						<p class="text-base sm:text-lg font-semibold">{formatDuration(showSessionDetail.duration)}</p>
 					</div>
-					<div class="flex items-center gap-2 sm:gap-4">
-						<div class="text-right">
-							<p class="text-xs sm:text-sm text-gray-500">Duration</p>
-							<p class="text-base sm:text-lg font-semibold">{formatDuration(showSessionDetail.duration)}</p>
-						</div>
-						<button
-							onclick={openEditModal}
-							class="px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm min-h-[44px]"
-							type="button"
-						>
-							Edit
-						</button>
-						<button
-							onclick={() => (showDeleteConfirm = true)}
-							class="px-3 py-2 sm:px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm min-h-[44px]"
-							type="button"
-						>
-							Delete
-						</button>
-						<button
-							onclick={() => (showSessionDetail = null)}
-							class="p-2 hover:bg-gray-100 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-							type="button"
-						>
-							<XIcon class="w-6 h-6 text-gray-500" />
-						</button>
-					</div>
+					<Button variant="primary" size="sm" onclick={openEditModal}>
+						Edit
+					</Button>
+					<Button variant="danger" size="sm" onclick={() => (showDeleteConfirm = true)}>
+						Delete
+					</Button>
 				</div>
 			</div>
 
-			<div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
-				{#if showSessionDetail.notes}
-					<div class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-						<h3 class="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Notes</h3>
-						<p class="text-blue-800 text-sm sm:text-base">{showSessionDetail.notes}</p>
-					</div>
-				{/if}
+			{#if showSessionDetail.notes}
+				<InfoBox variant="info" class="mb-4">
+					<h3 class="font-semibold mb-2 text-sm sm:text-base">Notes</h3>
+					<p class="text-sm sm:text-base">{showSessionDetail.notes}</p>
+				</InfoBox>
+			{/if}
 
-				<div class="space-y-3 sm:space-y-4">
-					{#each showSessionDetail.exercises as exercise}
-						<div class="border border-gray-200 rounded-lg overflow-hidden">
-							<div class="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
-								<h4 class="font-semibold text-gray-900 text-base sm:text-lg">{exercise.exerciseName}</h4>
-								<p class="text-xs sm:text-sm text-gray-600 capitalize">{exercise.primaryMuscle}</p>
-							</div>
-							
-							<div class="p-3 sm:p-4">
-								<div class="hidden sm:block">
-									<table class="w-full">
-										<thead>
-											<tr class="border-b border-gray-200">
-												<th class="text-left py-2 text-sm font-medium text-gray-700">Set</th>
-												<th class="text-left py-2 text-sm font-medium text-gray-700">Reps</th>
-												<th class="text-left py-2 text-sm font-medium text-gray-700">Weight</th>
-												<th class="text-left py-2 text-sm font-medium text-gray-700">Status</th>
+			<div class="space-y-3 sm:space-y-4">
+				{#each showSessionDetail.exercises as exercise}
+					<div class="border border-gray-200 rounded-lg overflow-hidden">
+						<div class="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
+							<h4 class="font-semibold text-gray-900 text-base sm:text-lg">{exercise.exerciseName}</h4>
+							<p class="text-xs sm:text-sm text-gray-600 capitalize">{exercise.primaryMuscle}</p>
+						</div>
+
+						<div class="p-3 sm:p-4">
+							<div class="hidden sm:block">
+								<table class="w-full">
+									<thead>
+										<tr class="border-b border-gray-200">
+											<th class="text-left py-2 text-sm font-medium text-gray-700">Set</th>
+											<th class="text-left py-2 text-sm font-medium text-gray-700">Reps</th>
+											<th class="text-left py-2 text-sm font-medium text-gray-700">Weight</th>
+											<th class="text-left py-2 text-sm font-medium text-gray-700">Status</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each exercise.sets as set, idx}
+											<tr class:completed={set.completed}>
+												<td class="py-2 text-sm text-gray-700">{idx + 1}</td>
+												<td class="py-2 text-sm text-gray-700">{set.reps}</td>
+												<td class="py-2 text-sm text-gray-700">{set.weight} lbs</td>
+												<td class="py-2 text-sm">
+													<span
+														class="px-2 py-1 rounded-full text-xs font-medium {set.completed
+															? 'bg-green-100 text-green-800'
+															: 'bg-gray-100 text-gray-600'}"
+													>
+														{set.completed ? '✓ Completed' : '— Skipped'}
+													</span>
+												</td>
 											</tr>
-										</thead>
-										<tbody>
-											{#each exercise.sets as set, idx}
-												<tr class:completed={set.completed}>
-													<td class="py-2 text-sm text-gray-700">{idx + 1}</td>
-													<td class="py-2 text-sm text-gray-700">{set.reps}</td>
-													<td class="py-2 text-sm text-gray-700">{set.weight} lbs</td>
-													<td class="py-2 text-sm">
-														<span
-															class="px-2 py-1 rounded-full text-xs font-medium {set.completed
-																? 'bg-green-100 text-green-800'
-																: 'bg-gray-100 text-gray-600'}"
-														>
-															{set.completed ? '✓ Completed' : '— Skipped'}
-														</span>
-													</td>
-												</tr>
-											{/each}
-										</tbody>
-									</table>
-								</div>
-								
-								<div class="sm:hidden space-y-2">
-									{#each exercise.sets as set, idx}
-										<div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg {set.completed ? 'bg-green-50' : 'bg-gray-50'}">
-											<div class="flex items-center gap-3">
-												<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}">{idx + 1}</span>
-												<div>
-													<p class="text-sm font-medium text-gray-900">{set.reps} reps × {set.weight} lbs</p>
-												</div>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+
+							<div class="sm:hidden space-y-2">
+								{#each exercise.sets as set, idx}
+									<div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg {set.completed ? 'bg-green-50' : 'bg-gray-50'}">
+										<div class="flex items-center gap-3">
+											<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}">{idx + 1}</span>
+											<div>
+												<p class="text-sm font-medium text-gray-900">{set.reps} reps × {set.weight} lbs</p>
 											</div>
-											<span class="text-xs font-medium px-2 py-1 rounded-full {set.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">
-												{set.completed ? 'Done' : 'Skip'}
-											</span>
 										</div>
-									{/each}
-								</div>
+										<span class="text-xs font-medium px-2 py-1 rounded-full {set.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">
+											{set.completed ? 'Done' : 'Skip'}
+										</span>
+									</div>
+								{/each}
 							</div>
 						</div>
-					{/each}
-				</div>
+					</div>
+				{/each}
 			</div>
+		{/if}
+	{/snippet}
+	{#snippet footer()}
+		<Button variant="secondary" onclick={() => (showSessionDetail = null)} fullWidth>
+			Close
+		</Button>
+	{/snippet}
+</Modal>
 
-			<div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-4 flex justify-end">
-				<button
-					onclick={() => (showSessionDetail = null)}
-					class="w-full sm:w-auto px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px]"
-					type="button"
-				>
-					Close
-				</button>
-			</div>
+<ConfirmDialog
+	open={showDeleteConfirm}
+	title="Delete Workout"
+	message={'This will permanently delete "' + (showSessionDetail?.workoutName || '') + '" from ' + formatDate(showSessionDetail?.date || '') + '. This action cannot be undone.'}
+	confirmText="Delete Workout"
+	confirmVariant="danger"
+	onconfirm={confirmDelete}
+	oncancel={closeDeleteConfirm}
+/>
+
+<Modal
+	open={showEditModal}
+	title="Edit Workout"
+	size="sm"
+	onclose={closeEditModal}
+>
+	{#snippet children()}
+		<div class="space-y-4">
+			<TextInput
+				label="Date"
+				type="date"
+				bind:value={editForm.date}
+				required
+			/>
+
+			<TextInput
+				label="Workout Name"
+				bind:value={editForm.name}
+				placeholder="Workout name"
+			/>
+
+			<Textarea
+				label="Notes"
+				bind:value={editForm.notes}
+				placeholder="Add notes about your workout..."
+				rows={3}
+			/>
+
+			{#if saveError}
+				<InfoBox variant="error">
+					<p class="text-sm">{saveError}</p>
+				</InfoBox>
+			{/if}
 		</div>
-	</div>
-
-	{#if showDeleteConfirm}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-			<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h2 class="text-xl font-bold text-gray-900">Delete Workout</h2>
-					<button
-						onclick={closeDeleteConfirm}
-						type="button"
-					>
-						<XIcon class="w-6 h-6 text-gray-500" />
-					</button>
-				</div>
-
-				<div class="space-y-4">
-					<div class="bg-red-50 border border-red-200 rounded-lg p-4">
-						<p class="text-red-900 font-medium mb-2">Are you sure?</p>
-						<p class="text-sm text-red-800">
-							This will permanently delete "{showSessionDetail?.workoutName}" from
-							{formatDate(showSessionDetail?.date || '')}. This action cannot be undone.
-						</p>
-					</div>
-
-					{#if deleteError}
-						<div class="bg-red-100 border border-red-300 rounded-lg p-3">
-							<p class="text-sm text-red-800">{deleteError}</p>
-						</div>
-					{/if}
-
-					<div class="flex gap-3">
-						<button
-							onclick={closeDeleteConfirm}
-							class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-							type="button"
-						>
-							Cancel
-						</button>
-						<button
-							onclick={confirmDelete}
-							class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-							type="button"
-						>
-							Delete Workout
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if showEditModal}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-			<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h2 class="text-xl font-bold text-gray-900">Edit Workout</h2>
-					<button
-						onclick={closeEditModal}
-						type="button"
-					>
-						<XIcon class="w-6 h-6 text-gray-500" />
-					</button>
-				</div>
-
-				<div class="space-y-4 mb-6">
-					<div>
-						<label for="edit-date" class="block text-sm font-medium text-gray-700 mb-1">
-							Date <span class="text-red-500">*</span>
-						</label>
-						<input
-							id="edit-date"
-							type="date"
-							bind:value={editForm.date}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						/>
-					</div>
-
-					<div>
-						<label for="edit-name" class="block text-sm font-medium text-gray-700 mb-1">
-							Workout Name
-						</label>
-						<input
-							id="edit-name"
-							type="text"
-							bind:value={editForm.name}
-							placeholder="Workout name"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						/>
-					</div>
-
-					<div>
-						<label for="edit-notes" class="block text-sm font-medium text-gray-700 mb-1">
-							Notes
-						</label>
-						<textarea
-							id="edit-notes"
-							bind:value={editForm.notes}
-							placeholder="Add notes about your workout..."
-							rows="3"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-						></textarea>
-					</div>
-
-					{#if saveError}
-						<div class="bg-red-100 border border-red-300 rounded-lg p-3">
-							<p class="text-sm text-red-800">{saveError}</p>
-						</div>
-					{/if}
-				</div>
-
-				<div class="flex gap-3">
-					<button
-						onclick={closeEditModal}
-						class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-						type="button"
-					>
-						Cancel
-					</button>
-					<button
-						onclick={saveSessionChanges}
-						class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-						type="button"
-					>
-						Save Changes
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-{/if}
+	{/snippet}
+	{#snippet footer()}
+		<Button variant="ghost" onclick={closeEditModal}>
+			Cancel
+		</Button>
+		<Button variant="primary" onclick={saveSessionChanges}>
+			Save Changes
+		</Button>
+	{/snippet}
+</Modal>
 
 {#if showUndoToast}
 	<div class="fixed bottom-4 right-4 bg-gray-900 text-white rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
@@ -653,13 +534,9 @@
 			<p class="text-sm text-gray-300 mb-2">
 				"{deletedSession?.workoutName}" has been removed from your history.
 			</p>
-			<button
-				onclick={undoDelete}
-				class="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
-				type="button"
-			>
+			<Button variant="primary" size="sm" onclick={undoDelete}>
 				Undo
-			</button>
+			</Button>
 		</div>
 		<button
 			onclick={() => {
