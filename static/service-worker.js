@@ -12,6 +12,7 @@ self.addEventListener('install', (event) => {
 			return cache.addAll(STATIC_ASSETS);
 		})
 	);
+	self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -32,6 +33,9 @@ self.addEventListener('fetch', (event) => {
 				});
 
 				return fetchResponse;
+			}).catch((error) => {
+				console.error('Fetch failed:', error);
+				return caches.match(event.request);
 			});
 		})
 	);
@@ -49,4 +53,29 @@ self.addEventListener('activate', (event) => {
 			);
 		})
 	);
+	self.clients.claim();
+});
+
+if ('sync' in self.registration) {
+	self.addEventListener('sync', (event) => {
+		if (event.tag === 'sync-data') {
+			event.waitUntil(
+				self.clients.matchAll().then((clients) => {
+					if (clients.length > 0) {
+						clients[0].postMessage({ type: 'SYNC_TRIGGERED' });
+					}
+				})
+			);
+		}
+	});
+}
+
+self.addEventListener('message', (event) => {
+	if (event.data && event.data.type === 'REGISTER_SYNC') {
+		if ('sync' in self.registration) {
+			self.registration.sync.register('sync-data').catch((error) => {
+				console.error('Sync registration failed:', error);
+			});
+		}
+	}
 });

@@ -3,7 +3,10 @@
 	import type { AppSettings, UserProfile, NotificationPreferences, AppPreferences } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
+	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
+	import { syncManager } from '$lib/syncUtils';
+	import { formatSyncMessage } from '$lib/syncUtils';
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
@@ -44,6 +47,8 @@
 	let newPassword = $state('');
 	let confirmNewPassword = $state('');
 	let messageTimeout: number | null = null;
+	let isSyncing = $state(false);
+	let syncResult = $state<{ success: boolean; message: string } | null>(null);
 
 	onMount(() => {
 		loadSettings();
@@ -192,6 +197,29 @@
 
 	function handleBack() {
 		window.location.href = '/';
+	}
+
+	async function handleSync() {
+		isSyncing = true;
+		syncResult = null;
+		const result = await syncManager.sync((progress) => {
+			exportProgress = {
+				current: progress.current,
+				total: progress.total,
+				stage: progress.stage
+			};
+		});
+		isSyncing = false;
+		syncResult = { success: result.success, message: formatSyncMessage(result) };
+		
+		showSavedMessage = result.success;
+		if (messageTimeout) {
+			clearTimeout(messageTimeout);
+		}
+		messageTimeout = window.setTimeout(() => {
+			showSavedMessage = false;
+			syncResult = null;
+		}, 5000);
 	}
 
 	async function handleExport() {
@@ -605,6 +633,95 @@
 						<li>• Import restores data from a previously exported backup</li>
 						<li>• You can choose how to handle duplicate items during import</li>
 						<li>• Store backup files in a safe location for data security</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+			<h2 class="text-xl font-bold text-gray-900 mb-4">Data Sync</h2>
+
+			<div class="space-y-4">
+				<div class="flex items-center justify-between">
+					<div>
+						<h3 class="font-medium text-gray-900">Connection Status</h3>
+						<p class="text-sm text-gray-600">
+							{syncManager.isOnline() ? 'You are online - changes will sync automatically' : 'You are offline - changes will sync when connection is restored'}
+						</p>
+					</div>
+					<SyncIndicator />
+				</div>
+
+				<div class="border-t border-gray-200 pt-4">
+					<h3 class="font-medium text-gray-900 mb-2">Manual Sync</h3>
+					<p class="text-sm text-gray-600 mb-3">
+						Force sync your data to the cloud. Pending changes will be uploaded immediately.
+					</p>
+					<button
+						onclick={handleSync}
+						disabled={isSyncing || !syncManager.isOnline()}
+						type="button"
+						class="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
+					>
+						{#if isSyncing}
+							<svg
+								class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+							Syncing...
+						{:else}
+							<span class="text-lg">🔄</span>
+							<span>Sync Now</span>
+						{/if}
+					</button>
+				</div>
+
+				{#if syncResult}
+					<div class="p-3 rounded-lg {syncResult.success ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}">
+						<p class="text-sm">{syncResult.message}</p>
+					</div>
+				{/if}
+
+				{#if isSyncing && exportProgress.total > 0}
+					<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+						<div class="flex items-center justify-between mb-2">
+							<span class="text-sm font-medium text-blue-900">{exportProgress.stage}</span>
+							<span class="text-xs text-blue-700"
+								>{exportProgress.current}/{exportProgress.total}</span
+							>
+						</div>
+						<div class="w-full bg-blue-200 rounded-full h-2">
+							<div
+								class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+								style="width: {(exportProgress.current / exportProgress.total) * 100}%"
+							></div>
+						</div>
+					</div>
+				{/if}
+
+				<div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+					<h3 class="font-medium text-gray-900 mb-2">ℹ️ About Sync</h3>
+					<ul class="text-sm text-gray-600 space-y-1">
+						<li>• Changes sync automatically when online</li>
+						<li>• Data is queued when offline and syncs when connection restores</li>
+						<li>• Failed syncs retry automatically with exponential backoff</li>
+						<li>• Last write wins in case of conflicts</li>
 					</ul>
 				</div>
 			</div>

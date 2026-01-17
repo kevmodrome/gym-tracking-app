@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseRoutine, Workout } from '$lib/types';
+	import { syncManager } from '$lib/syncUtils';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
@@ -87,6 +88,7 @@
 		};
 
 		await db.workouts.add(Dexie.deepClone(workout));
+		await syncManager.addToSyncQueue('workout', workout.id, 'create', workout);
 		onWorkoutCreated(workout);
 		onClose();
 	}

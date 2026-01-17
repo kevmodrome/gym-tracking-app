@@ -4,14 +4,16 @@
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import SwipeHandler from '$lib/components/SwipeHandler.svelte';
+	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
 
 	let { children } = $props();
-</script>
+</script>>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<SyncIndicator />
 <PWAInstallPrompt />
 <SwipeHandler />
 <div class="pb-16 md:pb-0 w-full min-w-[320px]">

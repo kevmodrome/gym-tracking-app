@@ -2,6 +2,7 @@
 	import Dexie from 'dexie';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
+	import { syncManager } from '$lib/syncUtils';
 	import XIcon from '$lib/components/XIcon.svelte';
 
 	let { onCreate, onClose } = $props<{
@@ -56,6 +57,7 @@
 		};
 
 		await db.exercises.add(Dexie.deepClone(newExercise));
+		await syncManager.addToSyncQueue('exercise', newExercise.id, 'create', newExercise);
 		onCreate(newExercise);
 		onClose();
 	}
