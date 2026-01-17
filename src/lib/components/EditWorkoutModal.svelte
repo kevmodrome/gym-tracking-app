@@ -42,7 +42,7 @@
 	});
 
 	const availableForSelection = $derived.by(() => {
-		return filteredExercises.filter((ex) => 
+		return filteredExercises.filter((ex) =>
 			!workoutExercises.some((we) => we.exerciseId === ex.id)
 		);
 	});
@@ -108,7 +108,7 @@
 
 		await db.workouts.update(initialWorkout.id, Dexie.deepClone(updates));
 		const updatedWorkout: Workout = { ...initialWorkout, ...updates };
-		await syncManager.addToSyncQueue('workout', updatedWorkout.id, 'update', updatedWorkout);
+		await syncManager.addToSyncQueue('workout', updatedWorkout.id, 'update', Dexie.deepClone(updatedWorkout));
 		onWorkoutUpdated(updatedWorkout);
 		onClose();
 	}

@@ -44,7 +44,7 @@ export async function calculatePersonalRecords(): Promise<void> {
 		});
 	});
 	await db.personalRecords.bulkPut(allPRs);
-	
+
 	allPRs.forEach(async (pr) => {
 		await syncManager.addToSyncQueue('personalRecord', pr.id, 'update', pr);
 	});

@@ -88,7 +88,7 @@
 		};
 
 		await db.workouts.add(Dexie.deepClone(workout));
-		await syncManager.addToSyncQueue('workout', workout.id, 'create', workout);
+		await syncManager.addToSyncQueue('workout', workout.id, 'create', Dexie.deepClone(workout));
 		onWorkoutCreated(workout);
 		onClose();
 	}

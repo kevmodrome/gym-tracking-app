@@ -8,7 +8,7 @@
 	import RestTimer from '$lib/components/RestTimer.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import EditWorkoutModal from '$lib/components/EditWorkoutModal.svelte';
-	import { toastStore } from '$lib/stores/toast';
+	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Trash2, Undo } from 'lucide-svelte';
 
 	let workouts = $state<Workout[]>([]);
@@ -138,7 +138,7 @@
 		};
 
 		await db.sessions.add(Dexie.deepClone(session));
-		await syncManager.addToSyncQueue('session', session.id, 'create', session);
+		await syncManager.addToSyncQueue('session', session.id, 'create', Dexie.deepClone(session));
 		await calculatePersonalRecords();
 
 		localStorage.removeItem(`gym-app-session-${selectedWorkout.id}`);
@@ -261,7 +261,7 @@
 
 	function editSet(setIndex: number) {
 		if (!currentExercise) return;
-		
+
 		const set = currentExercise.sets[setIndex];
 		editingSetReps = set.reps;
 		editingSetWeight = set.weight;
@@ -276,7 +276,7 @@
 		if (editingSetIndex === null || !currentExercise) return;
 
 		const validation = validateSetValues(editingSetReps, editingSetWeight, editingSetRPE);
-		
+
 		if (!validation.valid) {
 			showSaveError = true;
 			saveErrorMessage = validation.error || 'Invalid values';
@@ -287,10 +287,10 @@
 			currentExercise.sets[editingSetIndex].reps = editingSetReps;
 			currentExercise.sets[editingSetIndex].weight = editingSetWeight;
 			currentExercise.sets[editingSetIndex].rpe = editingSetRPE || undefined;
-			
+
 			sessionExercises = [...sessionExercises];
 			saveSessionProgress();
-			
+
 			editingSetIndex = null;
 			showSaveError = false;
 			toastStore.showSuccess('Set updated successfully');

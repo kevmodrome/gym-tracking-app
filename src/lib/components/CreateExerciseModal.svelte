@@ -57,7 +57,7 @@
 		};
 
 		await db.exercises.add(Dexie.deepClone(newExercise));
-		await syncManager.addToSyncQueue('exercise', newExercise.id, 'create', newExercise);
+		await syncManager.addToSyncQueue('exercise', newExercise.id, 'create', Dexie.deepClone(newExercise));
 		onCreate(newExercise);
 		onClose();
 	}

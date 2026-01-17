@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { syncManager } from '$lib/syncUtils';
-	import { toastStore } from '$lib/stores/toast';
+	import { toastStore } from '$lib/stores/toast.svelte';
 	import { onMount } from 'svelte';
 	import { Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-svelte';
 
@@ -63,7 +63,7 @@
 		isLoading = false;
 		syncQueueCount = await syncManager.getSyncQueueCount();
 		syncStatus = result.success ? 'synced' : 'failed';
-		
+
 		if (result.success) {
 			toastStore.showSuccess(result.message, 3000);
 		} else {

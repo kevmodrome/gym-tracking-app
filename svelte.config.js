@@ -5,10 +5,6 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
 	preprocess: vitePreprocess({ script: true }),
 
-	compilerOptions: {
-		runes: true
-	},
-
 	kit: {
 		adapter: adapter({
 			pages: 'build',

@@ -23,7 +23,7 @@
 
 	onMount(async () => {
 		allExercises = await db.exercises.toArray();
-		
+
 		liveQuery(() => db.sessions.orderBy('date').reverse().toArray()).subscribe((data) => {
 			sessions = data;
 		});
@@ -31,7 +31,7 @@
 
 	const filteredSessions = $derived.by(() => {
 		if (sessions.length === 0) return [];
-		
+
 		const now = new Date();
 		let startDate: Date;
 
@@ -53,7 +53,7 @@
 		}
 
 		let endDate = dateFilter === 'custom' && customEndDate ? new Date(customEndDate) : now;
-		
+
 		return filterSessionsByDateRange(sessions, startDate, endDate);
 	});
 
@@ -127,7 +127,7 @@
 	const pieChartData = $derived.by(() => {
 		const total = muscleGroupBreakdown.reduce((acc, item) => acc + item.count, 0);
 		let currentAngle = 0;
-		
+
 		return muscleGroupBreakdown.map(({ muscle, count }) => {
 			const percentage = (count / total) * 100;
 			const angle = (percentage / 100) * 360;
@@ -220,6 +220,7 @@
 				</button>
 			</div>
 		</div>
+		{/if}
 
 		{#if dateFilter === 'custom'}
 			<div class="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-4 sm:mb-6">
@@ -591,6 +592,6 @@
 			{:else}
 				<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No volume data available</p>
 			{/if}
-		{/if}
+		</div>
 	</div>
 </div>
