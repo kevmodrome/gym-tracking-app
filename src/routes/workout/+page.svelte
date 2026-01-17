@@ -6,6 +6,7 @@
 	import { calculatePersonalRecords } from '$lib/prUtils';
 	import RestTimer from '$lib/components/RestTimer.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
+	import EditWorkoutModal from '$lib/components/EditWorkoutModal.svelte';
 
 	let workouts = $state<Workout[]>([]);
 	let exercises = $state<Exercise[]>([]);
@@ -21,6 +22,8 @@
 	let sessionDuration = $state(0);
 	let durationInterval: number | null = null;
 	let editingSetIndex = $state<number | null>(null);
+	let showEditModal = $state(false);
+	let editingWorkout = $state<Workout | null>(null);
 
 	onMount(async () => {
 		workouts = await db.workouts.toArray();
@@ -214,6 +217,23 @@
 		workouts = await db.workouts.toArray();
 	}
 
+	function openEditModal(workout: Workout) {
+		editingWorkout = workout;
+		showEditModal = true;
+	}
+
+	function closeEditModal() {
+		showEditModal = false;
+		editingWorkout = null;
+	}
+
+	async function handleWorkoutUpdated(updatedWorkout: Workout) {
+		workouts = await db.workouts.toArray();
+		if (selectedWorkout?.id === updatedWorkout.id) {
+			selectedWorkout = updatedWorkout;
+		}
+	}
+
 	function editSet(setIndex: number) {
 		currentSetIndex = setIndex;
 		showTimer = false;
@@ -356,17 +376,30 @@
 											</p>
 										</div>
 									</button>
-									<button
-										onclick={(e) => {
-											e.stopPropagation();
-											copyWorkout(workout);
-										}}
-										class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium ml-4"
-										type="button"
-										title="Copy workout"
-									>
-										Copy
-									</button>
+									<div class="flex gap-2">
+										<button
+											onclick={(e) => {
+												e.stopPropagation();
+												openEditModal(workout);
+											}}
+											class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-sm font-medium"
+											type="button"
+											title="Edit workout"
+										>
+											Edit
+										</button>
+										<button
+											onclick={(e) => {
+												e.stopPropagation();
+												copyWorkout(workout);
+											}}
+											class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium"
+											type="button"
+											title="Copy workout"
+										>
+											Copy
+										</button>
+									</div>
 								</div>
 							</div>
 						{/each}
@@ -599,6 +632,14 @@
 					</div>
 				</div>
 			{/if}
+		{/if}
+
+		{#if showEditModal && editingWorkout}
+			<EditWorkoutModal
+				workout={editingWorkout}
+				onClose={closeEditModal}
+				onWorkoutUpdated={handleWorkoutUpdated}
+			/>
 		{/if}
 	</div>
 </div>
