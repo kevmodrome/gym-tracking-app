@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `gymtrack-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -184,6 +184,9 @@ if ('sync' in self.registration) {
 }
 
 self.addEventListener('message', (event) => {
+	if (event.data && event.data.type === 'SKIP_WAITING') {
+		self.skipWaiting();
+	}
 	if (event.data && event.data.type === 'REGISTER_SYNC') {
 		if ('sync' in self.registration) {
 			self.registration.sync.register('sync-data').catch((error) => {
