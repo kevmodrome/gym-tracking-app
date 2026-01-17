@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `gymtrack-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -20,6 +20,30 @@ const CACHEABLE_PATTERNS = [
     /\.jpeg$/,
     /\.webp$/
 ];
+
+const VALID_MIME_TYPES = {
+    js: ['application/javascript', 'text/javascript', 'application/x-javascript'],
+    css: ['text/css'],
+    svg: ['image/svg+xml'],
+    png: ['image/png'],
+    jpg: ['image/jpeg'],
+    jpeg: ['image/jpeg'],
+    webp: ['image/webp'],
+    json: ['application/json']
+};
+
+function hasValidMimeType(response, url) {
+    const contentType = response.headers.get('content-type');
+    if (!contentType) return true;
+
+    const pathname = new URL(url).pathname;
+    const ext = pathname.split('.').pop()?.toLowerCase();
+
+    if (!ext || !VALID_MIME_TYPES[ext]) return true;
+
+    const mimeBase = contentType.split(';')[0].trim().toLowerCase();
+    return VALID_MIME_TYPES[ext].includes(mimeBase);
+}
 
 function isCacheableRequest(request) {
     const url = new URL(request.url);
@@ -92,16 +116,27 @@ self.addEventListener('fetch', (event) => {
     if (isCacheableRequest(request)) {
         event.respondWith(
             caches.match(request).then((cached) => {
+                if (cached && !hasValidMimeType(cached, request.url)) {
+                    console.warn('Invalid MIME type in cache for:', url.pathname);
+                    caches.open(CACHE_NAME).then((cache) => cache.delete(request));
+                    cached = null;
+                }
+
                 return cached || fetch(request).then((response) => {
                     if (!response || response.status !== 200) {
                         return response;
                     }
-                    
+
+                    if (!hasValidMimeType(response, request.url)) {
+                        console.warn('Invalid MIME type from server for:', url.pathname);
+                        return response;
+                    }
+
                     const responseToCache = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(request, responseToCache);
                     });
-                    
+
                     return response;
                 }).catch((error) => {
                     console.error('Fetch failed for cacheable request:', url.pathname, error);
