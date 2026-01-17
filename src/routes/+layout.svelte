@@ -8,7 +8,7 @@
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
-</script>>
+</script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />

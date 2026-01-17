@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
 	let touchStartX = 0;
@@ -21,10 +21,10 @@
 		document.addEventListener('touchstart', handleTouchStart, { passive: true });
 		document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-		onDestroy(() => {
+		return () => {
 			document.removeEventListener('touchstart', handleTouchStart);
 			document.removeEventListener('touchend', handleTouchEnd);
-		});
+		};
 	});
 
 	function handleSwipe() {
