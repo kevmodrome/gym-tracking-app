@@ -116,17 +116,22 @@
 
 <div
 	class="fixed inset-0 bg-black-50 bg-opacity-50 flex items-center justify-center p-4 z-50"
-	role="dialog"
-	aria-modal="true"
-	aria-labelledby="modal-title"
-	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(e) => e.key === 'Escape' && onClose()}
 >
 	<div
-		role="document"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="modal-title"
+		tabindex="-1"
 		class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col"
 		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') {
+				e.stopPropagation();
+				onClose();
+			}
+		}}
 	>
 		<div class="p-6 border-b border-gray-200">
 			<div class="flex items-center justify-between">

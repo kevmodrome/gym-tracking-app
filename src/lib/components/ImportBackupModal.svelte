@@ -148,10 +148,31 @@
 	}
 </script>
 
-<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-	<div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+<div
+	class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+	onclick={() => {
+		reset();
+		onClose();
+	}}
+	onkeydown={(e) => e.key === 'Escape' && (reset(), onClose())}
+>
+	<div
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="modal-title"
+		tabindex="-1"
+		class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') {
+				e.stopPropagation();
+				reset();
+				onClose();
+			}
+		}}
+	>
 		<div class="flex items-center justify-between p-6 border-b">
-			<h2 class="text-2xl font-bold text-gray-900">Import Backup Data</h2>
+			<h2 id="modal-title" class="text-2xl font-bold text-gray-900">Import Backup Data</h2>
 			<button
 				onclick={() => {
 					reset();

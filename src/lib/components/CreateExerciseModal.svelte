@@ -69,17 +69,22 @@
 
 <div
 	class="fixed inset-0 bg-black-50 bg-opacity-50 flex items-center justify-center p-4 z-50"
-	role="dialog"
-	aria-modal="true"
-	aria-labelledby="modal-title"
-	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(e) => e.key === 'Escape' && onClose()}
 >
 	<div
-		role="document"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="modal-title"
+		tabindex="-1"
 		class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6"
 		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') {
+				e.stopPropagation();
+				onClose();
+			}
+		}}
 	>
 		<div class="flex items-center justify-between mb-6">
 			<h2 id="modal-title" class="text-2xl font-bold text-gray-900">Create Custom Exercise</h2>
