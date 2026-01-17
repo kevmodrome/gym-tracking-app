@@ -79,6 +79,12 @@
 			<h1 class="text-3xl font-bold text-gray-900">Browse Exercises</h1>
 			<div class="flex gap-3">
 				<a
+					href="/progress"
+					class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+				>
+					📈 Progress
+				</a>
+				<a
 					href="/pr"
 					class="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
 				>
