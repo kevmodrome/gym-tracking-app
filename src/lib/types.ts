@@ -35,3 +35,27 @@ export interface Workout {
 	createdAt: string;
 	updatedAt: string;
 }
+
+export interface ExerciseSet {
+	reps: number;
+	weight: number;
+	completed: boolean;
+}
+
+export interface SessionExercise {
+	exerciseId: string;
+	exerciseName: string;
+	primaryMuscle: string;
+	sets: ExerciseSet[];
+}
+
+export interface Session {
+	id: string;
+	workoutId: string;
+	workoutName: string;
+	exercises: SessionExercise[];
+	date: string;
+	duration: number;
+	notes?: string;
+	createdAt: string;
+}

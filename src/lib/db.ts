@@ -1,10 +1,11 @@
-import Dexie from 'dexie';
+import Dexie, { liveQuery } from 'dexie';
 import type { Table } from 'dexie';
-import type { Exercise, Workout } from './types';
+import type { Exercise, Workout, Session } from './types';
 
 export class GymDB extends Dexie {
 	exercises!: Table<Exercise>;
 	workouts!: Table<Workout>;
+	sessions!: Table<Session>;
 
 	constructor() {
 		super('gym-recording-app-db');
@@ -12,10 +13,14 @@ export class GymDB extends Dexie {
 			exercises: 'id, name, category, primary_muscle, is_custom',
 			workouts: 'id, name, createdAt, updatedAt'
 		});
+		this.version(2).stores({
+			sessions: 'id, workoutId, date, createdAt'
+		});
 	}
 }
 
 export const db = new GymDB();
+export { liveQuery };
 
 export async function initializeExercises(): Promise<void> {
 	const count = await db.exercises.count();
