@@ -4,11 +4,14 @@
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
+	import PlusIcon from '$lib/components/PlusIcon.svelte';
+	import CreateExerciseModal from '$lib/components/CreateExerciseModal.svelte';
 
 	let exercises = $state<Exercise[]>([]);
 	let searchQuery = $state('');
 	let selectedCategory = $state<ExerciseCategory | undefined>(undefined);
 	let selectedMuscle = $state<MuscleGroup | undefined>(undefined);
+	let showCreateModal = $state(false);
 
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
@@ -34,6 +37,10 @@
 		exercises = await db.exercises.toArray();
 	});
 
+	async function handleExerciseCreated(newExercise: Exercise) {
+		exercises = await db.exercises.toArray();
+	}
+
 	function clearFilters() {
 		searchQuery = '';
 		selectedCategory = undefined;
@@ -47,7 +54,17 @@
 
 <div class="min-h-screen bg-gray-100 p-4 md:p-8">
 	<div class="max-w-6xl mx-auto">
-		<h1 class="text-3xl font-bold text-gray-900 mb-6">Browse Exercises</h1>
+		<div class="flex items-center justify-between mb-6">
+			<h1 class="text-3xl font-bold text-gray-900">Browse Exercises</h1>
+			<button
+				onclick={() => (showCreateModal = true)}
+				class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+				type="button"
+			>
+				<PlusIcon class="w-5 h-5" />
+				Create Exercise
+			</button>
+		</div>
 
 		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -173,3 +190,10 @@
 		{/if}
 	</div>
 </div>
+
+{#if showCreateModal}
+	<CreateExerciseModal
+		onCreate={handleExerciseCreated}
+		onClose={() => (showCreateModal = false)}
+	/>
+{/if}
