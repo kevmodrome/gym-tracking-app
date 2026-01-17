@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { db, liveQuery } from '$lib/db';
 	import type { Session, Exercise } from '$lib/types';
+	import { calculatePersonalRecords } from '$lib/prUtils';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
@@ -17,6 +18,11 @@
 	let currentPage = $state(1);
 	let itemsPerPage = $state(10);
 	let showSessionDetail = $state<Session | null>(null);
+	let showDeleteConfirm = $state(false);
+	let showUndoToast = $state(false);
+	let deletedSession = $state<Session | null>(null);
+	let undoTimeout: number | null = null;
+	let deleteError = $state<string | null>(null);
 
 	onMount(async () => {
 		allWorkouts = (await db.workouts.toArray()).map((w) => ({ id: w.id, name: w.name }));
@@ -111,6 +117,49 @@
 
 	function loadMore() {
 		currentPage++;
+	}
+
+	async function confirmDelete() {
+		if (!showSessionDetail) return;
+
+		try {
+			await db.sessions.delete(showSessionDetail.id);
+			deletedSession = showSessionDetail;
+			showSessionDetail = null;
+			showDeleteConfirm = false;
+			showUndoToast = true;
+
+			await calculatePersonalRecords();
+
+			if (undoTimeout) clearTimeout(undoTimeout);
+			undoTimeout = window.setTimeout(() => {
+				showUndoToast = false;
+				deletedSession = null;
+			}, 30000);
+		} catch (error) {
+			deleteError = error instanceof Error ? error.message : 'Failed to delete session';
+		}
+	}
+
+	async function undoDelete() {
+		if (!deletedSession) return;
+
+		try {
+			await db.sessions.add(deletedSession);
+			await calculatePersonalRecords();
+
+			if (undoTimeout) clearTimeout(undoTimeout);
+			undoTimeout = null;
+			showUndoToast = false;
+			deletedSession = null;
+		} catch (error) {
+			deleteError = error instanceof Error ? error.message : 'Failed to undo deletion';
+		}
+	}
+
+	function closeDeleteConfirm() {
+		showDeleteConfirm = false;
+		deleteError = null;
 	}
 </script>
 
@@ -213,9 +262,88 @@
 							bind:value={customEndDate}
 							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						/>
+		</div>
+	</div>
+
+	{#if showDeleteConfirm}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+			<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+				<div class="flex items-center justify-between mb-4">
+					<h2 class="text-xl font-bold text-gray-900">Delete Workout</h2>
+					<button
+						onclick={closeDeleteConfirm}
+						type="button"
+					>
+						<XIcon class="w-6 h-6 text-gray-500" />
+					</button>
+				</div>
+
+				<div class="space-y-4">
+					<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+						<p class="text-red-900 font-medium mb-2">Are you sure?</p>
+						<p class="text-sm text-red-800">
+							This will permanently delete "{showSessionDetail?.workoutName}" from
+							{formatDate(showSessionDetail?.date || '')}. This action cannot be undone.
+						</p>
+					</div>
+
+					{#if deleteError}
+						<div class="bg-red-100 border border-red-300 rounded-lg p-3">
+							<p class="text-sm text-red-800">{deleteError}</p>
+						</div>
+					{/if}
+
+					<div class="flex gap-3">
+						<button
+							onclick={closeDeleteConfirm}
+							class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+							type="button"
+						>
+							Cancel
+						</button>
+						<button
+							onclick={confirmDelete}
+							class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+							type="button"
+						>
+							Delete Workout
+						</button>
 					</div>
 				</div>
-			{/if}
+			</div>
+		</div>
+	{/if}
+{/if}
+
+{#if showUndoToast}
+	<div class="fixed bottom-4 right-4 bg-gray-900 text-white rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
+		<div class="flex-1">
+			<p class="font-medium mb-1">Workout deleted</p>
+			<p class="text-sm text-gray-300 mb-2">
+				"{deletedSession?.workoutName}" has been removed from your history.
+			</p>
+			<button
+				onclick={undoDelete}
+				class="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
+				type="button"
+			>
+				Undo
+			</button>
+		</div>
+		<button
+			onclick={() => {
+				showUndoToast = false;
+				if (undoTimeout) clearTimeout(undoTimeout);
+				undoTimeout = null;
+				deletedSession = null;
+			}}
+			class="text-gray-400 hover:text-white"
+			type="button"
+		>
+			<XIcon class="w-5 h-5" />
+		</button>
+	</div>
+{/if}
 		</div>
 
 		{#if filteredSessions.length === 0}
@@ -306,6 +434,13 @@
 							<p class="text-lg font-semibold">{formatDuration(showSessionDetail.duration)}</p>
 						</div>
 						<button
+							onclick={() => (showDeleteConfirm = true)}
+							class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+							type="button"
+						>
+							Delete
+						</button>
+						<button
 							onclick={() => (showSessionDetail = null)}
 							class="p-2 hover:bg-gray-100 rounded-full transition-colors"
 							type="button"
@@ -376,6 +511,85 @@
 				</button>
 			</div>
 		</div>
+	</div>
+
+	{#if showDeleteConfirm}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+			<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+				<div class="flex items-center justify-between mb-4">
+					<h2 class="text-xl font-bold text-gray-900">Delete Workout</h2>
+					<button
+						onclick={closeDeleteConfirm}
+						type="button"
+					>
+						<XIcon class="w-6 h-6 text-gray-500" />
+					</button>
+				</div>
+
+				<div class="space-y-4">
+					<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+						<p class="text-red-900 font-medium mb-2">Are you sure?</p>
+						<p class="text-sm text-red-800">
+							This will permanently delete "{showSessionDetail?.workoutName}" from
+							{formatDate(showSessionDetail?.date || '')}. This action cannot be undone.
+						</p>
+					</div>
+
+					{#if deleteError}
+						<div class="bg-red-100 border border-red-300 rounded-lg p-3">
+							<p class="text-sm text-red-800">{deleteError}</p>
+						</div>
+					{/if}
+
+					<div class="flex gap-3">
+						<button
+							onclick={closeDeleteConfirm}
+							class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+							type="button"
+						>
+							Cancel
+						</button>
+						<button
+							onclick={confirmDelete}
+							class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+							type="button"
+						>
+							Delete Workout
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+{/if}
+
+{#if showUndoToast}
+	<div class="fixed bottom-4 right-4 bg-gray-900 text-white rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
+		<div class="flex-1">
+			<p class="font-medium mb-1">Workout deleted</p>
+			<p class="text-sm text-gray-300 mb-2">
+				"{deletedSession?.workoutName}" has been removed from your history.
+			</p>
+			<button
+				onclick={undoDelete}
+				class="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
+				type="button"
+			>
+				Undo
+			</button>
+		</div>
+		<button
+			onclick={() => {
+				showUndoToast = false;
+				if (undoTimeout) clearTimeout(undoTimeout);
+				undoTimeout = null;
+				deletedSession = null;
+			}}
+			class="text-gray-400 hover:text-white"
+			type="button"
+		>
+			<XIcon class="w-5 h-5" />
+		</button>
 	</div>
 {/if}
 
