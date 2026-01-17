@@ -1110,9 +1110,10 @@
 								Progress ({currentExercise.sets.filter((s) => s.completed).length} / {currentExercise.sets.length} sets)
 							</h4>
 						</div>
-						<div class="space-y-1">
+						<div class="space-y-1" role="list">
 							{#each currentExercise.sets as set, idx}
 								<div
+									role="listitem"
 									draggable={true}
 									ondragstart={(e) => handleDragStart(e, idx)}
 									ondragover={(e) => handleDragOver(e, idx)}
@@ -1121,6 +1122,8 @@
 									ontouchstart={(e) => handleTouchStart(e, idx)}
 									ontouchmove={(e) => handleTouchMove(e, idx)}
 									ontouchend={(e) => handleTouchEnd(e, idx)}
+									aria-grabbed={draggedSetIndex === idx}
+									aria-dropeffect={draggedOverSetIndex !== null && draggedSetIndex !== null ? 'move' : 'none'}
 									class="{draggedSetIndex === idx ? 'opacity-50' : ''} {draggedOverSetIndex === idx && draggedSetIndex !== null ? 'border-t-2 border-b-2 border-blue-500' : ''}"
 								>
 									<div
@@ -1154,7 +1157,7 @@
 												</svg>
 											</button>
 										</div>
-										<div class="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 text-gray-400 hover:text-gray-600" onmousedown={(e) => e.preventDefault()}>
+										<div class="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 text-gray-400 hover:text-gray-600" role="button" aria-label="Drag to reorder this set" tabindex="0" onmousedown={(e) => e.preventDefault()}>
 											<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
 												<path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
 											</svg>
