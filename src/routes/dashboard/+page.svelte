@@ -2,6 +2,13 @@
 	import { onMount } from 'svelte';
 	import { db, liveQuery } from '$lib/db';
 	import type { Session, Exercise } from '$lib/types';
+		import {
+			filterSessionsByDateRange,
+			calculateDashboardMetrics,
+			calculateVolumeTrends,
+			calculateMuscleBreakdown,
+			calculateDailyWorkouts
+		} from '$lib/dashboardMetrics';
 
 	let sessions = $state<Session[]>([]);
 	let allExercises = $state<Exercise[]>([]);
@@ -42,103 +49,29 @@
 
 		let endDate = dateFilter === 'custom' && customEndDate ? new Date(customEndDate) : now;
 		
-		return sessions.filter((session) => {
-			const sessionDate = new Date(session.date);
-			return sessionDate >= startDate && sessionDate <= endDate;
-		});
+		return filterSessionsByDateRange(sessions, startDate, endDate);
 	});
 
-	const totalSessions = $derived(filteredSessions.length);
+	const metrics = $derived.by(() => calculateDashboardMetrics(filteredSessions));
 
-	const totalTrainingTime = $derived.by(() => {
-		return filteredSessions.reduce((acc, session) => acc + session.duration, 0);
-	});
+	const totalSessions = $derived(metrics.totalSessions);
+	const totalTrainingTime = $derived(metrics.totalTrainingTime);
+	const totalVolume = $derived(metrics.totalVolume);
+	const uniqueWorkouts = $derived(metrics.uniqueWorkouts);
+	const averageDuration = $derived(metrics.averageDuration);
 
 	const workoutCalendar = $derived.by(() => {
-		const calendar: Record<string, number> = {};
-		const now = new Date();
-		
-		const dateRange = 30;
-		for (let i = dateRange - 1; i >= 0; i--) {
-			const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-			const dateStr = date.toISOString().split('T')[0];
-			calendar[dateStr] = 0;
-		}
-
-		filteredSessions.forEach((session) => {
-			const sessionDate = new Date(session.date).toISOString().split('T')[0];
-			if (calendar.hasOwnProperty(sessionDate)) {
-				calendar[sessionDate]++;
-			}
-		});
-
-		return calendar;
+		return calculateDailyWorkouts(filteredSessions, 30);
 	});
 
 	const muscleGroupBreakdown = $derived.by(() => {
-		const breakdown: Record<string, number> = {
-			chest: 0,
-			back: 0,
-			legs: 0,
-			shoulders: 0,
-			arms: 0,
-			core: 0,
-			'full-body': 0
-		};
-
-		filteredSessions.forEach((session) => {
-			const uniqueMuscles = new Set<string>();
-			session.exercises.forEach((exercise) => {
-				uniqueMuscles.add(exercise.primaryMuscle);
-			});
-			uniqueMuscles.forEach((muscle) => {
-				breakdown[muscle] = (breakdown[muscle] || 0) + 1;
-			});
-		});
-
-		return Object.entries(breakdown)
-			.filter(([_, count]) => count > 0)
-			.sort((a, b) => b[1] - a[1]);
+		return calculateMuscleBreakdown(filteredSessions);
 	});
 
 	const volumeTrends = $derived.by(() => {
-		const trends: Array<{ date: string; volume: number; sessions: number }> = [];
-		const now = new Date();
-		
-		const weeks = { week: 7, month: 4, year: 12, custom: 12 }[dateFilter];
-		
-		for (let i = weeks - 1; i >= 0; i--) {
-			const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (i + 1) * 7);
-			const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7);
-			
-			const weekSessions = filteredSessions.filter((session) => {
-				const sessionDate = new Date(session.date);
-				return sessionDate >= weekStart && sessionDate < weekEnd;
-			});
-
-			const volume = weekSessions.reduce((total, session) => {
-				return (
-					total +
-					session.exercises.reduce((exerciseTotal, exercise) => {
-						return (
-							exerciseTotal +
-							exercise.sets.reduce(
-								(setTotal, set) => setTotal + (set.completed ? set.reps * set.weight : 0),
-								0
-							)
-						);
-					}, 0)
-				);
-			}, 0);
-
-			trends.push({
-				date: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-				volume,
-				sessions: weekSessions.length
-			});
-		}
-
-		return trends;
+		const startDate = customStartDate ? new Date(customStartDate) : undefined;
+		const endDate = customEndDate ? new Date(customEndDate) : undefined;
+		return calculateVolumeTrends(filteredSessions, dateFilter, startDate, endDate);
 	});
 
 	function formatTime(minutes: number): string {
@@ -165,10 +98,10 @@
 	}
 
 	const pieChartData = $derived.by(() => {
-		const total = muscleGroupBreakdown.reduce((acc, [_, count]) => acc + count, 0);
+		const total = muscleGroupBreakdown.reduce((acc, item) => acc + item.count, 0);
 		let currentAngle = 0;
 		
-		return muscleGroupBreakdown.map(([muscle, count]) => {
+		return muscleGroupBreakdown.map(({ muscle, count }) => {
 			const percentage = (count / total) * 100;
 			const angle = (percentage / 100) * 360;
 			const segment = {
@@ -304,7 +237,7 @@
 				<div class="flex items-center justify-between">
 					<div>
 						<p class="text-xs sm:text-sm font-medium text-gray-500">Volume</p>
-						<p class="text-xl sm:text-3xl font-bold text-gray-900">{formatVolume(volumeTrends.reduce((acc, t) => acc + t.volume, 0))} lbs</p>
+						<p class="text-xl sm:text-3xl font-bold text-gray-900">{formatVolume(totalVolume)} lbs</p>
 					</div>
 					<div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center">
 						<span class="text-xl sm:text-2xl">🏋️</span>
@@ -332,12 +265,12 @@
 				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Workout Frequency</h2>
 				<div class="grid grid-cols-7 gap-1 sm:gap-2">
 					<div class="grid grid-cols-7 gap-1 sm:gap-2 col-span-7">
-						{#each Object.entries(workoutCalendar).reverse() as [date, count]}
+						{#each [...workoutCalendar].reverse() as entry}
 							<div
-								class="aspect-square rounded {getCalendarColor(count)} flex items-center justify-center text-[10px] sm:text-xs font-medium"
-								title="{new Date(date).toLocaleDateString()}: {count} session{count !== 1 ? 's' : ''}"
+								class="aspect-square rounded {getCalendarColor(entry.count)} flex items-center justify-center text-[10px] sm:text-xs font-medium"
+								title="{new Date(entry.date).toLocaleDateString()}: {entry.count} session{entry.count !== 1 ? 's' : ''}"
 							>
-								{count}
+								{entry.count}
 							</div>
 						{/each}
 					</div>
@@ -397,7 +330,7 @@
 											'#8b5cf6',
 											'#ec4899',
 											'#06b6d4'
-										][muscleGroupBreakdown.findIndex(([m, _]) => m === segment.muscle)]}
+										][muscleGroupBreakdown.findIndex((item) => item.muscle === segment.muscle)]}
 										stroke="white"
 										stroke-width="1"
 									/>
@@ -406,7 +339,7 @@
 						</svg>
 					</div>
 					<div class="grid grid-cols-2 gap-1 sm:gap-2">
-						{#each muscleGroupBreakdown.slice(0, 6) as [muscle, count]}
+						{#each muscleGroupBreakdown.slice(0, 6) as { muscle, count }}
 							<div class="flex items-center justify-between p-2 bg-gray-50 rounded">
 								<span class="capitalize text-xs sm:text-sm">{muscle}</span>
 								<span class="font-semibold text-xs sm:text-sm">{count} ({(

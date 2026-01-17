@@ -42,7 +42,7 @@
 				return { date: session.date, value: maxWeight };
 			} else if (selectedMetric === 'volume') {
 				const totalVolume = exerciseInSession.sets.reduce(
-					(sum, set) => sum + set.weight * set.reps,
+					(sum, set) => sum + (set.completed ? set.weight * set.reps : 0),
 					0
 				);
 				return { date: session.date, value: totalVolume };
