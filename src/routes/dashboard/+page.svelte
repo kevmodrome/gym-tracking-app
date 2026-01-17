@@ -7,7 +7,9 @@
 			calculateDashboardMetrics,
 			calculateVolumeTrends,
 			calculateMuscleBreakdown,
-			calculateDailyWorkouts
+			calculateDailyWorkouts,
+			calculateWeeklyComparison,
+			calculateMonthlyComparison
 		} from '$lib/dashboardMetrics';
 
 	let sessions = $state<Session[]>([]);
@@ -15,6 +17,7 @@
 	let dateFilter = $state<'week' | 'month' | 'year' | 'custom'>('month');
 	let customStartDate = $state('');
 	let customEndDate = $state('');
+	let selectedPeriod = $state<'week' | 'month'>('week');
 
 	onMount(async () => {
 		allExercises = await db.exercises.toArray();
@@ -74,6 +77,9 @@
 		return calculateVolumeTrends(filteredSessions, dateFilter, startDate, endDate);
 	});
 
+	const weeklyComparison = $derived.by(() => calculateWeeklyComparison(sessions));
+	const monthlyComparison = $derived.by(() => calculateMonthlyComparison(sessions));
+
 	function formatTime(minutes: number): string {
 		const hours = Math.floor(minutes / 60);
 		const mins = minutes % 60;
@@ -88,6 +94,13 @@
 			return (lbs / 1000).toFixed(1) + 'k';
 		}
 		return lbs.toString();
+	}
+
+	function formatDateRange(start: Date, end: Date): string {
+		const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+		const startStr = start.toLocaleDateString('en-US', options);
+		const endStr = end.toLocaleDateString('en-US', options);
+		return `${startStr} - ${endStr}`;
 	}
 
 	function getCalendarColor(count: number): string {
@@ -258,6 +271,144 @@
 					</div>
 				</div>
 			</div>
+		</div>
+
+		<div class="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-4 sm:mb-6">
+			<div class="flex items-center justify-between mb-3 sm:mb-4">
+				<h2 class="text-lg sm:text-xl font-bold text-gray-900">Training Aggregates</h2>
+				<div class="flex gap-1">
+					<button
+						onclick={() => (selectedPeriod = 'week')}
+						class:active={selectedPeriod === 'week'}
+						class="px-3 py-1.5 rounded transition-colors text-sm {selectedPeriod === 'week'
+							? 'bg-blue-600 text-white'
+							: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+						type="button"
+					>
+						Week
+					</button>
+					<button
+						onclick={() => (selectedPeriod = 'month')}
+						class:active={selectedPeriod === 'month'}
+						class="px-3 py-1.5 rounded transition-colors text-sm {selectedPeriod === 'month'
+							? 'bg-blue-600 text-white'
+							: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+						type="button"
+					>
+						Month
+					</button>
+				</div>
+			</div>
+
+			{#if selectedPeriod === 'week'}
+				<div class="space-y-3 sm:space-y-4">
+					<div class="grid grid-cols-2 gap-3 sm:gap-4">
+						<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
+							<div class="flex items-center justify-between mb-2">
+								<span class="text-xs sm:text-sm text-gray-600">Volume</span>
+								<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(weeklyComparison.current.startDate, weeklyComparison.current.endDate)}</span>
+							</div>
+							<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(weeklyComparison.current.volume)} lbs</p>
+							<div class="flex items-center gap-1 mt-1">
+								{#if weeklyComparison.volumeChange > 0}
+									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+									<span class="text-green-600 text-xs sm:text-sm font-medium">
+										{weeklyComparison.volumeChangePercent > 0 ? '+' : ''}{weeklyComparison.volumeChangePercent.toFixed(1)}%
+									</span>
+								{:else if weeklyComparison.volumeChange < 0}
+									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+									<span class="text-red-600 text-xs sm:text-sm font-medium">
+										{weeklyComparison.volumeChangePercent.toFixed(1)}%
+									</span>
+								{:else}
+									<span class="text-gray-500 text-xs sm:text-sm">-</span>
+								{/if}
+							</div>
+						</div>
+
+						<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
+							<div class="flex items-center justify-between mb-2">
+								<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
+								<span class="text-[10px] sm:text-xs text-gray-500">vs. previous week</span>
+							</div>
+							<p class="text-lg sm:text-2xl font-bold text-gray-900">{weeklyComparison.current.workoutCount}</p>
+							<div class="flex items-center gap-1 mt-1">
+								{#if weeklyComparison.workoutCountChange > 0}
+									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+									<span class="text-green-600 text-xs sm:text-sm font-medium">
+										+{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent > 0 ? '+' : ''}{weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+									</span>
+								{:else if weeklyComparison.workoutCountChange < 0}
+									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+									<span class="text-red-600 text-xs sm:text-sm font-medium">
+										{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+									</span>
+								{:else}
+									<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+
+					<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
+						<span class="text-xs text-gray-500">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.workoutCount} workouts</span>
+					</div>
+				</div>
+			{:else}
+				<div class="space-y-3 sm:space-y-4">
+					<div class="grid grid-cols-2 gap-3 sm:gap-4">
+						<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
+							<div class="flex items-center justify-between mb-2">
+								<span class="text-xs sm:text-sm text-gray-600">Volume</span>
+								<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(monthlyComparison.current.startDate, monthlyComparison.current.endDate)}</span>
+							</div>
+							<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(monthlyComparison.current.volume)} lbs</p>
+							<div class="flex items-center gap-1 mt-1">
+								{#if monthlyComparison.volumeChange > 0}
+									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+									<span class="text-green-600 text-xs sm:text-sm font-medium">
+										{monthlyComparison.volumeChangePercent > 0 ? '+' : ''}{monthlyComparison.volumeChangePercent.toFixed(1)}%
+									</span>
+								{:else if monthlyComparison.volumeChange < 0}
+									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+									<span class="text-red-600 text-xs sm:text-sm font-medium">
+										{monthlyComparison.volumeChangePercent.toFixed(1)}%
+									</span>
+								{:else}
+									<span class="text-gray-500 text-xs sm:text-sm">-</span>
+								{/if}
+							</div>
+						</div>
+
+						<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
+							<div class="flex items-center justify-between mb-2">
+								<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
+								<span class="text-[10px] sm:text-xs text-gray-500">vs. previous month</span>
+							</div>
+							<p class="text-lg sm:text-2xl font-bold text-gray-900">{monthlyComparison.current.workoutCount}</p>
+							<div class="flex items-center gap-1 mt-1">
+								{#if monthlyComparison.workoutCountChange > 0}
+									<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
+									<span class="text-green-600 text-xs sm:text-sm font-medium">
+										+{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent > 0 ? '+' : ''}{monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+									</span>
+								{:else if monthlyComparison.workoutCountChange < 0}
+									<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
+									<span class="text-red-600 text-xs sm:text-sm font-medium">
+										{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+									</span>
+								{:else}
+									<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+
+					<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
+						<span class="text-xs text-gray-500">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.workoutCount} workouts</span>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">

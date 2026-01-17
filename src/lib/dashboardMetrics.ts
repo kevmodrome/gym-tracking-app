@@ -24,6 +24,23 @@ export interface DailyWorkoutEntry {
 	count: number;
 }
 
+export interface PeriodAggregate {
+	volume: number;
+	workoutCount: number;
+	sessionCount: number;
+	startDate: Date;
+	endDate: Date;
+}
+
+export interface AggregateComparison {
+	current: PeriodAggregate;
+	previous: PeriodAggregate;
+	volumeChange: number;
+	volumeChangePercent: number;
+	workoutCountChange: number;
+	workoutCountChangePercent: number;
+}
+
 export function calculateTotalVolume(sessions: Session[]): number {
 	return sessions.reduce((total, session) => {
 		return (
@@ -209,4 +226,134 @@ export function isSessionEmpty(session: Session): boolean {
 
 export function getCompletedSessions(sessions: Session[]): Session[] {
 	return sessions.filter((session) => !isSessionEmpty(session));
+}
+
+function getWeekStart(date: Date): Date {
+	const d = new Date(date);
+	const day = d.getDay();
+	const diff = d.getDate() - day;
+	return new Date(d.setDate(diff));
+}
+
+function getWeekEnd(date: Date): Date {
+	const d = new Date(date);
+	const day = d.getDay();
+	const diff = d.getDate() - day + 6;
+	const weekEnd = new Date(d.setDate(diff));
+	weekEnd.setHours(23, 59, 59, 999);
+	return weekEnd;
+}
+
+function getMonthStart(date: Date): Date {
+	return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function getMonthEnd(date: Date): Date {
+	const d = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+	d.setHours(23, 59, 59, 999);
+	return d;
+}
+
+export function calculateWeeklyAggregate(
+	sessions: Session[],
+	referenceDate: Date = new Date()
+): PeriodAggregate {
+	const weekStart = getWeekStart(referenceDate);
+	const weekEnd = getWeekEnd(referenceDate);
+
+	const weekSessions = sessions.filter((session) => {
+		const sessionDate = new Date(session.date);
+		return sessionDate >= weekStart && sessionDate <= weekEnd;
+	});
+
+	const volume = calculateTotalVolume(weekSessions);
+	const uniqueWorkoutIds = new Set(weekSessions.map((session) => session.workoutId));
+
+	return {
+		volume,
+		workoutCount: uniqueWorkoutIds.size,
+		sessionCount: weekSessions.length,
+		startDate: weekStart,
+		endDate: weekEnd
+	};
+}
+
+export function calculateMonthlyAggregate(
+	sessions: Session[],
+	referenceDate: Date = new Date()
+): PeriodAggregate {
+	const monthStart = getMonthStart(referenceDate);
+	const monthEnd = getMonthEnd(referenceDate);
+
+	const monthSessions = sessions.filter((session) => {
+		const sessionDate = new Date(session.date);
+		return sessionDate >= monthStart && sessionDate <= monthEnd;
+	});
+
+	const volume = calculateTotalVolume(monthSessions);
+	const uniqueWorkoutIds = new Set(monthSessions.map((session) => session.workoutId));
+
+	return {
+		volume,
+		workoutCount: uniqueWorkoutIds.size,
+		sessionCount: monthSessions.length,
+		startDate: monthStart,
+		endDate: monthEnd
+	};
+}
+
+export function calculateWeeklyComparison(
+	sessions: Session[]
+): AggregateComparison {
+	const now = new Date();
+	const current = calculateWeeklyAggregate(sessions, now);
+	const previousWeekStart = new Date(current.startDate);
+	previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+	const previousWeekEnd = new Date(current.endDate);
+	previousWeekEnd.setDate(previousWeekEnd.getDate() - 7);
+	const previous = calculateWeeklyAggregate(sessions, previousWeekStart);
+
+	const volumeChange = current.volume - previous.volume;
+	const volumeChangePercent =
+		previous.volume > 0 ? (volumeChange / previous.volume) * 100 : 0;
+	const workoutCountChange = current.workoutCount - previous.workoutCount;
+	const workoutCountChangePercent =
+		previous.workoutCount > 0 ? (workoutCountChange / previous.workoutCount) * 100 : 0;
+
+	return {
+		current,
+		previous,
+		volumeChange,
+		volumeChangePercent,
+		workoutCountChange,
+		workoutCountChangePercent
+	};
+}
+
+export function calculateMonthlyComparison(
+	sessions: Session[]
+): AggregateComparison {
+	const now = new Date();
+	const current = calculateMonthlyAggregate(sessions, now);
+	const previousMonthStart = new Date(current.startDate);
+	previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
+	const previousMonthEnd = new Date(current.endDate);
+	previousMonthEnd.setMonth(previousMonthEnd.getMonth() - 1);
+	const previous = calculateMonthlyAggregate(sessions, previousMonthStart);
+
+	const volumeChange = current.volume - previous.volume;
+	const volumeChangePercent =
+		previous.volume > 0 ? (volumeChange / previous.volume) * 100 : 0;
+	const workoutCountChange = current.workoutCount - previous.workoutCount;
+	const workoutCountChangePercent =
+		previous.workoutCount > 0 ? (workoutCountChange / previous.workoutCount) * 100 : 0;
+
+	return {
+		current,
+		previous,
+		volumeChange,
+		volumeChangePercent,
+		workoutCountChange,
+		workoutCountChangePercent
+	};
 }
