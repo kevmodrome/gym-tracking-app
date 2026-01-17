@@ -8,6 +8,8 @@
 			calculateVolumeTrends,
 			calculateMuscleBreakdown,
 			calculateDailyWorkouts,
+			calculateDailyMetrics,
+			getLastWorkoutDate,
 			calculateWeeklyComparison,
 			calculateMonthlyComparison
 		} from '$lib/dashboardMetrics';
@@ -67,6 +69,12 @@
 		return calculateDailyWorkouts(filteredSessions, 30);
 	});
 
+	const dailyMetrics = $derived.by(() => {
+		return calculateDailyMetrics(filteredSessions, 30);
+	});
+
+	const lastWorkoutDate = $derived.by(() => getLastWorkoutDate(sessions));
+
 	const muscleGroupBreakdown = $derived.by(() => {
 		return calculateMuscleBreakdown(filteredSessions);
 	});
@@ -110,6 +118,12 @@
 		return 'bg-green-600';
 	}
 
+	function isLastWorkoutDate(dateStr: string): boolean {
+		if (!lastWorkoutDate) return false;
+		const lastDateStr = lastWorkoutDate.toISOString().split('T')[0];
+		return dateStr === lastDateStr;
+	}
+
 	const pieChartData = $derived.by(() => {
 		const total = muscleGroupBreakdown.reduce((acc, item) => acc + item.count, 0);
 		let currentAngle = 0;
@@ -132,8 +146,23 @@
 
 <div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
-		<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 sm:mb-6">
-			<div class="flex items-center gap-4">
+		{#if sessions.length === 0}
+			<div class="bg-white rounded-lg shadow-md p-6 sm:p-8 mb-4 sm:mb-6 text-center">
+				<div class="w-20 h-20 sm:w-24 sm:h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+					<span class="text-4xl sm:text-5xl">🏋️</span>
+				</div>
+				<h1 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Your Gym Dashboard!</h1>
+				<p class="text-gray-600 mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
+				<a
+					href="/"
+					class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
+				>
+					Start Your First Workout
+				</a>
+			</div>
+		{:else}
+			<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 sm:mb-6">
+				<div class="flex items-center gap-4">
 				<a
 					href="/"
 					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] flex items-center"
@@ -413,29 +442,36 @@
 
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
 			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Workout Frequency</h2>
-				<div class="grid grid-cols-7 gap-1 sm:gap-2">
-					<div class="grid grid-cols-7 gap-1 sm:gap-2 col-span-7">
-						{#each [...workoutCalendar].reverse() as entry}
+				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Daily Metrics</h2>
+				{#if dailyMetrics.length > 0}
+					<div class="space-y-2 max-h-64 overflow-y-auto">
+						<div class="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600 border-b pb-2">
+							<span>Date</span>
+							<span class="text-center">Workouts</span>
+							<span class="text-right">Volume</span>
+						</div>
+						{#each [...dailyMetrics].reverse() as metric}
 							<div
-								class="aspect-square rounded {getCalendarColor(entry.count)} flex items-center justify-center text-[10px] sm:text-xs font-medium"
-								title="{new Date(entry.date).toLocaleDateString()}: {entry.count} session{entry.count !== 1 ? 's' : ''}"
+								class="grid grid-cols-3 gap-2 text-xs sm:text-sm py-1 {isLastWorkoutDate(metric.date)
+									? 'bg-blue-50 border-l-4 border-blue-600'
+									: 'bg-gray-50'} rounded"
 							>
-								{entry.count}
+								<span class="truncate">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+								<span class="text-center {metric.workoutCount === 0 ? 'text-gray-400' : 'font-semibold'}">{metric.workoutCount}</span>
+								<span class="text-right {metric.volume === 0 ? 'text-gray-400' : 'font-semibold text-blue-600'}">
+									{formatVolume(metric.volume)} lbs
+								</span>
 							</div>
 						{/each}
 					</div>
-				</div>
-				<div class="flex items-center justify-between mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">
-					<span>Less</span>
-					<div class="flex gap-1">
-						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 rounded"></div>
-						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-green-200 rounded"></div>
-						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded"></div>
-						<div class="w-3 h-3 sm:w-4 sm:h-4 bg-green-600 rounded"></div>
-					</div>
-					<span>More</span>
-				</div>
+					{#if lastWorkoutDate}
+						<div class="mt-3 text-xs text-gray-500">
+							Last workout: {lastWorkoutDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+						</div>
+					{/if}
+				{:else}
+					<p class="text-gray-500 text-center py-4 text-sm">No workout data available</p>
+				{/if}
 			</div>
 
 			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
@@ -555,6 +591,6 @@
 			{:else}
 				<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No volume data available</p>
 			{/if}
-		</div>
+		{/if}
 	</div>
 </div>

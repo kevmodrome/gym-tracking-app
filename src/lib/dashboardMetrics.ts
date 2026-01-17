@@ -22,6 +22,13 @@ export interface MuscleGroup {
 export interface DailyWorkoutEntry {
 	date: string;
 	count: number;
+	volume?: number;
+}
+
+export interface DailyMetrics {
+	date: string;
+	workoutCount: number;
+	volume: number;
 }
 
 export interface PeriodAggregate {
@@ -185,8 +192,53 @@ export function calculateDailyWorkouts(
 	});
 
 	return Object.entries(calendar)
-		.map(([date, count]) => ({ date, count }))
+		.map(([date, count]) => ({ date, count, volume: 0 }))
 		.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function calculateDailyMetrics(
+	sessions: Session[],
+	days: number = 30
+): DailyMetrics[] {
+	const metrics: Record<string, { workoutCount: number; volume: number }> = {};
+	const now = new Date();
+	
+	for (let i = days - 1; i >= 0; i--) {
+		const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+		const dateStr = date.toISOString().split('T')[0];
+		metrics[dateStr] = { workoutCount: 0, volume: 0 };
+	}
+
+	sessions.forEach((session) => {
+		const sessionDate = new Date(session.date).toISOString().split('T')[0];
+		if (sessionDate in metrics) {
+			metrics[sessionDate].workoutCount++;
+			metrics[sessionDate].volume += session.exercises.reduce((exerciseTotal, exercise) => {
+				return (
+					exerciseTotal +
+					exercise.sets.reduce((setTotal, set) => {
+						if (!set.completed) return setTotal;
+						return setTotal + set.reps * set.weight;
+					}, 0)
+				);
+			}, 0);
+		}
+	});
+
+	return Object.entries(metrics)
+		.map(([date, { workoutCount, volume }]) => ({ date, workoutCount, volume }))
+		.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function getLastWorkoutDate(sessions: Session[]): Date | null {
+	if (sessions.length === 0) return null;
+	
+	const latestSession = sessions.reduce((latest, session) => {
+		const sessionDate = new Date(session.date);
+		return sessionDate > latest ? sessionDate : latest;
+	}, new Date(sessions[0].date));
+	
+	return latestSession;
 }
 
 export function calculateDashboardMetrics(sessions: Session[]): DashboardMetrics {
