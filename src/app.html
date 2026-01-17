@@ -16,29 +16,34 @@
 				navigator.serviceWorker.register('/service-worker.js')
 					.then((registration) => {
 						console.log('Service Worker registered with scope:', registration.scope);
-						
+
+						// Check for updates on page load
+						registration.update();
+
 						registration.addEventListener('updatefound', () => {
 							const newWorker = registration.installing;
 							if (newWorker) {
 								newWorker.addEventListener('statechange', () => {
 									if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-										console.log('New service worker available, refresh to update');
+										console.log('New service worker installed, activating...');
+										// Force the new SW to activate immediately
+										newWorker.postMessage({ type: 'SKIP_WAITING' });
 									}
 								});
 							}
 						});
-						
+
 						navigator.serviceWorker.addEventListener('controllerchange', () => {
 							console.log('Controller changed - service worker activated');
 							window.location.reload();
 						});
 					})
 					.catch((err) => console.log('Service Worker registration failed', err));
-					
+
 				window.addEventListener('online', () => {
 					console.log('App is back online');
 				});
-				
+
 				window.addEventListener('offline', () => {
 					console.log('App is now offline');
 				});
