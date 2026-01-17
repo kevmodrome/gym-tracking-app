@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import type { AppSettings, UserProfile, NotificationPreferences, AppPreferences } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
+	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
+	import { exportBackupData } from '$lib/backupUtils';
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
@@ -34,6 +36,11 @@
 	let showSavedMessage = $state(false);
 	let showDeleteConfirm = $state(false);
 	let showPasswordChange = $state(false);
+	let showImportModal = $state(false);
+	let showExportProgress = $state(false);
+	let exportProgress = $state({ current: 0, total: 0, stage: '' });
+	let exportResult = $state<{ success: boolean; message: string } | null>(null);
+	let exportFormat = $state<'json'>('json');
 	let newPassword = $state('');
 	let confirmNewPassword = $state('');
 	let messageTimeout: number | null = null;
@@ -185,6 +192,30 @@
 
 	function handleBack() {
 		window.location.href = '/';
+	}
+
+	async function handleExport() {
+		showExportProgress = true;
+		exportResult = null;
+		exportProgress = { current: 0, total: 0, stage: 'Starting...' };
+
+		const result = await exportBackupData((current: number, total: number, stage: string) => {
+			exportProgress = { current, total, stage };
+		});
+
+		exportResult = result;
+
+		setTimeout(() => {
+			showExportProgress = false;
+		}, 3000);
+	}
+
+	function showImportBackupModal() {
+		showImportModal = true;
+	}
+
+	function handleImportModalClose() {
+		showImportModal = false;
 	}
 </script>
 
@@ -501,6 +532,58 @@
 			</div>
 		</div>
 
+		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+			<h2 class="text-xl font-bold text-gray-900 mb-4">Data Management</h2>
+
+			<div class="space-y-4">
+				<div>
+					<label for="export-format" class="block text-sm font-medium text-gray-700 mb-2">
+						Export File Format
+					</label>
+					<select
+						id="export-format"
+						bind:value={exportFormat}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					>
+						<option value="json">JSON (Recommended)</option>
+					</select>
+					<p class="mt-1 text-sm text-gray-500">
+						Choose the format for exported data files
+					</p>
+				</div>
+
+				<div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+					<button
+						onclick={handleExport}
+						disabled={showExportProgress}
+						type="button"
+						class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+					>
+						<span class="text-lg">📤</span>
+						<span>Export Data</span>
+					</button>
+					<button
+						onclick={showImportBackupModal}
+						type="button"
+						class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+					>
+						<span class="text-lg">📥</span>
+						<span>Import Data</span>
+					</button>
+				</div>
+
+				<div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+					<h3 class="font-medium text-gray-900 mb-2">ℹ️ About Import/Export</h3>
+					<ul class="text-sm text-gray-600 space-y-1">
+						<li>• Export creates a backup file with all your workout data</li>
+						<li>• Import restores data from a previously exported backup</li>
+						<li>• You can choose how to handle duplicate items during import</li>
+						<li>• Store backup files in a safe location for data security</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
 		<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
 			<h3 class="font-semibold text-blue-900 mb-2">Tips</h3>
 			<ul class="text-sm text-blue-800 space-y-1">
@@ -617,6 +700,54 @@
 				<span class="text-xl">✓</span>
 				<span>Settings saved!</span>
 			</div>
+		{/if}
+
+		{#if showExportProgress}
+			<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+				<div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+					<div class="flex items-center justify-between mb-4">
+						<h3 class="text-xl font-bold text-gray-900">Exporting Data</h3>
+					</div>
+
+					{#if exportResult === null}
+						<div class="space-y-4">
+							<div class="flex items-center gap-2">
+								<div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+									<div
+										class="bg-blue-600 h-full transition-all duration-300"
+										style:width={exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%'}
+									></div>
+								</div>
+								<span class="text-sm text-gray-600 font-medium min-w-[3rem]">
+									{exportProgress.total > 0 ? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%` : '0%'}
+								</span>
+							</div>
+							<p class="text-sm text-gray-600">{exportProgress.stage}</p>
+						</div>
+					{:else if exportResult.success}
+						<div class="space-y-3">
+							<div class="flex items-center gap-2 text-green-600">
+								<span class="text-2xl">✅</span>
+								<p class="font-medium">Export Complete!</p>
+							</div>
+							<p class="text-sm text-gray-600">{exportResult.message}</p>
+							<p class="text-sm text-gray-500">File has been downloaded to your default download location.</p>
+						</div>
+					{:else}
+						<div class="space-y-3">
+							<div class="flex items-center gap-2 text-red-600">
+								<span class="text-2xl">❌</span>
+								<p class="font-medium">Export Failed</p>
+							</div>
+							<p class="text-sm text-gray-600">{exportResult.message}</p>
+						</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
+
+		{#if showImportModal}
+			<ImportBackupModal onClose={handleImportModalClose} />
 		{/if}
 	</div>
 </div>
