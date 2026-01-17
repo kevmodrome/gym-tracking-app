@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Dexie from 'dexie';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Workout, Exercise, Session, SessionExercise, ExerciseSet } from '$lib/types';
@@ -61,7 +62,7 @@
 
 	const isAllSetsCompleted = $derived.by(() => {
 		if (sessionExercises.length === 0) return true;
-		
+
 		return sessionExercises.every((exercise) =>
 			exercise.sets.every((set) => set.completed)
 		);
@@ -114,7 +115,7 @@
 			createdAt: new Date().toISOString()
 		};
 
-		await db.sessions.add(session);
+		await db.sessions.add(Dexie.deepClone(session));
 		await calculatePersonalRecords();
 
 		localStorage.removeItem(`gym-app-session-${selectedWorkout.id}`);

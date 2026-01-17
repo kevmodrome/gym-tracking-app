@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Dexie from 'dexie';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseRoutine, Workout } from '$lib/types';
@@ -85,7 +86,7 @@
 			updatedAt: new Date().toISOString()
 		};
 
-		await db.workouts.add(workout);
+		await db.workouts.add(Dexie.deepClone(workout));
 		onWorkoutCreated(workout);
 		onClose();
 	}

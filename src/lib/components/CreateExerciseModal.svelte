@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Dexie from 'dexie';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
@@ -18,7 +19,7 @@
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
 
-	let validationError = $derived(() => {
+	let validationError = $derived.by(() => {
 		if (!name.trim()) return 'Exercise name is required';
 		if (!category) return 'Category is required';
 		if (!primaryMuscle) return 'Primary muscle group is required';
@@ -54,7 +55,7 @@
 			is_custom: true
 		};
 
-		await db.exercises.add(newExercise);
+		await db.exercises.add(Dexie.deepClone(newExercise));
 		onCreate(newExercise);
 		onClose();
 	}
