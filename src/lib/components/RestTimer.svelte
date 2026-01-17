@@ -5,11 +5,16 @@
 		onSkip?: () => void;
 	}>();
 
-	let timeLeft = $state(duration);
+	let timeLeft = $state(0);
 	let isRunning = $state(false);
 	let isPaused = $state(false);
 	let intervalId: number | null = null;
-	let customDuration = $state(duration);
+	let customDuration = $state(0);
+
+	$effect(() => {
+		timeLeft = duration;
+		customDuration = duration;
+	});
 
 	const formattedTime = $derived.by(() => {
 		const minutes = Math.floor(timeLeft / 60);
@@ -107,7 +112,6 @@
 	}
 
 	function updateCustomDuration() {
-		duration = customDuration;
 		timeLeft = customDuration;
 	}
 
