@@ -11,8 +11,8 @@
 	let sessions = $state<Session[]>([]);
 	let selectedExercise = $state<Exercise | undefined>(undefined);
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
-	let chartInstance: Chart | null = null;
-	let chartCanvas: HTMLCanvasElement;
+	let chartInstance = $state<Chart | null>(null);
+	let chartCanvas = $state<HTMLCanvasElement>();
 
 	onMount(async () => {
 		exercises = await db.exercises.toArray();
@@ -66,7 +66,7 @@
 			chartInstance.destroy();
 		}
 
-		if (!chartData || chartData.length === 0) {
+		if (!chartCanvas || !chartData || chartData.length === 0) {
 			return;
 		}
 
