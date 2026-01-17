@@ -5,6 +5,7 @@
 	import Navigation from '$lib/components/Navigation.svelte';
 	import SwipeHandler from '$lib/components/SwipeHandler.svelte';
 	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
+	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
 </script>>
@@ -13,6 +14,7 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<Toast />
 <SyncIndicator />
 <PWAInstallPrompt />
 <SwipeHandler />

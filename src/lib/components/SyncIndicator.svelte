@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { syncManager } from '$lib/syncUtils';
+	import { toastStore } from '$lib/stores/toast';
 	import { onMount } from 'svelte';
 	import { Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-svelte';
 
@@ -8,6 +9,7 @@
 	let syncStatus = $state('synced');
 	let isLoading = $state(false);
 	let isOnline = $state(false);
+	let wasOnline = $state(true);
 
 	onMount(() => {
 		updateStatus();
@@ -28,24 +30,45 @@
 		};
 	});
 
+	async function scheduleSync() {
+		if (isOnline && syncQueueCount > 0) {
+			handleManualSync();
+		}
+	}
+
 	async function updateStatus() {
+		wasOnline = isOnline;
 		isOnline = syncManager.isOnline();
 		if (!isOnline) {
 			syncStatus = 'failed';
+			if (wasOnline) {
+				toastStore.showInfo('You are now offline. Changes will sync when connection is restored.', 4000);
+			}
 		} else {
 			syncStatus = syncManager.getSyncStatus();
+			if (!wasOnline) {
+				toastStore.showSuccess('You are back online!', 3000);
+				scheduleSync();
+			}
 		}
 		syncQueueCount = await syncManager.getSyncQueueCount();
 	}
 
 	async function handleManualSync() {
 		isLoading = true;
+		toastStore.showInfo('Syncing your data...');
 		const result = await syncManager.sync((progress) => {
 			console.log(`Syncing... ${progress.current}/${progress.total} - ${progress.stage}`);
 		});
 		isLoading = false;
 		syncQueueCount = await syncManager.getSyncQueueCount();
 		syncStatus = result.success ? 'synced' : 'failed';
+		
+		if (result.success) {
+			toastStore.showSuccess(result.message, 3000);
+		} else {
+			toastStore.showError(result.message, 4000);
+		}
 	}
 </script>
 
