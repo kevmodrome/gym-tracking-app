@@ -24,3 +24,8 @@ vite.config.ts.timestamp-*
 
 # Ralph TUI
 .ralph-tui/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
