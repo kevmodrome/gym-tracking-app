@@ -98,7 +98,7 @@
 			{/if}
 
 			<div>
-				<label for="exercise-name" class="block text-sm font-medium text-gray-700 mb-1">
+				<label for="exercise-name" class="block text-sm font-medium text-gray-700 mb-2">
 					Exercise Name *
 				</label>
 				<input
@@ -106,18 +106,19 @@
 					type="text"
 					bind:value={name}
 					placeholder="e.g., Incline Barbell Bench Press"
-					class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					autofocus
+					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 				/>
 			</div>
 
 			<div>
-				<label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+				<label for="category" class="block text-sm font-medium text-gray-700 mb-2">
 					Category *
 				</label>
 				<select
 					id="category"
 					bind:value={category}
-					class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 				>
 					<option value="">Select category</option>
 					{#each categories as cat}
@@ -127,13 +128,13 @@
 			</div>
 
 			<div>
-				<label for="primary-muscle" class="block text-sm font-medium text-gray-700 mb-1">
+				<label for="primary-muscle" class="block text-sm font-medium text-gray-700 mb-2">
 					Primary Muscle Group *
 				</label>
 				<select
 					id="primary-muscle"
 					bind:value={primaryMuscle}
-					class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 				>
 					<option value="">Select primary muscle group</option>
 					{#each muscles as muscle}
@@ -143,20 +144,20 @@
 			</div>
 
 			<fieldset class="border-none p-0 m-0">
-				<legend class="text-sm font-medium text-gray-700 mb-1 block">Secondary Muscle Groups</legend>
+				<legend class="text-sm font-medium text-gray-700 mb-2 block">Secondary Muscle Groups</legend>
 				<div class="flex gap-2 mb-2">
 					<input
 						type="text"
 						bind:value={newSecondaryMuscle}
 						onkeypress={(e) => e.key === 'Enter' && (addSecondaryMuscle(), e.preventDefault())}
 						placeholder="e.g., triceps (press Enter to add)"
-						class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="flex-1 px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					/>
 					<button
 						onclick={addSecondaryMuscle}
 						disabled={!newSecondaryMuscle.trim()}
 						type="button"
-						class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+						class="px-4 py-3 text-base bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[80px]"
 					>
 						Add
 					</button>
@@ -165,13 +166,14 @@
 					<div class="flex flex-wrap gap-2">
 						{#each secondaryMuscles as muscle, index}
 							<span
-								class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+								class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-full text-sm min-h-[36px]"
 							>
 								{muscle}
 								<button
 									onclick={() => removeSecondaryMuscle(index)}
-									class="ml-1 text-gray-500 hover:text-gray-700"
+									class="ml-1 p-1 text-gray-500 hover:text-gray-700 min-w-[28px] min-h-[28px] rounded-full hover:bg-gray-200"
 									type="button"
+									aria-label={`Remove ${muscle}`}
 								>
 									<XIcon class="w-3 h-3" />
 								</button>
@@ -182,7 +184,7 @@
 			</fieldset>
 
 			<div>
-				<label for="equipment" class="block text-sm font-medium text-gray-700 mb-1">
+				<label for="equipment" class="block text-sm font-medium text-gray-700 mb-2">
 					Equipment (optional)
 				</label>
 				<input
@@ -190,7 +192,7 @@
 					type="text"
 					bind:value={equipment}
 					placeholder="e.g., Barbell, Dumbbells, Cable Machine"
-					class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 				/>
 			</div>
 		</div>
@@ -199,7 +201,7 @@
 			<button
 				onclick={onClose}
 				type="button"
-				class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+				class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px]"
 			>
 				Cancel
 			</button>
@@ -207,7 +209,7 @@
 				onclick={handleSubmit}
 				disabled={!isFormValid}
 				type="button"
-				class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				class="flex-1 px-4 py-3 text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
 			>
 				Create Exercise
 			</button>

@@ -464,35 +464,73 @@
 
 							<div class="grid grid-cols-2 gap-4 mb-4">
 								<div>
-									<label for="reps-input" class="block text-sm font-medium text-gray-700 mb-1">
+									<label for="reps-input" class="block text-sm font-medium text-gray-700 mb-2">
 										Reps
 									</label>
-									<input
-										id="reps-input"
-										type="number"
-										min="0"
-										bind:value={currentSet.reps}
-										oninput={updateSetReps}
-										class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-2xl font-bold text-center"
-									/>
+									<div class="flex gap-1">
+										<button
+											onclick={() => { if (currentSet) { currentSet.reps = Math.max(0, currentSet.reps - 1); sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
+											type="button"
+											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											aria-label="Decrease reps"
+										>
+											-
+										</button>
+										<input
+											id="reps-input"
+											type="number"
+											min="0"
+											inputmode="numeric"
+											bind:value={currentSet.reps}
+											oninput={updateSetReps}
+											class="flex-1 px-4 py-3 text-2xl font-bold text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500"
+										/>
+										<button
+											onclick={() => { if (currentSet) { currentSet.reps += 1; sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
+											type="button"
+											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											aria-label="Increase reps"
+										>
+											+
+										</button>
+									</div>
 								</div>
 								<div>
-									<label for="weight-input" class="block text-sm font-medium text-gray-700 mb-1">
+									<label for="weight-input" class="block text-sm font-medium text-gray-700 mb-2">
 										Weight (lbs)
 									</label>
-									<input
-										id="weight-input"
-										type="number"
-										min="0"
-										bind:value={currentSet.weight}
-										oninput={updateSetWeight}
-										class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-2xl font-bold text-center"
-									/>
+									<div class="flex gap-1">
+										<button
+											onclick={() => { if (currentSet) { currentSet.weight = Math.max(0, currentSet.weight - 5); sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
+											type="button"
+											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											aria-label="Decrease weight"
+										>
+											-
+										</button>
+										<input
+											id="weight-input"
+											type="number"
+											min="0"
+											inputmode="numeric"
+											bind:value={currentSet.weight}
+											oninput={updateSetWeight}
+											class="flex-1 px-4 py-3 text-2xl font-bold text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500"
+										/>
+										<button
+											onclick={() => { if (currentSet) { currentSet.weight += 5; sessionExercises = [...sessionExercises]; saveSessionProgress(); } }}
+											type="button"
+											class="px-4 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-xl font-semibold"
+											aria-label="Increase weight"
+										>
+											+
+										</button>
+									</div>
 								</div>
 							</div>
 
 							<div class="mb-4">
-								<label for="set-notes" class="block text-sm font-medium text-gray-700 mb-1">
+								<label for="set-notes" class="block text-sm font-medium text-gray-700 mb-2">
 									Notes (optional)
 								</label>
 								<textarea
@@ -501,21 +539,21 @@
 									oninput={updateSetNotes}
 									placeholder="Add notes about this set..."
 									rows="2"
-									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+									class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
 								></textarea>
 							</div>
 
 							<div class="flex gap-3">
 								<button
 									onclick={completeSet}
-									class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+									class="flex-1 px-4 py-4 text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 min-h-[48px]"
 									type="button"
 								>
 									✓ Complete Set
 								</button>
 								<button
 									onclick={skipCurrentSet}
-									class="flex-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+									class="flex-1 px-4 py-4 text-base bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium min-h-[48px]"
 									type="button"
 								>
 									→ Skip Set
@@ -600,7 +638,7 @@
 							</div>
 
 							<div>
-								<label for="session-notes" class="block text-sm font-medium text-gray-700 mb-1">
+								<label for="session-notes" class="block text-sm font-medium text-gray-700 mb-2">
 									Notes (optional)
 								</label>
 								<textarea
@@ -608,7 +646,7 @@
 									bind:value={sessionNotes}
 									placeholder="How did your workout go?"
 									rows="3"
-									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+									class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
 								></textarea>
 							</div>
 						</div>
@@ -616,14 +654,14 @@
 						<div class="flex gap-3">
 							<button
 								onclick={() => (showCompleteModal = false)}
-								class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+								class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 min-h-[44px]"
 								type="button"
 							>
 								Back to Workout
 							</button>
 							<button
 								onclick={completeSession}
-								class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+								class="flex-1 px-4 py-3 text-base bg-green-600 text-white rounded-lg hover:bg-green-700 min-h-[44px]"
 								type="button"
 							>
 								Save Workout

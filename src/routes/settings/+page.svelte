@@ -221,11 +221,11 @@
 
 	<div class="min-h-screen bg-gray-100 p-4 md:p-8">
 		<div class="max-w-2xl mx-auto">
-			<div class="flex items-center justify-between mb-6">
-				<div class="flex items-center gap-4">
+			<div class="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
+				<div class="flex items-center gap-4 w-full sm:w-auto">
 					<button
 						onclick={handleBack}
-						class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+						class="px-4 py-3 text-base bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px]"
 						type="button"
 					>
 						← Back
@@ -234,7 +234,7 @@
 				</div>
 				<button
 					onclick={saveSettings}
-					class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+					class="flex items-center gap-2 px-4 py-3 text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
 					type="button"
 				>
 					Save Settings
@@ -246,7 +246,7 @@
 
 			<div class="space-y-4">
 				<div>
-					<label for="user-name" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="user-name" class="block text-sm font-medium text-gray-700 mb-2">
 						Name
 					</label>
 					<input
@@ -254,12 +254,12 @@
 						type="text"
 						bind:value={userProfile.name}
 						onblur={saveProfile}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					/>
 				</div>
 
 				<div>
-					<label for="user-email" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="user-email" class="block text-sm font-medium text-gray-700 mb-2">
 						Email
 					</label>
 					<input
@@ -267,7 +267,7 @@
 						type="email"
 						bind:value={userProfile.email}
 						onblur={saveProfile}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					/>
 				</div>
 
@@ -290,7 +290,7 @@
 						</div>
 						<button
 							onclick={showPasswordChangeModal}
-							class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+							class="px-4 py-3 text-base bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors min-h-[44px]"
 							type="button"
 						>
 							Change
@@ -301,7 +301,7 @@
 				<div class="border-t border-gray-200 pt-4">
 					<button
 						onclick={handleLogout}
-						class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+						class="w-full px-4 py-3 text-base bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px]"
 						type="button"
 					>
 						Logout
@@ -311,7 +311,7 @@
 				<div class="border-t border-gray-200 pt-4">
 					<button
 						onclick={showDeleteAccountConfirm}
-						class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+						class="w-full px-4 py-3 text-base bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-h-[44px]"
 						type="button"
 					>
 						Delete Account
@@ -400,7 +400,7 @@
 
 			<div class="space-y-4">
 				<div>
-					<label for="default-rest-duration" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="default-rest-duration" class="block text-sm font-medium text-gray-700 mb-2">
 						Default Rest Duration (seconds)
 					</label>
 					<input
@@ -408,8 +408,9 @@
 						type="number"
 						min="10"
 						max="300"
+						inputmode="numeric"
 						bind:value={settings.defaultRestDuration}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					/>
 					<p class="mt-1 text-sm text-gray-500">
 						Duration automatically used when rest timer starts
@@ -457,14 +458,14 @@
 
 			<div class="space-y-4">
 				<div>
-					<label for="theme" class="block text-sm font-medium text-gray-700 mb-1">
-						Theme
+					<label for="theme" class="block text-sm font-medium text-gray-700 mb-2">
+						App Theme
 					</label>
 					<select
 						id="theme"
 						bind:value={appPreferences.theme}
 						onchange={saveAppPreferences}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					>
 						<option value="light">Light</option>
 						<option value="dark">Dark</option>
@@ -476,14 +477,14 @@
 				</div>
 
 				<div class="border-t border-gray-200 pt-4">
-					<label for="weight-unit" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="weight-unit" class="block text-sm font-medium text-gray-700 mb-2">
 						Weight Unit
 					</label>
 					<select
 						id="weight-unit"
 						bind:value={appPreferences.weightUnit}
 						onchange={saveAppPreferences}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					>
 						<option value="kg">Kilograms (kg)</option>
 						<option value="lb">Pounds (lb)</option>
@@ -494,14 +495,14 @@
 				</div>
 
 				<div class="border-t border-gray-200 pt-4">
-					<label for="distance-unit" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="distance-unit" class="block text-sm font-medium text-gray-700 mb-2">
 						Distance Unit
 					</label>
 					<select
 						id="distance-unit"
 						bind:value={appPreferences.distanceUnit}
 						onchange={saveAppPreferences}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 					>
 						<option value="km">Kilometers (km)</option>
 						<option value="miles">Miles</option>
@@ -512,8 +513,33 @@
 				</div>
 
 				<div class="border-t border-gray-200 pt-4">
-					<label for="decimal-places" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="decimal-places" class="block text-sm font-medium text-gray-700 mb-2">
 						Decimal Places
+					</label>
+					<select
+						id="decimal-places"
+						bind:value={appPreferences.decimalPlaces}
+						onchange={saveAppPreferences}
+						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+					>
+						<option value={0}>0 decimal places (whole numbers)</option>
+						<option value={1}>1 decimal place</option>
+						<option value={2}>2 decimal places</option>
+					</select>
+					<p class="mt-1 text-sm text-gray-500">
+						Precision for displaying numeric values
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+			<h2 class="text-xl font-bold text-gray-900 mb-4">Data Management</h2>
+
+			<div class="space-y-4">
+				<div>
+					<label for="export-format" class="block text-sm font-medium text-gray-700 mb-2">
+						Export File Format
 					</label>
 					<select
 						id="decimal-places"
@@ -609,7 +635,7 @@
 					</div>
 					<div class="space-y-4">
 						<div>
-							<label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">
+							<label for="new-password" class="block text-sm font-medium text-gray-700 mb-2">
 								New Password
 							</label>
 							<input
@@ -617,11 +643,12 @@
 								type="password"
 								bind:value={newPassword}
 								placeholder="Enter new password"
-								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								autofocus
+								class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 							/>
 						</div>
 						<div>
-							<label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">
+							<label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-2">
 								Confirm New Password
 							</label>
 							<input
@@ -629,21 +656,21 @@
 								type="password"
 								bind:value={confirmNewPassword}
 								placeholder="Confirm new password"
-								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
 							/>
 						</div>
 						<p class="text-sm text-gray-500">Password must be at least 8 characters long.</p>
 						<div class="flex justify-end gap-3">
 							<button
 								onclick={hidePasswordChangeModal}
-								class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+								class="px-4 py-3 text-base bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors min-h-[44px]"
 								type="button"
 							>
 								Cancel
 							</button>
 							<button
 								onclick={handlePasswordChange}
-								class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+								class="px-4 py-3 text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
 								type="button"
 							>
 								Change Password
