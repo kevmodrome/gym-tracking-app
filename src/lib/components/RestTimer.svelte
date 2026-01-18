@@ -1,8 +1,9 @@
 <script lang="ts">
-	let { duration = 90, onComplete, onSkip } = $props<{
+	let { duration = 90, onComplete, onSkip, compact = false } = $props<{
 		duration?: number;
 		onComplete?: () => void;
 		onSkip?: () => void;
+		compact?: boolean;
 	}>();
 
 	let timeLeft = $state(0);
@@ -15,6 +16,12 @@
 		timeLeft = duration;
 		customDuration = duration;
 	});
+
+	function adjustDuration(amount: number) {
+		const newDuration = Math.max(10, Math.min(300, timeLeft + amount));
+		timeLeft = newDuration;
+		customDuration = newDuration;
+	}
 
 	const formattedTime = $derived.by(() => {
 		const minutes = Math.floor(timeLeft / 60);
@@ -124,99 +131,186 @@
 	});
 </script>
 
-<div class="bg-surface border border-border rounded-xl shadow-lg p-6 w-full max-w-md mx-auto">
-	<div class="text-center mb-6">
-		<h3 class="text-lg font-semibold text-text-primary mb-2">Rest Timer</h3>
-
-		<div class="relative inline-block mb-4">
-			<svg class="w-36 h-36 transform -rotate-90">
+{#if compact}
+	<!-- Compact Mode -->
+	<div class="flex flex-col items-center">
+		<div class="relative inline-block mb-3">
+			<svg class="w-24 h-24 transform -rotate-90">
 				<circle
-					cx="72"
-					cy="72"
-					r="54"
+					cx="48"
+					cy="48"
+					r="36"
 					stroke="#2a2b32"
-					stroke-width="8"
+					stroke-width="6"
 					fill="none"
 				/>
 				<circle
-					cx="72"
-					cy="72"
-					r="54"
+					cx="48"
+					cy="48"
+					r="36"
 					stroke="#c5ff00"
-					stroke-width="8"
+					stroke-width="6"
 					fill="none"
 					stroke-linecap="round"
-					stroke-dasharray={circumference}
-					stroke-dashoffset={offset}
-					class="drop-shadow-[0_0_10px_rgba(197,255,0,0.5)]"
+					stroke-dasharray={2 * Math.PI * 36}
+					stroke-dashoffset={2 * Math.PI * 36 - (progressPercent / 100) * 2 * Math.PI * 36}
+					class="drop-shadow-[0_0_8px_rgba(197,255,0,0.5)]"
 				/>
 			</svg>
 			<div class="absolute inset-0 flex items-center justify-center">
-				<span class="text-4xl font-display font-bold text-text-primary">{formattedTime}</span>
+				<span class="text-2xl font-display font-bold text-text-primary">{formattedTime}</span>
 			</div>
 		</div>
 
-		<div class="flex items-center justify-center gap-2 mb-4">
-			<label for="duration-input" class="text-sm text-text-secondary">Duration (s):</label>
-			<input
-				id="duration-input"
-				type="number"
-				min="10"
-				max="300"
-				bind:value={customDuration}
-				onchange={updateCustomDuration}
+		<!-- Compact Controls -->
+		<div class="flex items-center gap-2 mb-3">
+			<button
+				onclick={() => adjustDuration(-30)}
 				disabled={isRunning}
-				class="w-20 px-2 py-1 bg-surface-elevated border border-border rounded text-center text-text-primary focus:ring-2 focus:ring-accent disabled:opacity-50"
-			/>
+				class="px-3 py-1.5 text-sm bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors disabled:opacity-50"
+				type="button"
+			>
+				-30s
+			</button>
+			{#if !isRunning && !isPaused}
+				<button
+					onclick={startTimer}
+					class="px-4 py-1.5 text-sm bg-accent text-bg rounded-lg hover:bg-accent-muted transition-colors font-medium"
+					type="button"
+				>
+					Start
+				</button>
+			{:else if isRunning}
+				<button
+					onclick={pauseTimer}
+					class="px-4 py-1.5 text-sm bg-warning text-bg rounded-lg hover:opacity-90 transition-colors font-medium"
+					type="button"
+				>
+					Pause
+				</button>
+			{:else}
+				<button
+					onclick={resumeTimer}
+					class="px-4 py-1.5 text-sm bg-success text-bg rounded-lg hover:opacity-90 transition-colors font-medium"
+					type="button"
+				>
+					Resume
+				</button>
+			{/if}
+			<button
+				onclick={() => adjustDuration(30)}
+				disabled={isRunning}
+				class="px-3 py-1.5 text-sm bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors disabled:opacity-50"
+				type="button"
+			>
+				+30s
+			</button>
 		</div>
-	</div>
-
-	<div class="flex gap-3">
-		{#if !isRunning && !isPaused}
-			<button
-				onclick={startTimer}
-				class="flex-1 px-4 py-3 bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_20px_rgba(197,255,0,0.3)] transition-all font-medium flex items-center justify-center gap-2"
-				type="button"
-			>
-				<span class="text-xl">▶</span>
-				Start
-			</button>
-		{:else if isRunning}
-			<button
-				onclick={pauseTimer}
-				class="flex-1 px-4 py-3 bg-warning text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
-				type="button"
-			>
-				<span class="text-xl">⏸</span>
-				Pause
-			</button>
-		{:else}
-			<button
-				onclick={resumeTimer}
-				class="flex-1 px-4 py-3 bg-success text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
-				type="button"
-			>
-				<span class="text-xl">▶</span>
-				Resume
-			</button>
-		{/if}
 
 		<button
 			onclick={skipTimer}
-			class="flex-1 px-4 py-3 bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors font-medium flex items-center justify-center gap-2"
+			class="w-full px-4 py-2.5 bg-surface-elevated border border-border text-text-primary rounded-lg hover:bg-surface-hover transition-colors font-medium"
 			type="button"
 		>
-			<span class="text-xl">⏭</span>
-			Skip
-		</button>
-
-		<button
-			onclick={resetTimer}
-			class="w-16 px-4 py-3 bg-danger text-white rounded-lg hover:opacity-90 transition-colors flex items-center justify-center"
-			type="button"
-			title="Reset"
-		>
-			<span class="text-xl">↻</span>
+			Skip Rest
 		</button>
 	</div>
-</div>
+{:else}
+	<!-- Full Mode -->
+	<div class="bg-surface border border-border rounded-xl shadow-lg p-6 w-full max-w-md mx-auto">
+		<div class="text-center mb-6">
+			<h3 class="text-lg font-semibold text-text-primary mb-2">Rest Timer</h3>
+
+			<div class="relative inline-block mb-4">
+				<svg class="w-36 h-36 transform -rotate-90">
+					<circle
+						cx="72"
+						cy="72"
+						r="54"
+						stroke="#2a2b32"
+						stroke-width="8"
+						fill="none"
+					/>
+					<circle
+						cx="72"
+						cy="72"
+						r="54"
+						stroke="#c5ff00"
+						stroke-width="8"
+						fill="none"
+						stroke-linecap="round"
+						stroke-dasharray={circumference}
+						stroke-dashoffset={offset}
+						class="drop-shadow-[0_0_10px_rgba(197,255,0,0.5)]"
+					/>
+				</svg>
+				<div class="absolute inset-0 flex items-center justify-center">
+					<span class="text-4xl font-display font-bold text-text-primary">{formattedTime}</span>
+				</div>
+			</div>
+
+			<div class="flex items-center justify-center gap-2 mb-4">
+				<label for="duration-input" class="text-sm text-text-secondary">Duration (s):</label>
+				<input
+					id="duration-input"
+					type="number"
+					min="10"
+					max="300"
+					bind:value={customDuration}
+					onchange={updateCustomDuration}
+					disabled={isRunning}
+					class="w-20 px-2 py-1 bg-surface-elevated border border-border rounded text-center text-text-primary focus:ring-2 focus:ring-accent disabled:opacity-50"
+				/>
+			</div>
+		</div>
+
+		<div class="flex gap-3">
+			{#if !isRunning && !isPaused}
+				<button
+					onclick={startTimer}
+					class="flex-1 px-4 py-3 bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_20px_rgba(197,255,0,0.3)] transition-all font-medium flex items-center justify-center gap-2"
+					type="button"
+				>
+					<span class="text-xl">▶</span>
+					Start
+				</button>
+			{:else if isRunning}
+				<button
+					onclick={pauseTimer}
+					class="flex-1 px-4 py-3 bg-warning text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
+					type="button"
+				>
+					<span class="text-xl">⏸</span>
+					Pause
+				</button>
+			{:else}
+				<button
+					onclick={resumeTimer}
+					class="flex-1 px-4 py-3 bg-success text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
+					type="button"
+				>
+					<span class="text-xl">▶</span>
+					Resume
+				</button>
+			{/if}
+
+			<button
+				onclick={skipTimer}
+				class="flex-1 px-4 py-3 bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors font-medium flex items-center justify-center gap-2"
+				type="button"
+			>
+				<span class="text-xl">⏭</span>
+				Skip
+			</button>
+
+			<button
+				onclick={resetTimer}
+				class="w-16 px-4 py-3 bg-danger text-white rounded-lg hover:opacity-90 transition-colors flex items-center justify-center"
+				type="button"
+				title="Reset"
+			>
+				<span class="text-xl">↻</span>
+			</button>
+		</div>
+	</div>
+{/if}

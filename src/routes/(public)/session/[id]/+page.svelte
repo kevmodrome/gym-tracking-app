@@ -6,6 +6,7 @@
 	import type { Session, SessionExercise, ExerciseSet } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
 	import RestTimer from '$lib/components/RestTimer.svelte';
+	import WorkoutProgressBar from '$lib/components/WorkoutProgressBar.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Trash2, Undo } from 'lucide-svelte';
@@ -53,6 +54,27 @@
 	let exerciseUndoTimeout: number | null = null;
 	let showExerciseUndoToast = $state(false);
 	let exerciseSaveRetries = $state(0);
+	let lastCompletedSet = $state<{ reps: number; weight: number; setNumber: number; exerciseName: string } | null>(null);
+
+	// Derived state for "next up" info during rest timer
+	const nextSetInfo = $derived.by(() => {
+		if (!showTimer) return null;
+
+		// Find the next set to be done
+		let nextExIdx = currentExerciseIndex;
+		let nextSetIdx = currentSetIndex;
+
+		const exercise = sessionExercises[nextExIdx];
+		if (!exercise) return null;
+
+		return {
+			exerciseName: exercise.exerciseName,
+			setNumber: nextSetIdx + 1,
+			totalSets: exercise.sets.length,
+			targetReps: exercise.sets[nextSetIdx]?.reps ?? 0,
+			targetWeight: exercise.sets[nextSetIdx]?.weight ?? 0
+		};
+	});
 
 	onMount(() => {
 		if (!workout) {
@@ -166,7 +188,15 @@
 	}
 
 	function completeSet() {
-		if (!currentSet) return;
+		if (!currentSet || !currentExercise) return;
+
+		// Store what was just completed for display during rest
+		lastCompletedSet = {
+			reps: currentSet.reps,
+			weight: currentSet.weight,
+			setNumber: currentSetIndex + 1,
+			exerciseName: currentExercise.exerciseName
+		};
 
 		currentSet.completed = true;
 		sessionExercises = [...sessionExercises];
@@ -250,6 +280,7 @@
 
 	function goToNextSet() {
 		showTimer = false;
+		lastCompletedSet = null;
 	}
 
 	function goToPreviousExercise() {
@@ -628,7 +659,7 @@
 			</Card>
 		{:else}
 			<!-- Header -->
-			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-6 mb-4 sm:mb-6">
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-6 mb-3 sm:mb-4">
 				<div>
 					<Button variant="ghost" href="/workout">← Exit</Button>
 				</div>
@@ -638,14 +669,60 @@
 				</div>
 			</div>
 
-			{#if showTimer}
-				<div class="mb-6">
-					<RestTimer
-						duration={defaultRestDuration}
-						onComplete={goToNextSet}
-						onSkip={goToNextSet}
+			<!-- Workout Progress Bar -->
+			{#if currentExercise}
+				<div class="mb-4 sm:mb-6 -mx-3 sm:-mx-4 md:-mx-6 lg:-mx-8">
+					<WorkoutProgressBar
+						exercises={sessionExercises}
+						currentIndex={currentExerciseIndex}
+						currentExerciseName={currentExercise.exerciseName}
 					/>
 				</div>
+			{/if}
+
+			{#if showTimer}
+				<!-- Rest Phase with Context -->
+				<Card class="mb-4 sm:mb-6">
+					{#snippet children()}
+						<div class="text-center">
+							<!-- What was completed -->
+							{#if lastCompletedSet}
+								<div class="mb-4 pb-4 border-b border-border">
+									<div class="flex items-center justify-center gap-2 text-success mb-1">
+										<span class="text-lg">✓</span>
+										<span class="font-semibold">Set {lastCompletedSet.setNumber} complete!</span>
+									</div>
+									<p class="text-sm text-text-secondary">
+										{lastCompletedSet.reps} reps @ {lastCompletedSet.weight} lbs
+									</p>
+								</div>
+							{/if}
+
+							<!-- Timer -->
+							<div class="py-4">
+								<RestTimer
+									duration={defaultRestDuration}
+									onComplete={goToNextSet}
+									onSkip={goToNextSet}
+									compact
+								/>
+							</div>
+
+							<!-- What's next -->
+							{#if nextSetInfo}
+								<div class="mt-4 pt-4 border-t border-border">
+									<p class="text-xs text-text-muted uppercase tracking-wide mb-1">Next Up</p>
+									<p class="font-semibold text-text-primary">
+										{nextSetInfo.exerciseName} - Set {nextSetInfo.setNumber} of {nextSetInfo.totalSets}
+									</p>
+									<p class="text-sm text-text-secondary">
+										Target: {nextSetInfo.targetReps} reps @ {nextSetInfo.targetWeight} lbs
+									</p>
+								</div>
+							{/if}
+						</div>
+					{/snippet}
+				</Card>
 			{/if}
 
 			{#if currentExercise}
