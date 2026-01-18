@@ -1,6 +1,6 @@
 <script lang="ts">
 	interface TextareaProps {
-		value: string;
+		value?: string;
 		label?: string;
 		placeholder?: string;
 		id?: string;

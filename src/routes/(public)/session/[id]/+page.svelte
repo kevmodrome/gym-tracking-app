@@ -607,18 +607,20 @@
 		{:else if sessionExercises.length === 0}
 			<Card>
 				{#snippet children()}
-					<div class="text-center py-8">
-						<h2 class="text-xl font-bold text-text-primary mb-2">No Exercises</h2>
-						<p class="text-text-secondary mb-4">This workout doesn't have any exercises yet.</p>
-						<div class="flex flex-col sm:flex-row gap-3 justify-center">
-							<Button variant="secondary" href="/workout/{workout.id}">
-								Edit Workout
-							</Button>
-							<Button variant="ghost" href="/workout">
-								Choose Different Workout
-							</Button>
+					{#if workout}
+						<div class="text-center py-8">
+							<h2 class="text-xl font-bold text-text-primary mb-2">No Exercises</h2>
+							<p class="text-text-secondary mb-4">This workout doesn't have any exercises yet.</p>
+							<div class="flex flex-col sm:flex-row gap-3 justify-center">
+								<Button variant="secondary" href="/workout/{workout.id}">
+									Edit Workout
+								</Button>
+								<Button variant="ghost" href="/workout">
+									Choose Different Workout
+								</Button>
+							</div>
 						</div>
-					</div>
+					{/if}
 				{/snippet}
 			</Card>
 		{:else}

@@ -26,7 +26,7 @@
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
-		<PageHeader title="Progress" stable>
+		<PageHeader title="Progress">
 			{#snippet actions()}
 				<ButtonGroup
 					options={tabOptions}

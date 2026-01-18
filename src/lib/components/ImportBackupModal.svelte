@@ -162,7 +162,7 @@
 <Modal open={true} title="Import Backup Data" size="lg" onclose={handleClose}>
 	{#snippet children()}
 		{#if errorMessage}
-			<InfoBox variant="error" class="mb-6">
+			<InfoBox type="error" class="mb-6">
 				<div class="flex items-center gap-2">
 					<span class="text-xl">⚠️</span>
 					<p class="font-medium">Error</p>
@@ -192,7 +192,7 @@
 				</div>
 
 				{#if isParsing || isDetecting}
-					<InfoBox variant="info">
+					<InfoBox type="info">
 						<div class="flex items-center gap-3">
 							<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-secondary"></div>
 							<p>
@@ -204,7 +204,7 @@
 			</div>
 		{:else if !importResult}
 			<div class="space-y-6">
-				<InfoBox variant="success">
+				<InfoBox type="success">
 					<div class="flex items-center gap-2">
 						<span class="text-xl">✅</span>
 						<p class="font-medium">File Validated Successfully</p>
@@ -235,7 +235,7 @@
 				</div>
 
 				{#if anyDuplicates()}
-					<InfoBox variant="warning">
+					<InfoBox type="warning">
 						<div class="flex items-center gap-2 mb-4">
 							<span class="text-xl">⚠️</span>
 							<p class="font-medium">{totalDuplicates()} duplicate(s) detected in your database</p>
@@ -304,7 +304,7 @@
 						</div>
 					</InfoBox>
 				{:else}
-					<InfoBox variant="success">
+					<InfoBox type="success">
 						<div class="flex items-center gap-2">
 							<span class="text-xl">✨</span>
 							<p class="font-medium">No duplicates found</p>
@@ -317,7 +317,7 @@
 			</div>
 		{:else}
 			{#if importResult.success}
-				<InfoBox variant="success">
+				<InfoBox type="success">
 					<div class="flex items-center gap-3 mb-4">
 						<span class="text-3xl">✅</span>
 						<div>
@@ -346,7 +346,7 @@
 					</div>
 				</InfoBox>
 			{:else}
-				<InfoBox variant="error">
+				<InfoBox type="error">
 					<div class="flex items-center gap-3 mb-4">
 						<span class="text-3xl">❌</span>
 						<div>

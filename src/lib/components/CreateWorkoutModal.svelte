@@ -93,6 +93,7 @@
 </script>
 
 <div
+	role="presentation"
 	class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
 	onclick={onClose}
 	onkeydown={(e) => e.key === 'Escape' && onClose()}

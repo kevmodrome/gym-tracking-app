@@ -15,7 +15,7 @@
 		clearSyncKey
 	} from '$lib/syncService';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import { Button, TextInput, Select, Toggle, Card, Modal, InfoBox, PageHeader } from '$lib/ui';
+	import { Button, TextInput, Select, Toggle, Card, Modal, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
@@ -378,16 +378,16 @@
 				<h2 class="text-xl font-bold text-text-primary mb-4">Rest Timer</h2>
 
 				<div class="space-y-4">
-					<TextInput
+					<NumberSpinner
 						bind:value={settings.defaultRestDuration}
 						label="Default Rest Duration (seconds)"
 						id="default-rest-duration"
-						type="number"
 						min={10}
 						max={300}
-						inputmode="numeric"
-						hint="Duration automatically used when rest timer starts"
+						step={5}
+						size="sm"
 					/>
+					<p class="mt-1 text-sm text-text-muted">Duration automatically used when rest timer starts</p>
 
 					<div class="border-t border-border pt-4">
 						<Toggle
