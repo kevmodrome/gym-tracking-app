@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "7274:3000"
+    volumes:
+      - sync_data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATA_DIR=/app/data
+    restart: unless-stopped
+
+volumes:
+  sync_data:

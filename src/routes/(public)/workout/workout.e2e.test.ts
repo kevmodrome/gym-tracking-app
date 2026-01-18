@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { db, liveQuery } from '../../lib/db';
-import { syncManager } from '../../lib/syncUtils';
-import { calculatePersonalRecords } from '../../lib/prUtils';
+import { db, liveQuery } from '$lib/db';
+import { syncManager } from '$lib/syncUtils';
+import { calculatePersonalRecords } from '$lib/prUtils';
 
-vi.mock('../../lib/db');
-vi.mock('../../lib/syncUtils');
-vi.mock('../../lib/prUtils');
+vi.mock('$lib/db');
+vi.mock('$lib/syncUtils', () => ({
+	syncManager: {
+		sync: vi.fn(),
+		isOnline: vi.fn(),
+		scheduleSync: vi.fn(),
+		getSyncStatus: vi.fn(),
+		getLastSyncTime: vi.fn(),
+		hasSyncKey: vi.fn()
+	}
+}));
+vi.mock('$lib/prUtils');
 
 describe('Workout Page - E2E Verification', () => {
 	let mockWorkouts: Array<{
@@ -95,7 +104,15 @@ describe('Workout Page - E2E Verification', () => {
 		vi.mocked(db.sessions.add).mockResolvedValue('session-1');
 		vi.mocked(db.sessions.update).mockResolvedValue(1);
 
-		vi.mocked(syncManager.addToSyncQueue).mockResolvedValue(undefined);
+		vi.mocked(syncManager.sync).mockResolvedValue({
+			success: true,
+			itemsProcessed: 1,
+			itemsFailed: 0,
+			itemsSkipped: 0,
+			duration: 100,
+			message: 'Successfully synced'
+		});
+		vi.mocked(syncManager.isOnline).mockReturnValue(true);
 		vi.mocked(calculatePersonalRecords).mockResolvedValue([] as any);
 	});
 
@@ -549,7 +566,8 @@ describe('Workout Page - E2E Verification', () => {
 
 		it('should verify syncManager is mocked', () => {
 			expect(syncManager).toBeDefined();
-			expect(syncManager.addToSyncQueue).toBeDefined();
+			expect(syncManager.sync).toBeDefined();
+			expect(syncManager.isOnline).toBeDefined();
 		});
 
 		it('should verify calculatePersonalRecords is mocked', () => {
@@ -560,12 +578,12 @@ describe('Workout Page - E2E Verification', () => {
 		it('should verify all mocks can be called', async () => {
 			await db.workouts.toArray();
 			await db.exercises.toArray();
-			await syncManager.addToSyncQueue('session', 'session-1', 'create', {});
+			await syncManager.sync();
 			await calculatePersonalRecords();
 
 			expect(db.workouts.toArray).toHaveBeenCalled();
 			expect(db.exercises.toArray).toHaveBeenCalled();
-			expect(syncManager.addToSyncQueue).toHaveBeenCalled();
+			expect(syncManager.sync).toHaveBeenCalled();
 			expect(calculatePersonalRecords).toHaveBeenCalled();
 		});
 	});

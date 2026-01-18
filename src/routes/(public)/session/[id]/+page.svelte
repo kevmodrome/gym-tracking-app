@@ -1,33 +1,31 @@
 <script lang="ts">
 	import Dexie from 'dexie';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Workout, Exercise, Session, SessionExercise, ExerciseSet } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
-	import { syncManager } from '$lib/syncUtils';
 	import RestTimer from '$lib/components/RestTimer.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
-	import EditWorkoutModal from '$lib/components/EditWorkoutModal.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Trash2, Undo } from 'lucide-svelte';
 	import { Button, Card, Modal, ConfirmDialog, NumberSpinner, Textarea, InfoBox } from '$lib/ui';
 
-	let workouts = $state<Workout[]>([]);
+	const workoutId = $derived($page.params.id);
+
+	let workout = $state<Workout | null>(null);
 	let exercises = $state<Exercise[]>([]);
-	let selectedWorkout = $state<Workout | null>(null);
 	let sessionExercises = $state<SessionExercise[]>([]);
 	let currentExerciseIndex = $state(0);
 	let currentSetIndex = $state(0);
 	let showTimer = $state(false);
 	let sessionStartTime = $state<number>(0);
 	let sessionNotes = $state('');
-	let showWorkoutSelector = $state(true);
 	let showCompleteModal = $state(false);
 	let sessionDuration = $state(0);
 	let durationInterval: number | null = null;
 	let editingSetIndex = $state<number | null>(null);
-	let showEditModal = $state(false);
-	let editingWorkout = $state<Workout | null>(null);
 	let showDeleteConfirm = $state(false);
 	let deletingSetIndex = $state<number | null>(null);
 	let deletedSet = $state<{ exerciseIndex: number; setIndex: number; set: ExerciseSet } | null>(null);
@@ -43,11 +41,25 @@
 	let editingExerciseNotes = $state('');
 	let showExerciseSaveError = $state(false);
 	let exerciseSaveErrorMessage = $state('');
+	let defaultRestDuration = $state(90);
+	let loading = $state(true);
+	let showDeleteExerciseConfirm = $state(false);
+	let deletingExerciseIndex = $state<number | null>(null);
+	let deletedExercise = $state<{ exerciseIndex: number; exercise: SessionExercise } | null>(null);
+	let exerciseUndoTimeout: number | null = null;
+	let showExerciseUndoToast = $state(false);
+	let exerciseSaveRetries = $state(0);
 
 	onMount(async () => {
-		workouts = await db.workouts.toArray();
 		exercises = await db.exercises.toArray();
+		workout = await db.workouts.get(workoutId) ?? null;
 
+		if (!workout) {
+			goto('/workout');
+			return;
+		}
+
+		// Load settings
 		const saved = localStorage.getItem('gym-app-settings');
 		if (saved) {
 			try {
@@ -57,41 +69,8 @@
 				console.error('Failed to parse settings:', e);
 			}
 		}
-	});
 
-	const currentExercise = $derived.by(() => {
-		if (sessionExercises.length === 0 || currentExerciseIndex >= sessionExercises.length) {
-			return null;
-		}
-		return sessionExercises[currentExerciseIndex];
-	});
-
-	const currentSet = $derived.by(() => {
-		if (!currentExercise || currentSetIndex >= currentExercise.sets.length) {
-			return null;
-		}
-		return currentExercise.sets[currentSetIndex];
-	});
-
-	const isLastSetInExercise = $derived.by(() => {
-		if (!currentExercise) return false;
-		return currentSetIndex === currentExercise.sets.length - 1;
-	});
-
-	const isLastExercise = $derived.by(() => {
-		return currentExerciseIndex === sessionExercises.length - 1;
-	});
-
-	const isAllSetsCompleted = $derived.by(() => {
-		if (sessionExercises.length === 0) return true;
-
-		return sessionExercises.every((exercise) =>
-			exercise.sets.every((set) => set.completed)
-		);
-	});
-
-	function selectWorkout(workout: Workout) {
-		selectedWorkout = workout;
+		// Load or initialize session
 		loadSessionProgress();
 
 		if (sessionExercises.length === 0 || sessionExercises.every((ex) => ex.sets.length === 0)) {
@@ -117,20 +96,44 @@
 			});
 		}
 
-		showWorkoutSelector = false;
 		if (sessionStartTime === 0) {
 			sessionStartTime = Date.now();
 			startDurationTracking();
 		}
-	}
+
+		loading = false;
+	});
+
+	const currentExercise = $derived.by(() => {
+		if (sessionExercises.length === 0 || currentExerciseIndex >= sessionExercises.length) {
+			return null;
+		}
+		return sessionExercises[currentExerciseIndex];
+	});
+
+	const currentSet = $derived.by(() => {
+		if (!currentExercise || currentSetIndex >= currentExercise.sets.length) {
+			return null;
+		}
+		return currentExercise.sets[currentSetIndex];
+	});
+
+	const isLastSetInExercise = $derived.by(() => {
+		if (!currentExercise) return false;
+		return currentSetIndex === currentExercise.sets.length - 1;
+	});
+
+	const isLastExercise = $derived.by(() => {
+		return currentExerciseIndex === sessionExercises.length - 1;
+	});
 
 	async function completeSession() {
-		if (!selectedWorkout) return;
+		if (!workout) return;
 
 		const session: Session = {
 			id: Date.now().toString(),
-			workoutId: selectedWorkout.id,
-			workoutName: selectedWorkout.name,
+			workoutId: workout.id,
+			workoutName: workout.name,
 			exercises: sessionExercises,
 			date: new Date().toISOString(),
 			duration: sessionDuration,
@@ -139,12 +142,11 @@
 		};
 
 		await db.sessions.add(Dexie.deepClone(session));
-		await syncManager.addToSyncQueue('session', session.id, 'create', Dexie.deepClone(session));
 		await calculatePersonalRecords();
 
-		localStorage.removeItem(`gym-app-session-${selectedWorkout.id}`);
+		localStorage.removeItem(`gym-app-session-${workout.id}`);
 
-		window.location.href = '/';
+		goto('/');
 	}
 
 	function startDurationTracking() {
@@ -183,9 +185,9 @@
 	}
 
 	function saveSessionProgress() {
-		if (!selectedWorkout) return;
+		if (!workout) return;
 		localStorage.setItem(
-			`gym-app-session-${selectedWorkout.id}`,
+			`gym-app-session-${workout.id}`,
 			JSON.stringify({
 				sessionExercises,
 				currentExerciseIndex,
@@ -197,8 +199,8 @@
 	}
 
 	function loadSessionProgress() {
-		if (!selectedWorkout) return;
-		const saved = localStorage.getItem(`gym-app-session-${selectedWorkout.id}`);
+		if (!workout) return;
+		const saved = localStorage.getItem(`gym-app-session-${workout.id}`);
 		if (saved) {
 			try {
 				const data = JSON.parse(saved);
@@ -222,41 +224,42 @@
 		}
 	}
 
-	async function copyWorkout(workout: Workout) {
-		const copiedWorkout: Workout = {
-			id: Date.now().toString(),
-			name: `${workout.name} (Copy)`,
-			exercises: workout.exercises.map((exercise) => ({
-				exerciseId: exercise.exerciseId,
-				exerciseName: exercise.exerciseName,
-				targetSets: exercise.targetSets,
-				targetReps: exercise.targetReps,
-				targetWeight: exercise.targetWeight
-			})),
-			notes: workout.notes,
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString()
-		};
+	function skipCurrentSet() {
+		if (!currentSet) return;
 
-		await db.workouts.add(copiedWorkout);
-		await syncManager.addToSyncQueue('workout', copiedWorkout.id, 'create', copiedWorkout);
-		workouts = await db.workouts.toArray();
+		currentSet.completed = false;
+		sessionExercises = [...sessionExercises];
+
+		if (isLastSetInExercise) {
+			if (isLastExercise) {
+				showCompleteModal = true;
+				stopDurationTracking();
+			} else {
+				currentExerciseIndex++;
+				currentSetIndex = 0;
+				showTimer = true;
+			}
+		} else {
+			currentSetIndex++;
+			showTimer = true;
+		}
 	}
 
-	function openEditModal(workout: Workout) {
-		editingWorkout = workout;
-		showEditModal = true;
+	function goToNextSet() {
+		showTimer = false;
 	}
 
-	function closeEditModal() {
-		showEditModal = false;
-		editingWorkout = null;
+	function goToPreviousExercise() {
+		if (currentExerciseIndex > 0) {
+			currentExerciseIndex--;
+			currentSetIndex = 0;
+		}
 	}
 
-	async function handleWorkoutUpdated(updatedWorkout: Workout) {
-		workouts = await db.workouts.toArray();
-		if (selectedWorkout?.id === updatedWorkout.id) {
-			selectedWorkout = updatedWorkout;
+	function goToNextExercise() {
+		if (currentExerciseIndex < sessionExercises.length - 1) {
+			currentExerciseIndex++;
+			currentSetIndex = 0;
 		}
 	}
 
@@ -306,191 +309,32 @@
 		editingSetIndex = null;
 	}
 
-	function updateSetNotes(e: Event) {
-		if (!currentSet) return;
-		const textarea = e.target as HTMLTextAreaElement;
-		currentSet.notes = textarea.value;
+	function validateSetValues(reps: number, weight: number, rpe?: number): { valid: boolean; error?: string } {
+		if (reps < 0 || isNaN(reps)) {
+			return { valid: false, error: 'Reps must be a non-negative number' };
+		}
+		if (weight < 0 || isNaN(weight)) {
+			return { valid: false, error: 'Weight must be a non-negative number' };
+		}
+		if (rpe !== undefined && (rpe < 1 || rpe > 10 || isNaN(rpe))) {
+			return { valid: false, error: 'RPE must be between 1 and 10' };
+		}
+		return { valid: true };
 	}
 
-	function skipCurrentSet() {
-		if (!currentSet) return;
-
-		currentSet.completed = false;
-		sessionExercises = [...sessionExercises];
-
-		if (isLastSetInExercise) {
-			if (isLastExercise) {
-				showCompleteModal = true;
-				stopDurationTracking();
-			} else {
-				currentExerciseIndex++;
-				currentSetIndex = 0;
-				showTimer = true;
-			}
-		} else {
-			currentSetIndex++;
-			showTimer = true;
+	function handleSetBlur() {
+		if (editingSetIndex !== null) {
+			saveSetEdit();
 		}
 	}
 
-	function updateSetReps(e: Event) {
-		if (!currentSet) return;
-		const input = e.target as HTMLInputElement;
-		currentSet.reps = parseInt(input.value) || 0;
-		sessionExercises = [...sessionExercises];
-	}
-
-	function updateSetWeight(e: Event) {
-		if (!currentSet) return;
-		const input = e.target as HTMLInputElement;
-		currentSet.weight = parseInt(input.value) || 0;
-		sessionExercises = [...sessionExercises];
-	}
-
-	function goToNextSet() {
-		showTimer = false;
-	}
-
-	function goToPreviousExercise() {
-		if (currentExerciseIndex > 0) {
-			currentExerciseIndex--;
-			currentSetIndex = 0;
+	function handleSetKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			saveSetEdit();
+		} else if (e.key === 'Escape') {
+			cancelSetEdit();
 		}
-	}
-
-	function goToNextExercise() {
-		if (currentExerciseIndex < sessionExercises.length - 1) {
-			currentExerciseIndex++;
-			currentSetIndex = 0;
-		}
-	}
-
-	function goBack() {
-		if (sessionStartTrackingRunning && sessionStartTime) {
-			if (confirm('Are you sure you want to exit? Your progress will be lost.')) {
-				window.location.href = '/';
-			}
-		} else {
-			window.location.href = '/';
-		}
-	}
-
-	const sessionStartTrackingRunning = $derived(durationInterval !== null);
-
-	let defaultRestDuration = $state(90);
-	let loadedSettings = $state(false);
-	let draggedSetIndex = $state<number | null>(null);
-	let draggedOverSetIndex = $state<number | null>(null);
-
-	$effect(() => {
-		if (!loadedSettings) {
-			const saved = localStorage.getItem('gym-app-settings');
-			if (saved) {
-				try {
-					const settings = JSON.parse(saved);
-					defaultRestDuration = settings.defaultRestDuration || 90;
-				} catch (e) {
-					console.error('Failed to parse settings:', e);
-				}
-			}
-			loadedSettings = true;
-		}
-	});
-
-	function moveSetUp(index: number) {
-		if (index <= 0) return;
-		if (!currentExercise) return;
-
-		const sets = [...currentExercise.sets];
-		[sets[index], sets[index - 1]] = [sets[index - 1], sets[index]];
-		currentExercise.sets = sets;
-		sessionExercises = [...sessionExercises];
-		saveSessionProgress();
-	}
-
-	function moveSetDown(index: number) {
-		if (!currentExercise || index >= currentExercise.sets.length - 1) return;
-
-		const sets = [...currentExercise.sets];
-		[sets[index], sets[index + 1]] = [sets[index + 1], sets[index]];
-		currentExercise.sets = sets;
-		sessionExercises = [...sessionExercises];
-		saveSessionProgress();
-	}
-
-	function handleDragStart(e: DragEvent, index: number) {
-		draggedSetIndex = index;
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setData('text/plain', index.toString());
-		}
-	}
-
-	function handleDragOver(e: DragEvent, index: number) {
-		e.preventDefault();
-		draggedOverSetIndex = index;
-		if (e.dataTransfer) {
-			e.dataTransfer.dropEffect = 'move';
-		}
-	}
-
-	function handleDrop(e: DragEvent, index: number) {
-		e.preventDefault();
-		if (draggedSetIndex === null || draggedSetIndex === index) {
-			draggedSetIndex = null;
-			draggedOverSetIndex = null;
-			return;
-		}
-
-		if (!currentExercise) return;
-
-		const sets = [...currentExercise.sets];
-		const [movedSet] = sets.splice(draggedSetIndex, 1);
-		sets.splice(index, 0, movedSet);
-
-		currentExercise.sets = sets;
-		sessionExercises = [...sessionExercises];
-		saveSessionProgress();
-
-		draggedSetIndex = null;
-		draggedOverSetIndex = null;
-	}
-
-	function handleDragEnd() {
-		draggedSetIndex = null;
-		draggedOverSetIndex = null;
-	}
-
-	function handleTouchStart(e: TouchEvent, index: number) {
-		if (!currentExercise) return;
-		const touch = e.touches[0];
-		draggedSetIndex = index;
-	}
-
-	function handleTouchMove(e: TouchEvent, index: number) {
-		e.preventDefault();
-		draggedOverSetIndex = index;
-	}
-
-	function handleTouchEnd(e: TouchEvent, index: number) {
-		if (draggedSetIndex === null || draggedSetIndex === index) {
-			draggedSetIndex = null;
-			draggedOverSetIndex = null;
-			return;
-		}
-
-		if (!currentExercise) return;
-
-		const sets = [...currentExercise.sets];
-		const [movedSet] = sets.splice(draggedSetIndex, 1);
-		sets.splice(index, 0, movedSet);
-
-		currentExercise.sets = sets;
-		sessionExercises = [...sessionExercises];
-		saveSessionProgress();
-
-		draggedSetIndex = null;
-		draggedOverSetIndex = null;
 	}
 
 	function confirmDeleteSet(setIndex: number) {
@@ -543,6 +387,35 @@
 	function cancelDeleteSet() {
 		showDeleteConfirm = false;
 		deletingSetIndex = null;
+	}
+
+	function undoDeleteSet() {
+		if (!deletedSet || !currentExercise) return;
+
+		if (undoTimeout) {
+			clearTimeout(undoTimeout);
+			undoTimeout = null;
+		}
+
+		try {
+			if (deletedSet.exerciseIndex === currentExerciseIndex) {
+				currentExercise.sets.splice(deletedSet.setIndex, 0, deletedSet.set);
+				currentSetIndex = deletedSet.setIndex;
+			} else {
+				const exercise = sessionExercises[deletedSet.exerciseIndex];
+				if (exercise) {
+					exercise.sets.splice(deletedSet.setIndex, 0, deletedSet.set);
+				}
+			}
+			sessionExercises = [...sessionExercises];
+			saveSessionProgress();
+			showUndoToast = false;
+			deletedSet = null;
+			toastStore.showSuccess('Set restored successfully');
+		} catch (error) {
+			console.error('Failed to undo deletion:', error);
+			toastStore.showError('Failed to undo deletion');
+		}
 	}
 
 	function confirmDeleteExercise(exerciseIndex: number) {
@@ -611,71 +484,6 @@
 		}
 	}
 
-	function validateSetValues(reps: number, weight: number, rpe?: number): { valid: boolean; error?: string } {
-		if (reps < 0 || isNaN(reps)) {
-			return { valid: false, error: 'Reps must be a non-negative number' };
-		}
-		if (weight < 0 || isNaN(weight)) {
-			return { valid: false, error: 'Weight must be a non-negative number' };
-		}
-		if (rpe !== undefined && (rpe < 1 || rpe > 10 || isNaN(rpe))) {
-			return { valid: false, error: 'RPE must be between 1 and 10' };
-		}
-		return { valid: true };
-	}
-
-	function handleSetBlur() {
-		if (editingSetIndex !== null) {
-			saveSetEdit();
-		}
-	}
-
-	function handleSetKeyDown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			saveSetEdit();
-		} else if (e.key === 'Escape') {
-			cancelSetEdit();
-		}
-	}
-
-	function calculateSessionVolume(): number {
-		return sessionExercises.reduce((total, exercise) => {
-			return total + exercise.sets.reduce((exerciseTotal, set) => {
-				return exerciseTotal + (set.reps * set.weight);
-			}, 0);
-		}, 0);
-	}
-
-	function undoDeleteSet() {
-		if (!deletedSet || !currentExercise) return;
-
-		if (undoTimeout) {
-			clearTimeout(undoTimeout);
-			undoTimeout = null;
-		}
-
-		try {
-			if (deletedSet.exerciseIndex === currentExerciseIndex) {
-				currentExercise.sets.splice(deletedSet.setIndex, 0, deletedSet.set);
-				currentSetIndex = deletedSet.setIndex;
-			} else {
-				const exercise = sessionExercises[deletedSet.exerciseIndex];
-				if (exercise) {
-					exercise.sets.splice(deletedSet.setIndex, 0, deletedSet.set);
-				}
-			}
-			sessionExercises = [...sessionExercises];
-			saveSessionProgress();
-			showUndoToast = false;
-			deletedSet = null;
-			toastStore.showSuccess('Set restored successfully');
-		} catch (error) {
-			console.error('Failed to undo deletion:', error);
-			toastStore.showError('Failed to undo deletion');
-		}
-	}
-
 	function isLibraryExercise(exerciseId: string): boolean {
 		const exercise = exercises.find((e) => e.id === exerciseId);
 		return exercise ? !exercise.is_custom : false;
@@ -724,13 +532,6 @@
 		}
 	}
 
-	let exerciseSaveRetries = $state(0);
-	let showDeleteExerciseConfirm = $state(false);
-	let deletingExerciseIndex = $state<number | null>(null);
-	let deletedExercise = $state<{ exerciseIndex: number; exercise: SessionExercise } | null>(null);
-	let exerciseUndoTimeout: number | null = null;
-	let showExerciseUndoToast = $state(false);
-
 	async function saveExerciseEditWithRetry(): Promise<boolean> {
 		if (editingExerciseIndex === null) return false;
 
@@ -777,77 +578,56 @@
 		return false;
 	}
 
-	</script>
+	function calculateSessionVolume(): number {
+		return sessionExercises.reduce((total, exercise) => {
+			return total + exercise.sets.reduce((exerciseTotal, set) => {
+				return exerciseTotal + (set.reps * set.weight);
+			}, 0);
+		}, 0);
+	}
+</script>
+
+<svelte:head>
+	<title>{workout?.name ?? 'Session'} - Gym Recording App</title>
+</svelte:head>
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-4xl mx-auto w-full">
-		{#if showWorkoutSelector}
+		{#if loading}
+			<div class="flex items-center justify-center min-h-[50vh]">
+				<div class="text-text-muted">Loading workout...</div>
+			</div>
+		{:else if !workout}
+			<div class="flex items-center justify-center min-h-[50vh]">
+				<div class="text-center">
+					<p class="text-text-secondary mb-4">Workout not found</p>
+					<Button variant="primary" href="/workout">Back to Workouts</Button>
+				</div>
+			</div>
+		{:else if sessionExercises.length === 0}
 			<Card>
 				{#snippet children()}
-					<div class="flex items-center justify-between mb-4 sm:mb-6">
-						<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary">Select Workout</h1>
-						<Button variant="ghost" href="/">Cancel</Button>
-					</div>
-
-					{#if workouts.length === 0}
-						<div class="text-center py-8">
-							<p class="text-text-secondary mb-4">No workouts created yet.</p>
-							<Button variant="primary" href="/">
-								Create a Workout
+					<div class="text-center py-8">
+						<h2 class="text-xl font-bold text-text-primary mb-2">No Exercises</h2>
+						<p class="text-text-secondary mb-4">This workout doesn't have any exercises yet.</p>
+						<div class="flex flex-col sm:flex-row gap-3 justify-center">
+							<Button variant="secondary" href="/workout/{workout.id}">
+								Edit Workout
+							</Button>
+							<Button variant="ghost" href="/workout">
+								Choose Different Workout
 							</Button>
 						</div>
-					{:else}
-						<div class="space-y-3">
-							{#each workouts as workout}
-								<div class="border border-border rounded-lg hover:bg-accent/5 hover:border-accent/50 transition-colors">
-									<div class="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-										<button
-											onclick={() => selectWorkout(workout)}
-											class="flex-1 text-left min-h-[44px] flex items-center"
-											type="button"
-										>
-											<div>
-												<h3 class="font-semibold text-text-primary text-base sm:text-lg">{workout.name}</h3>
-												<p class="text-sm text-text-secondary">
-													{workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
-												</p>
-											</div>
-										</button>
-										<div class="flex gap-2">
-											<Button
-												variant="secondary"
-												size="sm"
-												onclick={(e: MouseEvent) => {
-													e.stopPropagation();
-													openEditModal(workout);
-												}}
-											>
-												Edit
-											</Button>
-											<Button
-												variant="ghost"
-												size="sm"
-												onclick={(e: MouseEvent) => {
-													e.stopPropagation();
-													copyWorkout(workout);
-												}}
-											>
-												Copy
-											</Button>
-										</div>
-									</div>
-								</div>
-							{/each}
-						</div>
-					{/if}
+					</div>
 				{/snippet}
 			</Card>
 		{:else}
+			<!-- Header -->
 			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-6 mb-4 sm:mb-6">
 				<div>
-					<Button variant="ghost" href="/">← Exit</Button>
+					<Button variant="ghost" href="/workout">← Exit</Button>
 				</div>
-				<h1 class="text-lg sm:text-xl font-bold font-display text-text-primary text-center sm:text-auto">{selectedWorkout?.name}</h1>
+				<h1 class="text-lg sm:text-xl font-bold font-display text-text-primary text-center">{workout.name}</h1>
 				<div class="text-sm text-accent font-medium text-center sm:text-auto min-h-[44px] flex items-center justify-center sm:justify-end">
 					⏱️ {sessionDuration}m
 				</div>
@@ -926,7 +706,7 @@
 										></textarea>
 									</div>
 									{#if showExerciseSaveError}
-										<InfoBox variant="error">
+										<InfoBox type="error">
 											<p class="text-xs mb-2">{exerciseSaveErrorMessage}</p>
 											{#if exerciseSaveRetries > 0}
 												<Button
@@ -952,7 +732,7 @@
 						{/if}
 
 						{#if currentExercise.notes && editingExerciseIndex !== currentExerciseIndex}
-							<InfoBox variant="warning" class="mb-3 sm:mb-4">
+							<InfoBox type="warning" class="mb-3 sm:mb-4">
 								<strong>Notes:</strong> {currentExercise.notes}
 							</InfoBox>
 						{/if}
@@ -1012,7 +792,7 @@
 									</Button>
 								</div>
 							</div>
-						{:else}
+						{:else if !showTimer}
 							<div class="text-center py-4">
 								<p class="text-sm sm:text-base text-text-secondary">
 									{currentSetIndex} / {currentExercise.sets.length} sets completed
@@ -1020,6 +800,7 @@
 							</div>
 						{/if}
 
+						<!-- Sets Progress List -->
 						<div class="mt-3 sm:mt-4">
 							<div class="flex items-center justify-between mb-2">
 								<h4 class="text-xs sm:text-sm font-medium text-text-secondary">
@@ -1028,20 +809,7 @@
 							</div>
 							<div class="space-y-1" role="list">
 								{#each currentExercise.sets as set, idx}
-									<div
-										role="listitem"
-										draggable={true}
-										ondragstart={(e) => handleDragStart(e, idx)}
-										ondragover={(e) => handleDragOver(e, idx)}
-										ondrop={(e) => handleDrop(e, idx)}
-										ondragend={handleDragEnd}
-										ontouchstart={(e) => handleTouchStart(e, idx)}
-										ontouchmove={(e) => handleTouchMove(e, idx)}
-										ontouchend={(e) => handleTouchEnd(e, idx)}
-										aria-grabbed={draggedSetIndex === idx}
-										aria-dropeffect={draggedOverSetIndex !== null && draggedSetIndex !== null ? 'move' : 'none'}
-										class="{draggedSetIndex === idx ? 'opacity-50' : ''} {draggedOverSetIndex === idx && draggedSetIndex !== null ? 'border-t-2 border-b-2 border-accent' : ''}"
-									>
+									<div role="listitem">
 										<div
 											class="w-full flex items-center gap-2 p-2 sm:p-3 rounded {set.completed
 												? 'bg-success/10 border border-success/30 hover:bg-success/15'
@@ -1049,38 +817,9 @@
 													? 'bg-accent/10 border border-accent/30'
 													: 'bg-surface-elevated border border-border hover:bg-surface-hover'} transition-colors"
 										>
-											<div class="flex flex-col gap-1 flex-shrink-0">
-												<button
-													onclick={(e) => { e.stopPropagation(); moveSetUp(idx); }}
-													disabled={idx === 0}
-													class="px-1.5 py-0.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded {idx === 0 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
-													type="button"
-													aria-label="Move set up"
-												>
-													<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-													</svg>
-												</button>
-												<button
-													onclick={(e) => { e.stopPropagation(); moveSetDown(idx); }}
-													disabled={idx >= currentExercise.sets.length - 1}
-													class="px-1.5 py-0.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded {idx >= currentExercise.sets.length - 1 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
-													type="button"
-													aria-label="Move set down"
-												>
-													<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-													</svg>
-												</button>
-											</div>
-											<div class="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 text-text-muted hover:text-text-secondary" role="button" aria-label="Drag to reorder this set" tabindex="0" onmousedown={(e) => e.preventDefault()}>
-												<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-													<path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
-												</svg>
-											</div>
 											{#if editingSetIndex === idx}
 												<div class="flex-1 flex flex-col gap-2">
-													<div class="grid grid-cols-3 gap-2">
+													<div class="grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-2">
 														<div>
 															<label for="edit-set-reps" class="block text-xs text-text-secondary mb-1">Reps</label>
 															<input
@@ -1122,7 +861,7 @@
 														</div>
 													</div>
 													{#if showSaveError}
-														<InfoBox variant="error">
+														<InfoBox type="error">
 															<p class="text-xs">{saveErrorMessage}</p>
 														</InfoBox>
 													{/if}
@@ -1141,9 +880,6 @@
 														>
 															Cancel
 														</Button>
-														<span class="text-xs text-text-secondary ml-auto">
-															Volume: {calculateSessionVolume().toLocaleString()} lbs
-														</span>
 													</div>
 												</div>
 											{:else}
@@ -1193,113 +929,110 @@
 					{/snippet}
 				</Card>
 			{/if}
-
-			<Modal
-				open={showCompleteModal}
-				title="Complete Workout"
-				onclose={() => (showCompleteModal = false)}
-			>
-				{#snippet children()}
-					<div class="space-y-4 mb-6">
-						<InfoBox variant="info">
-							<h3 class="font-semibold mb-2">Summary</h3>
-							<p class="text-sm">Duration: {sessionDuration} minutes</p>
-							<p class="text-sm">Exercises: {sessionExercises.length}</p>
-							<p class="text-sm">Sets: {sessionExercises.reduce((acc, ex) => acc + ex.sets.length, 0)}</p>
-							<p class="text-sm">Total Volume: {calculateSessionVolume().toLocaleString()} lbs</p>
-						</InfoBox>
-
-						<Textarea
-							label="Notes (optional)"
-							bind:value={sessionNotes}
-							placeholder="How did your workout go?"
-							rows={3}
-						/>
-					</div>
-				{/snippet}
-				{#snippet footer()}
-					<Button variant="ghost" onclick={() => (showCompleteModal = false)}>
-						Back to Workout
-					</Button>
-					<Button variant="success" onclick={completeSession}>
-						Save Workout
-					</Button>
-				{/snippet}
-			</Modal>
-
-			<ConfirmDialog
-				open={showDeleteConfirm}
-				title="Delete Set"
-				message="Are you sure you want to delete {deletedSet?.set.reps || currentExercise?.sets[deletingSetIndex || 0]?.reps} reps @ {deletedSet?.set.weight || currentExercise?.sets[deletingSetIndex || 0]?.weight} lbs?"
-				confirmText="Delete Set"
-				confirmVariant="danger"
-				onconfirm={deleteSet}
-				oncancel={cancelDeleteSet}
-			/>
-
-			<ConfirmDialog
-				open={showDeleteExerciseConfirm}
-				title="Delete Exercise"
-				message="Are you sure you want to delete {deletedExercise?.exercise.exerciseName || currentExercise?.exerciseName}? This will remove all sets from this exercise. You can undo this action within 30 seconds."
-				confirmText="Delete Exercise"
-				confirmVariant="danger"
-				onconfirm={deleteExercise}
-				oncancel={cancelDeleteExercise}
-			/>
-
-			{#if showUndoToast}
-				<div class="fixed bottom-20 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
-					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-warning/10 border-warning/30 text-warning">
-						<Undo class="w-5 h-5 flex-shrink-0" />
-						<span class="text-sm font-medium flex-1">Set deleted. Undo available for 30 seconds</span>
-						<button
-							onclick={undoDeleteSet}
-							class="px-3 py-1.5 bg-warning text-bg rounded-lg font-medium text-sm hover:bg-warning-muted transition-colors"
-						>
-							Undo
-						</button>
-						<button
-							onclick={() => showUndoToast = false}
-							class="flex-shrink-0 p-1 rounded hover:bg-warning/20 transition-colors"
-							aria-label="Dismiss"
-							type="button"
-						>
-							<XIcon class="w-4 h-4" />
-						</button>
-					</div>
-				</div>
-			{/if}
-
-			{#if showExerciseUndoToast}
-				<div class="fixed bottom-20 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
-					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-warning/10 border-warning/30 text-warning">
-						<Undo class="w-5 h-5 flex-shrink-0" />
-						<span class="text-sm font-medium flex-1">Exercise deleted. Undo available for 30 seconds</span>
-						<button
-							onclick={undoDeleteExercise}
-							class="px-3 py-1.5 bg-warning text-bg rounded-lg font-medium text-sm hover:bg-warning-muted transition-colors"
-						>
-							Undo
-						</button>
-						<button
-							onclick={() => showExerciseUndoToast = false}
-							class="flex-shrink-0 p-1 rounded hover:bg-warning/20 transition-colors"
-							aria-label="Dismiss"
-							type="button"
-						>
-							<XIcon class="w-4 h-4" />
-						</button>
-					</div>
-				</div>
-			{/if}
 		{/if}
 
-		{#if showEditModal && editingWorkout}
-			<EditWorkoutModal
-				workout={editingWorkout}
-				onClose={closeEditModal}
-				onWorkoutUpdated={handleWorkoutUpdated}
-			/>
+		<!-- Complete Modal -->
+		<Modal
+			open={showCompleteModal}
+			title="Complete Workout"
+			onclose={() => (showCompleteModal = false)}
+		>
+			{#snippet children()}
+				<div class="space-y-4 mb-6">
+					<InfoBox type="info">
+						<h3 class="font-semibold mb-2">Summary</h3>
+						<p class="text-sm">Duration: {sessionDuration} minutes</p>
+						<p class="text-sm">Exercises: {sessionExercises.length}</p>
+						<p class="text-sm">Sets: {sessionExercises.reduce((acc, ex) => acc + ex.sets.length, 0)}</p>
+						<p class="text-sm">Total Volume: {calculateSessionVolume().toLocaleString()} lbs</p>
+					</InfoBox>
+
+					<Textarea
+						label="Notes (optional)"
+						bind:value={sessionNotes}
+						placeholder="How did your workout go?"
+						rows={3}
+					/>
+				</div>
+			{/snippet}
+			{#snippet footer()}
+				<Button variant="ghost" onclick={() => (showCompleteModal = false)}>
+					Back to Workout
+				</Button>
+				<Button variant="success" onclick={completeSession}>
+					Save Workout
+				</Button>
+			{/snippet}
+		</Modal>
+
+		<!-- Delete Set Confirm -->
+		<ConfirmDialog
+			open={showDeleteConfirm}
+			title="Delete Set"
+			message="Are you sure you want to delete this set?"
+			confirmText="Delete Set"
+			confirmVariant="danger"
+			onconfirm={deleteSet}
+			oncancel={cancelDeleteSet}
+		/>
+
+		<!-- Delete Exercise Confirm -->
+		<ConfirmDialog
+			open={showDeleteExerciseConfirm}
+			title="Delete Exercise"
+			message="Are you sure you want to delete {currentExercise?.exerciseName}? You can undo this within 30 seconds."
+			confirmText="Delete Exercise"
+			confirmVariant="danger"
+			onconfirm={deleteExercise}
+			oncancel={cancelDeleteExercise}
+		/>
+
+		<!-- Set Undo Toast -->
+		{#if showUndoToast}
+			<div class="fixed bottom-20 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
+				<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-warning/10 border-warning/30 text-warning">
+					<Undo class="w-5 h-5 flex-shrink-0" />
+					<span class="text-sm font-medium flex-1">Set deleted. Undo available for 30 seconds</span>
+					<button
+						onclick={undoDeleteSet}
+						class="px-3 py-1.5 bg-warning text-bg rounded-lg font-medium text-sm hover:bg-warning-muted transition-colors"
+					>
+						Undo
+					</button>
+					<button
+						onclick={() => showUndoToast = false}
+						class="flex-shrink-0 p-1 rounded hover:bg-warning/20 transition-colors"
+						aria-label="Dismiss"
+						type="button"
+					>
+						<XIcon class="w-4 h-4" />
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Exercise Undo Toast -->
+		{#if showExerciseUndoToast}
+			<div class="fixed bottom-20 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
+				<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-warning/10 border-warning/30 text-warning">
+					<Undo class="w-5 h-5 flex-shrink-0" />
+					<span class="text-sm font-medium flex-1">Exercise deleted. Undo available for 30 seconds</span>
+					<button
+						onclick={undoDeleteExercise}
+						class="px-3 py-1.5 bg-warning text-bg rounded-lg font-medium text-sm hover:bg-warning-muted transition-colors"
+					>
+						Undo
+					</button>
+					<button
+						onclick={() => showExerciseUndoToast = false}
+						class="flex-shrink-0 p-1 rounded hover:bg-warning/20 transition-colors"
+						aria-label="Dismiss"
+						type="button"
+					>
+						<XIcon class="w-4 h-4" />
+					</button>
+				</div>
+			</div>
 		{/if}
 	</div>
 </div>

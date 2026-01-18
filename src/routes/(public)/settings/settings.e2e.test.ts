@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as backupUtils from '../../lib/backupUtils';
-import { syncManager } from '../../lib/syncUtils';
+import * as backupUtils from '$lib/backupUtils';
+import { syncManager } from '$lib/syncUtils';
 
-vi.mock('../../lib/backupUtils');
-vi.mock('../../lib/syncUtils');
+vi.mock('$lib/backupUtils');
+vi.mock('$lib/syncUtils');
 
 describe('Settings Page - E2E Verification', () => {
 	beforeEach(() => {

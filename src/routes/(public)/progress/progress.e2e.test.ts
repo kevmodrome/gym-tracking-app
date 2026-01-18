@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { db } from '../../lib/db';
-import type { Exercise, Session } from '../../lib/types';
+import { db } from '$lib/db';
+import type { Exercise, Session } from '$lib/types';
 
-vi.mock('../../lib/db');
+vi.mock('$lib/db');
 
 describe('Progress Page - E2E Verification', () => {
 	let mockExercises: Exercise[];

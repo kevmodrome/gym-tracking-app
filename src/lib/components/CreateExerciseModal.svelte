@@ -2,7 +2,6 @@
 	import Dexie from 'dexie';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
-	import { syncManager } from '$lib/syncUtils';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import { Button, Modal, TextInput, Select, InfoBox } from '$lib/ui';
 
@@ -68,7 +67,6 @@
 		};
 
 		await db.exercises.add(Dexie.deepClone(newExercise));
-		await syncManager.addToSyncQueue('exercise', newExercise.id, 'create', Dexie.deepClone(newExercise));
 		onCreate(newExercise);
 		onClose();
 	}
@@ -82,7 +80,7 @@
 	{#snippet children()}
 		<div class="space-y-4">
 			{#if validationError}
-				<InfoBox variant="error">
+				<InfoBox type="error">
 					{validationError}
 				</InfoBox>
 			{/if}

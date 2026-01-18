@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { db, liveQuery } from '$lib/db';
-	import type { Session, Exercise } from '$lib/types';
+	import type { Session } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
-	import { syncManager } from '$lib/syncUtils';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
-	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
 	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
-	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox } from '$lib/ui';
+	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox, SearchInput } from '$lib/ui';
 
+	// Sessions state
 	let sessions = $state<Session[]>([]);
 	let allWorkouts = $state<{ id: string; name: string }[]>([]);
 	let searchQuery = $state('');
@@ -54,6 +53,14 @@
 	const filteredSessions = $derived.by(() => {
 		let filtered = sessions;
 
+		// Filter by search query (workout name)
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase().trim();
+			filtered = filtered.filter((session) =>
+				session.workoutName.toLowerCase().includes(query)
+			);
+		}
+
 		if (selectedWorkout) {
 			filtered = filtered.filter((session) => session.workoutId === selectedWorkout);
 		}
@@ -94,8 +101,6 @@
 	});
 
 	const hasMore = $derived(filteredSessions.length > currentPage * itemsPerPage);
-
-	const totalPages = $derived(Math.ceil(filteredSessions.length / itemsPerPage));
 
 	function formatDate(dateStr: string): string {
 		const date = new Date(dateStr);
@@ -143,7 +148,6 @@
 
 		try {
 			await db.sessions.delete(showSessionDetail.id);
-			await syncManager.addToSyncQueue('session', showSessionDetail.id, 'delete', showSessionDetail);
 			deletedSession = showSessionDetail;
 			showSessionDetail = null;
 			showDeleteConfirm = false;
@@ -166,7 +170,6 @@
 
 		try {
 			await db.sessions.add(deletedSession);
-			await syncManager.addToSyncQueue('session', deletedSession.id, 'create', deletedSession);
 			await calculatePersonalRecords();
 
 			if (undoTimeout) clearTimeout(undoTimeout);
@@ -221,7 +224,6 @@
 				workoutName: updatedSession.workoutName,
 				notes: updatedSession.notes
 			});
-			await syncManager.addToSyncQueue('session', updatedSession.id, 'update', updatedSession);
 
 			showSessionDetail = updatedSession;
 			showEditModal = false;
@@ -234,145 +236,132 @@
 	}
 </script>
 
-<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
-	<div class="max-w-7xl mx-auto w-full">
-		<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-			<div class="flex items-center gap-4">
-				<Button variant="secondary" href="/">
-					← Back
+<Card class="mb-6">
+	{#snippet children()}
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+			<SearchInput
+				label="Search"
+				bind:value={searchQuery}
+				placeholder="Search workouts..."
+			/>
+
+			<Select
+				label="Workout Type"
+				bind:value={selectedWorkout}
+				options={workoutOptions}
+			/>
+
+			<Select
+				label="Date Range"
+				bind:value={dateFilter}
+				options={dateOptions}
+			/>
+
+			<div>
+				<label class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
+					Showing: {filteredSessions.length} sessions
+				</label>
+				<Button variant="ghost" onclick={clearFilters} fullWidth>
+					<XIcon class="w-4 h-4" />
+					Clear
 				</Button>
-				<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Workout History</h1>
 			</div>
 		</div>
 
-		<Card class="mb-6">
-			{#snippet children()}
-				<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-					<div class="relative">
-						<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-						<input
-							type="text"
-							bind:value={searchQuery}
-							placeholder="Search workouts..."
-							class="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted text-sm sm:text-base min-h-[44px]"
-						/>
-					</div>
-
-					<Select
-						label="Workout Type"
-						bind:value={selectedWorkout}
-						options={workoutOptions}
+		{#if dateFilter === 'custom'}
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 pt-4 border-t border-border">
+				<div>
+					<label for="start-date" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">Start Date</label>
+					<input
+						id="start-date"
+						type="date"
+						bind:value={customStartDate}
+						class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent text-sm text-text-primary min-h-[44px]"
 					/>
-
-					<Select
-						label="Date Range"
-						bind:value={dateFilter}
-						options={dateOptions}
-					/>
-
-					<div>
-						<label class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
-							Showing: {filteredSessions.length} sessions
-						</label>
-						<Button variant="ghost" onclick={clearFilters} fullWidth>
-							<XIcon class="w-4 h-4" />
-							Clear
-						</Button>
-					</div>
 				</div>
+				<div>
+					<label for="end-date" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">End Date</label>
+					<input
+						id="end-date"
+						type="date"
+						bind:value={customEndDate}
+						class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent text-sm text-text-primary min-h-[44px]"
+					/>
+				</div>
+			</div>
+		{/if}
+	{/snippet}
+</Card>
 
-				{#if dateFilter === 'custom'}
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 pt-4 border-t border-border">
-						<TextInput
-							label="Start Date"
-							type="date"
-							bind:value={customStartDate}
-						/>
-						<TextInput
-							label="End Date"
-							type="date"
-							bind:value={customEndDate}
-						/>
-					</div>
+{#if filteredSessions.length === 0}
+	<Card class="text-center" padding="lg">
+		{#snippet children()}
+			<div class="text-text-muted mb-4">
+				<SearchIcon class="w-16 h-16 mx-auto" />
+			</div>
+			<h2 class="text-xl font-semibold text-text-primary mb-2">No workout sessions found</h2>
+			<p class="text-text-secondary">
+				{#if sessions.length === 0}
+					Start working out to see your history here
+				{:else}
+					Try adjusting your search or filters
 				{/if}
-			{/snippet}
-		</Card>
-
-		{#if filteredSessions.length === 0}
-			<Card class="text-center" padding="lg">
+			</p>
+		{/snippet}
+	</Card>
+{:else}
+	<div class="grid grid-cols-1 gap-4">
+		{#each paginatedSessions as session}
+			<Card hoverable>
 				{#snippet children()}
-					<div class="text-text-muted mb-4">
-						<SearchIcon class="w-16 h-16 mx-auto" />
-					</div>
-					<h2 class="text-xl font-semibold text-text-primary mb-2">No workout sessions found</h2>
-					<p class="text-text-secondary">
-						{#if sessions.length === 0}
-							Start working out to see your history here
-						{:else}
-							Try adjusting your search or filters
-						{/if}
-					</p>
-				{/snippet}
-			</Card>
-		{:else}
-			<div class="grid grid-cols-1 gap-4">
-				{#each paginatedSessions as session, index}
-					<Card hover>
-						{#snippet children()}
-							<button
-								class="w-full text-left"
-								onclick={() => (showSessionDetail = session)}
-								onkeydown={(e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										showSessionDetail = session;
-									}
-								}}
-								type="button"
-							>
-								<div class="flex items-start justify-between">
-									<div class="flex-1">
-										<h3 class="text-xl font-semibold text-text-primary mb-2">{session.workoutName}</h3>
-										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-											<div class="flex items-center gap-2">
-												<span class="text-text-muted">📅</span>
-												<span class="text-sm text-text-secondary">{formatDate(session.date)}</span>
-											</div>
-											<div class="flex items-center gap-2">
-												<span class="text-text-muted">⏱️</span>
-												<span class="text-sm text-text-secondary">{formatDuration(session.duration)}</span>
-											</div>
-											<div class="flex items-center gap-2">
-												<span class="text-text-muted">💪</span>
-												<span class="text-sm text-text-secondary">{getSessionSummary(session)}</span>
-											</div>
-										</div>
-										{#if session.notes}
-											<p class="text-sm text-text-secondary mt-2 bg-surface-elevated p-2 rounded">
-												{session.notes}
-											</p>
-										{/if}
+					<button
+						class="w-full text-left"
+						onclick={() => (showSessionDetail = session)}
+						type="button"
+					>
+						<div class="flex items-start justify-between">
+							<div class="flex-1">
+								<h3 class="text-xl font-semibold text-text-primary mb-2">{session.workoutName}</h3>
+								<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+									<div class="flex items-center gap-2">
+										<span class="text-text-muted">📅</span>
+										<span class="text-sm text-text-secondary">{formatDate(session.date)}</span>
 									</div>
-									<div class="flex items-center gap-2 ml-4">
-										<ChevronDownIcon class="w-5 h-5 text-text-muted" />
+									<div class="flex items-center gap-2">
+										<span class="text-text-muted">⏱️</span>
+										<span class="text-sm text-text-secondary">{formatDuration(session.duration)}</span>
+									</div>
+									<div class="flex items-center gap-2">
+										<span class="text-text-muted">💪</span>
+										<span class="text-sm text-text-secondary">{getSessionSummary(session)}</span>
 									</div>
 								</div>
-							</button>
-						{/snippet}
-					</Card>
-				{/each}
-			</div>
-
-			{#if hasMore}
-				<div class="mt-6 text-center">
-					<Button variant="primary" onclick={loadMore}>
-						Load More Sessions
-					</Button>
-				</div>
-			{/if}
-		{/if}
+								{#if session.notes}
+									<p class="text-sm text-text-secondary mt-2 bg-surface-elevated p-2 rounded">
+										{session.notes}
+									</p>
+								{/if}
+							</div>
+							<div class="flex items-center gap-2 ml-4">
+								<ChevronDownIcon class="w-5 h-5 text-text-muted" />
+							</div>
+						</div>
+					</button>
+				{/snippet}
+			</Card>
+		{/each}
 	</div>
-</div>
 
+	{#if hasMore}
+		<div class="mt-6 text-center">
+			<Button variant="primary" onclick={loadMore}>
+				Load More Sessions
+			</Button>
+		</div>
+	{/if}
+{/if}
+
+<!-- Session Detail Modal -->
 <Modal
 	open={showSessionDetail !== null}
 	title={showSessionDetail?.workoutName || ''}
@@ -398,7 +387,7 @@
 			</div>
 
 			{#if showSessionDetail.notes}
-				<InfoBox variant="info" class="mb-4">
+				<InfoBox type="info" class="mb-4">
 					<h3 class="font-semibold mb-2 text-sm sm:text-base">Notes</h3>
 					<p class="text-sm sm:text-base">{showSessionDetail.notes}</p>
 				</InfoBox>
@@ -472,6 +461,7 @@
 	{/snippet}
 </Modal>
 
+<!-- Delete Confirmation -->
 <ConfirmDialog
 	open={showDeleteConfirm}
 	title="Delete Workout"
@@ -482,6 +472,7 @@
 	oncancel={closeDeleteConfirm}
 />
 
+<!-- Edit Modal -->
 <Modal
 	open={showEditModal}
 	title="Edit Workout"
@@ -490,12 +481,16 @@
 >
 	{#snippet children()}
 		<div class="space-y-4">
-			<TextInput
-				label="Date"
-				type="date"
-				bind:value={editForm.date}
-				required
-			/>
+			<div>
+				<label for="edit-date" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">Date</label>
+				<input
+					id="edit-date"
+					type="date"
+					bind:value={editForm.date}
+					required
+					class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent text-sm text-text-primary min-h-[44px]"
+				/>
+			</div>
 
 			<TextInput
 				label="Workout Name"
@@ -511,7 +506,7 @@
 			/>
 
 			{#if saveError}
-				<InfoBox variant="error">
+				<InfoBox type="error">
 					<p class="text-sm">{saveError}</p>
 				</InfoBox>
 			{/if}
@@ -527,6 +522,7 @@
 	{/snippet}
 </Modal>
 
+<!-- Undo Toast -->
 {#if showUndoToast}
 	<div class="fixed bottom-4 right-4 bg-surface border border-warning/30 rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
 		<div class="flex-1">
@@ -552,4 +548,3 @@
 		</button>
 	</div>
 {/if}
-

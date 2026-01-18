@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseRoutine, Workout } from '$lib/types';
-	import { syncManager } from '$lib/syncUtils';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
@@ -12,8 +11,10 @@
 	let { onClose, onWorkoutUpdated, workout: initialWorkout } = $props<{
 		onClose: () => void;
 		onWorkoutUpdated: (workout: Workout) => void;
-		workout: Workout;
+		workout?: Workout;
 	}>();
+
+	const isCreateMode = $derived(!initialWorkout || !initialWorkout.id);
 
 	let availableExercises = $state<Exercise[]>([]);
 	let workoutName = $state('');
@@ -26,9 +27,11 @@
 	let newTargetWeight = $state(0);
 
 	onMount(() => {
-		workoutName = initialWorkout.name;
-		workoutExercises = [...initialWorkout.exercises];
-		workoutNotes = initialWorkout.notes || '';
+		if (initialWorkout) {
+			workoutName = initialWorkout.name;
+			workoutExercises = [...initialWorkout.exercises];
+			workoutNotes = initialWorkout.notes || '';
+		}
 		loadExercises();
 	});
 
@@ -99,17 +102,31 @@
 	async function saveWorkout() {
 		if (!isFormValid) return;
 
-		const updates = {
-			name: workoutName.trim(),
-			exercises: workoutExercises,
-			notes: workoutNotes.trim() || undefined,
-			updatedAt: new Date().toISOString()
-		};
+		if (isCreateMode) {
+			const now = new Date().toISOString();
+			const newWorkout: Workout = {
+				id: Date.now().toString(),
+				name: workoutName.trim(),
+				exercises: workoutExercises,
+				notes: workoutNotes.trim() || undefined,
+				createdAt: now,
+				updatedAt: now
+			};
 
-		await db.workouts.update(initialWorkout.id, Dexie.deepClone(updates));
-		const updatedWorkout: Workout = { ...initialWorkout, ...updates };
-		await syncManager.addToSyncQueue('workout', updatedWorkout.id, 'update', Dexie.deepClone(updatedWorkout));
-		onWorkoutUpdated(updatedWorkout);
+			await db.workouts.add(Dexie.deepClone(newWorkout));
+			onWorkoutUpdated(newWorkout);
+		} else if (initialWorkout) {
+			const updates = {
+				name: workoutName.trim(),
+				exercises: workoutExercises,
+				notes: workoutNotes.trim() || undefined,
+				updatedAt: new Date().toISOString()
+			};
+
+			await db.workouts.update(initialWorkout.id, Dexie.deepClone(updates));
+			const updatedWorkout: Workout = { ...initialWorkout, ...updates };
+			onWorkoutUpdated(updatedWorkout);
+		}
 		onClose();
 	}
 </script>
@@ -135,7 +152,7 @@
 	>
 		<div class="p-6 border-b border-border">
 			<div class="flex items-center justify-between">
-				<h2 id="modal-title" class="text-2xl font-display font-bold text-text-primary">Edit Workout Routine</h2>
+				<h2 id="modal-title" class="text-2xl font-display font-bold text-text-primary">{isCreateMode ? 'Create Workout' : 'Edit Workout Routine'}</h2>
 				<button
 					onclick={onClose}
 					class="p-2 hover:bg-surface-elevated rounded-full transition-colors"
@@ -202,7 +219,7 @@
 								</div>
 								<div class="flex-1 min-w-0">
 									<h4 class="font-medium text-text-primary mb-2">{exercise.exerciseName}</h4>
-									<div class="grid grid-cols-3 gap-2">
+									<div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
 										<div>
 											<label for="exercise-sets-{index}" class="block text-xs font-medium text-text-muted mb-1">Sets</label>
 											<input
@@ -288,7 +305,7 @@
 					{#if selectedExercise}
 						<div class="bg-surface-elevated border border-border rounded-lg p-4 mb-4">
 							<h3 class="font-semibold text-text-primary mb-3">Configure {selectedExercise.name}</h3>
-							<div class="grid grid-cols-3 gap-4 mb-4">
+							<div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4">
 								<div>
 									<label for="target-sets" class="block text-sm font-medium text-text-secondary mb-2">
 										Sets

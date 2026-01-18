@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
+	import type { Exercise } from '$lib/types';
 	import { getAllPersonalRecords, getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
-	import type { PersonalRecord, Exercise } from '$lib/types';
+	import type { PersonalRecord } from '$lib/types';
 	import { Button, Card, Modal } from '$lib/ui';
 
-	let allPRs = $state<PersonalRecord[]>([]);
 	let exercises = $state<Exercise[]>([]);
+	let allPRs = $state<PersonalRecord[]>([]);
 	let selectedExerciseId = $state<string | null>(null);
 	let prHistory = $state<any[]>([]);
 
@@ -46,75 +47,70 @@
 			prs: prs.sort((a, b) => a.reps - b.reps)
 		}));
 	});
+
+	async function refreshPRs() {
+		allPRs = await getAllPersonalRecords();
+	}
 </script>
 
-<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
-	<div class="max-w-7xl mx-auto w-full">
-		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-			<div class="flex items-center gap-4">
-				<Button variant="ghost" href="/">
-					← Back
-				</Button>
-				<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Personal Records</h1>
-			</div>
-			<Button onclick={() => window.location.reload()}>
-				Refresh
-			</Button>
-		</div>
-
-		{#if allPRs.length === 0}
-			<Card class="text-center" padding="lg">
-				{#snippet children()}
-					<div class="text-4xl sm:text-6xl mb-3 sm:mb-4 text-warning drop-shadow-[0_0_20px_rgba(255,149,0,0.5)]">🏆</div>
-					<h2 class="text-xl sm:text-2xl font-bold text-text-primary mb-2">No Personal Records Yet</h2>
-					<p class="text-sm sm:text-base text-text-secondary">
-						Start logging your workouts to track your personal records!
-					</p>
-				{/snippet}
-			</Card>
-		{:else}
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-				{#each groupedPRs as group}
-					<Card>
-						{#snippet children()}
-							<h2 class="text-lg sm:text-xl font-bold text-text-primary mb-3 sm:mb-4">{group.exerciseName}</h2>
-							<div class="space-y-2 sm:space-y-3">
-								{#each group.prs as pr}
-									<div
-										class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-3 bg-gradient-to-r from-warning/10 to-warning/5 rounded-lg border border-warning/30"
-									>
-										<div class="flex items-center gap-2 sm:gap-3">
-											<div class="w-9 h-9 sm:w-10 sm:h-10 bg-warning text-bg rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-[0_0_15px_rgba(255,149,0,0.4)]">
-												🏆
-											</div>
-											<div>
-												<p class="font-semibold text-text-primary text-sm sm:text-base">
-													{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
-												</p>
-												<p class="text-xs sm:text-sm text-text-muted">
-													{new Date(pr.achievedDate).toLocaleDateString()}
-												</p>
-											</div>
-										</div>
-										<Button
-											variant="ghost"
-											size="sm"
-											onclick={() => showHistory(pr)}
-											class="self-start sm:self-auto bg-secondary/20 text-secondary hover:bg-secondary/30"
-										>
-											View History
-										</Button>
-									</div>
-								{/each}
-							</div>
-						{/snippet}
-					</Card>
-				{/each}
-			</div>
-		{/if}
-	</div>
+<div class="flex justify-end mb-4">
+	<Button onclick={refreshPRs}>
+		Refresh
+	</Button>
 </div>
 
+{#if allPRs.length === 0}
+	<Card class="text-center" padding="lg">
+		{#snippet children()}
+			<div class="text-4xl sm:text-6xl mb-3 sm:mb-4 text-warning drop-shadow-[0_0_20px_rgba(255,149,0,0.5)]">🏆</div>
+			<h2 class="text-xl sm:text-2xl font-bold text-text-primary mb-2">No Personal Records Yet</h2>
+			<p class="text-sm sm:text-base text-text-secondary">
+				Start logging your workouts to track your personal records!
+			</p>
+		{/snippet}
+	</Card>
+{:else}
+	<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+		{#each groupedPRs as group}
+			<Card>
+				{#snippet children()}
+					<h2 class="text-lg sm:text-xl font-bold text-text-primary mb-3 sm:mb-4">{group.exerciseName}</h2>
+					<div class="space-y-2 sm:space-y-3">
+						{#each group.prs as pr}
+							<div
+								class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-3 bg-gradient-to-r from-warning/10 to-warning/5 rounded-lg border border-warning/30"
+							>
+								<div class="flex items-center gap-2 sm:gap-3">
+									<div class="w-9 h-9 sm:w-10 sm:h-10 bg-warning text-bg rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-[0_0_15px_rgba(255,149,0,0.4)]">
+										🏆
+									</div>
+									<div>
+										<p class="font-semibold text-text-primary text-sm sm:text-base">
+											{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+										</p>
+										<p class="text-xs sm:text-sm text-text-muted">
+											{new Date(pr.achievedDate).toLocaleDateString()}
+										</p>
+									</div>
+								</div>
+								<Button
+									variant="ghost"
+									size="sm"
+									onclick={() => showHistory(pr)}
+									class="self-start sm:self-auto bg-secondary/20 text-secondary hover:bg-secondary/30"
+								>
+									View History
+								</Button>
+							</div>
+						{/each}
+					</div>
+				{/snippet}
+			</Card>
+		{/each}
+	</div>
+{/if}
+
+<!-- PR History Modal -->
 <Modal
 	open={selectedExerciseId !== null && prHistory.length > 0}
 	title="PR History - {selectedExerciseId ? getExerciseName(selectedExerciseId) : ''}"
