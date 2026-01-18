@@ -5,6 +5,7 @@
 	import XIcon from '$lib/components/XIcon.svelte';
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
 	import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
 
@@ -144,7 +145,7 @@
 									<div class="flex flex-wrap gap-2">
 										{#each exercisePRs.get(exercise.id)?.slice(0, 3) as pr}
 											<span class="text-xs bg-warning/20 text-warning px-2 py-1 rounded-full font-medium">
-												{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+												{getRepRangeLabel(pr.reps)}: {pr.weight} {preferencesStore.weightUnit}
 											</span>
 										{/each}
 										{#if (exercisePRs.get(exercise.id)?.length || 0) > 3}

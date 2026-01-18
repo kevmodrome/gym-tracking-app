@@ -8,6 +8,7 @@
 	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
 	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox, SearchInput } from '$lib/ui';
 	import { invalidateSessions, invalidatePersonalRecords } from '$lib/invalidation';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
 
@@ -420,7 +421,7 @@
 											<tr class={set.completed ? 'bg-success/5' : ''}>
 												<td class="py-2 text-sm text-text-secondary">{idx + 1}</td>
 												<td class="py-2 text-sm text-text-secondary">{set.reps}</td>
-												<td class="py-2 text-sm text-text-secondary">{set.weight} lbs</td>
+												<td class="py-2 text-sm text-text-secondary">{set.weight} {preferencesStore.weightUnit}</td>
 												<td class="py-2 text-sm">
 													<span
 														class="px-2 py-1 rounded-full text-xs font-medium {set.completed
@@ -442,7 +443,7 @@
 										<div class="flex items-center gap-3">
 											<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed ? 'bg-success text-bg' : 'bg-surface text-text-muted'}">{idx + 1}</span>
 											<div>
-												<p class="text-sm font-medium text-text-primary">{set.reps} reps × {set.weight} lbs</p>
+												<p class="text-sm font-medium text-text-primary">{set.reps} reps × {set.weight} {preferencesStore.weightUnit}</p>
 											</div>
 										</div>
 										<span class="text-xs font-medium px-2 py-1 rounded-full {set.completed ? 'bg-success/20 text-success' : 'bg-surface text-text-muted'}">

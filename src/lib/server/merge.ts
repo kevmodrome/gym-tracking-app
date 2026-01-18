@@ -6,6 +6,7 @@ export interface SyncPayload {
 	workouts: SyncRecord[];
 	sessions: SyncRecord[];
 	personal_records: SyncRecord[];
+	preferences: SyncRecord[];
 	lastSync: number;
 }
 
@@ -20,6 +21,7 @@ export interface SyncResult {
 	workouts: SyncRecord[];
 	sessions: SyncRecord[];
 	personal_records: SyncRecord[];
+	preferences: SyncRecord[];
 	syncTimestamp: number;
 }
 
@@ -56,7 +58,8 @@ const TABLE_COLUMNS: Record<TableName, string[]> = {
 		'achieved_date',
 		'session_id',
 		'updated_at'
-	]
+	],
+	preferences: ['id', 'theme', 'weight_unit', 'distance_unit', 'decimal_places', 'updated_at']
 };
 
 export function mergeAndSync(db: Database.Database, payload: SyncPayload): SyncResult {
@@ -80,6 +83,7 @@ export function mergeAndSync(db: Database.Database, payload: SyncPayload): SyncR
 		workouts: getAllRecords(db, 'workouts'),
 		sessions: getAllRecords(db, 'sessions'),
 		personal_records: getAllRecords(db, 'personal_records'),
+		preferences: getAllRecords(db, 'preferences'),
 		syncTimestamp
 	};
 }

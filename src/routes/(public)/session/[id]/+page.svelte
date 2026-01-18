@@ -8,6 +8,7 @@
 	import RestTimer from '$lib/components/RestTimer.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { Trash2, Undo } from 'lucide-svelte';
 	import { Button, Card, Modal, ConfirmDialog, NumberSpinner, Textarea, InfoBox } from '$lib/ui';
 	import { invalidateSessions, invalidatePersonalRecords } from '$lib/invalidation';
@@ -902,7 +903,7 @@
 													</span>
 													<div class="flex-1 min-w-0">
 														<p class="text-xs sm:text-sm text-text-primary">
-															{set.reps} reps @ {set.weight} lbs
+															{set.reps} reps @ {set.weight} {preferencesStore.weightUnit}
 															{#if set.rpe}
 																<span class="text-text-muted">· RPE {set.rpe}</span>
 															{/if}
@@ -949,7 +950,7 @@
 						<p class="text-sm">Duration: {sessionDuration} minutes</p>
 						<p class="text-sm">Exercises: {sessionExercises.length}</p>
 						<p class="text-sm">Sets: {sessionExercises.reduce((acc, ex) => acc + ex.sets.length, 0)}</p>
-						<p class="text-sm">Total Volume: {calculateSessionVolume().toLocaleString()} lbs</p>
+						<p class="text-sm">Total Volume: {calculateSessionVolume().toLocaleString()} {preferencesStore.weightUnit}</p>
 					</InfoBox>
 
 					<Textarea

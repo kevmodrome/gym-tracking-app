@@ -5,6 +5,7 @@
 	import zoomPlugin from 'chartjs-plugin-zoom';
 	import { Button, Card, Modal, Select } from '$lib/ui';
 	import { ArrowLeft } from 'lucide-svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	Chart.register(zoomPlugin);
 
@@ -170,16 +171,16 @@
 
 	function getMetricLabel(): string {
 		switch (selectedMetric) {
-			case 'weight': return 'Weight (lbs)';
-			case 'volume': return 'Volume (lbs)';
+			case 'weight': return `Weight (${preferencesStore.weightUnit})`;
+			case 'volume': return `Volume (${preferencesStore.weightUnit})`;
 			case 'reps': return 'Max Reps';
 		}
 	}
 
 	function getMetricUnit(): string {
 		switch (selectedMetric) {
-			case 'weight': return ' lbs';
-			case 'volume': return ' lbs';
+			case 'weight': return ` ${preferencesStore.weightUnit}`;
+			case 'volume': return ` ${preferencesStore.weightUnit}`;
 			case 'reps': return ' reps';
 		}
 	}
@@ -293,7 +294,7 @@
 									</div>
 									<div class="flex-1 min-w-0">
 										<p class="font-semibold text-text-primary text-sm">
-											{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+											{getRepRangeLabel(pr.reps)}: {pr.weight} {preferencesStore.weightUnit}
 										</p>
 										<p class="text-xs text-text-muted">
 											{formatDate(pr.achievedDate)}
@@ -423,7 +424,7 @@
 					>
 						<div>
 							<p class="font-semibold text-text-primary">
-								{entry.weight} lbs @ {entry.reps} reps
+								{entry.weight} {preferencesStore.weightUnit} @ {entry.reps} reps
 							</p>
 							<p class="text-xs text-text-muted">
 								{formatDate(entry.achievedDate)}

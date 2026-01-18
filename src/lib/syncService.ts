@@ -1,6 +1,6 @@
-import { db } from './db';
+import { db, type DbPreferences } from './db';
 import { setSuppressHooks } from './dbHooks';
-import type { Exercise, Workout, Session, PersonalRecord } from './types';
+import type { Exercise, Workout, Session, PersonalRecord, AppPreferences } from './types';
 import { writable, get } from 'svelte/store';
 
 const SYNC_KEY_STORAGE = 'gym-app-sync-key';
@@ -98,7 +98,13 @@ export function clearSyncKey(): void {
 }
 
 // Transform local data to server format
-function transformToServer(exercises: Exercise[], workouts: Workout[], sessions: Session[], personalRecords: PersonalRecord[]) {
+function transformToServer(
+	exercises: Exercise[],
+	workouts: Workout[],
+	sessions: Session[],
+	personalRecords: PersonalRecord[],
+	preferences: DbPreferences | null
+) {
 	const now = Date.now();
 
 	return {
@@ -141,6 +147,18 @@ function transformToServer(exercises: Exercise[], workouts: Workout[], sessions:
 			session_id: pr.sessionId,
 			updated_at: new Date(pr.achievedDate).getTime()
 		})),
+		preferences: preferences
+			? [
+					{
+						id: preferences.id,
+						theme: preferences.theme,
+						weight_unit: preferences.weightUnit,
+						distance_unit: preferences.distanceUnit,
+						decimal_places: preferences.decimalPlaces,
+						updated_at: preferences.updatedAt
+					}
+				]
+			: [],
 		lastSync: get(lastSyncTime) || 0
 	};
 }
@@ -151,11 +169,13 @@ function transformFromServer(data: {
 	workouts: Array<Record<string, unknown>>;
 	sessions: Array<Record<string, unknown>>;
 	personal_records: Array<Record<string, unknown>>;
+	preferences: Array<Record<string, unknown>>;
 }): {
 	exercises: Exercise[];
 	workouts: Workout[];
 	sessions: Session[];
 	personalRecords: PersonalRecord[];
+	preferences: DbPreferences | null;
 } {
 	return {
 		exercises: data.exercises.map((e) => ({
@@ -193,7 +213,18 @@ function transformFromServer(data: {
 			weight: pr.weight as number,
 			achievedDate: pr.achieved_date as string,
 			sessionId: pr.session_id as string
-		}))
+		})),
+		preferences:
+			data.preferences && data.preferences.length > 0
+				? {
+						id: data.preferences[0].id as string,
+						theme: data.preferences[0].theme as AppPreferences['theme'],
+						weightUnit: data.preferences[0].weight_unit as AppPreferences['weightUnit'],
+						distanceUnit: data.preferences[0].distance_unit as AppPreferences['distanceUnit'],
+						decimalPlaces: data.preferences[0].decimal_places as number,
+						updatedAt: data.preferences[0].updated_at as number
+					}
+				: null
 	};
 }
 
@@ -213,15 +244,16 @@ export async function syncData(): Promise<SyncServiceResult> {
 
 	try {
 		// Get all local data
-		const [exercises, workouts, sessions, personalRecords] = await Promise.all([
+		const [exercises, workouts, sessions, personalRecords, preferences] = await Promise.all([
 			db.exercises.toArray(),
 			db.workouts.toArray(),
 			db.sessions.toArray(),
-			db.personalRecords.toArray()
+			db.personalRecords.toArray(),
+			db.preferences.get('default')
 		]);
 
 		// Transform and send to server
-		const payload = transformToServer(exercises, workouts, sessions, personalRecords);
+		const payload = transformToServer(exercises, workouts, sessions, personalRecords, preferences ?? null);
 
 		const response = await fetch(`/api/sync/${key}`, {
 			method: 'POST',
@@ -244,7 +276,7 @@ export async function syncData(): Promise<SyncServiceResult> {
 		try {
 			await db.transaction(
 				'rw',
-				[db.exercises, db.workouts, db.sessions, db.personalRecords],
+				[db.exercises, db.workouts, db.sessions, db.personalRecords, db.preferences],
 				async () => {
 					// Clear and replace each table
 					await db.exercises.clear();
@@ -258,6 +290,11 @@ export async function syncData(): Promise<SyncServiceResult> {
 
 					await db.personalRecords.clear();
 					await db.personalRecords.bulkAdd(serverData.personalRecords);
+
+					// Only update preferences if server has them
+					if (serverData.preferences) {
+						await db.preferences.put(serverData.preferences);
+					}
 				}
 			);
 		} finally {
