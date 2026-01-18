@@ -1,6 +1,5 @@
 import type { Session, PersonalRecord, PRHistory } from './types';
 import { db } from './db';
-import { syncManager } from './syncUtils';
 
 export async function calculatePersonalRecords(): Promise<void> {
 	const sessions = await db.sessions.toArray();
@@ -44,10 +43,6 @@ export async function calculatePersonalRecords(): Promise<void> {
 		});
 	});
 	await db.personalRecords.bulkPut(allPRs);
-
-	allPRs.forEach(async (pr) => {
-		await syncManager.addToSyncQueue('personalRecord', pr.id, 'update', pr);
-	});
 }
 
 export async function getPersonalRecordsForExercise(

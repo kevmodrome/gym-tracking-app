@@ -3,7 +3,6 @@
 	import { db, liveQuery } from '$lib/db';
 	import type { Session, Exercise } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
-	import { syncManager } from '$lib/syncUtils';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
@@ -143,7 +142,6 @@
 
 		try {
 			await db.sessions.delete(showSessionDetail.id);
-			await syncManager.addToSyncQueue('session', showSessionDetail.id, 'delete', showSessionDetail);
 			deletedSession = showSessionDetail;
 			showSessionDetail = null;
 			showDeleteConfirm = false;
@@ -166,7 +164,6 @@
 
 		try {
 			await db.sessions.add(deletedSession);
-			await syncManager.addToSyncQueue('session', deletedSession.id, 'create', deletedSession);
 			await calculatePersonalRecords();
 
 			if (undoTimeout) clearTimeout(undoTimeout);
@@ -221,7 +218,6 @@
 				workoutName: updatedSession.workoutName,
 				notes: updatedSession.notes
 			});
-			await syncManager.addToSyncQueue('session', updatedSession.id, 'update', updatedSession);
 
 			showSessionDetail = updatedSession;
 			showEditModal = false;

@@ -4,7 +4,6 @@
 	import { db } from '$lib/db';
 	import type { Workout, Exercise, Session, SessionExercise, ExerciseSet } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
-	import { syncManager } from '$lib/syncUtils';
 	import RestTimer from '$lib/components/RestTimer.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import EditWorkoutModal from '$lib/components/EditWorkoutModal.svelte';
@@ -139,7 +138,6 @@
 		};
 
 		await db.sessions.add(Dexie.deepClone(session));
-		await syncManager.addToSyncQueue('session', session.id, 'create', Dexie.deepClone(session));
 		await calculatePersonalRecords();
 
 		localStorage.removeItem(`gym-app-session-${selectedWorkout.id}`);
@@ -239,7 +237,6 @@
 		};
 
 		await db.workouts.add(copiedWorkout);
-		await syncManager.addToSyncQueue('workout', copiedWorkout.id, 'create', copiedWorkout);
 		workouts = await db.workouts.toArray();
 	}
 
