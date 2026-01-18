@@ -1,12 +1,10 @@
 <script lang="ts">
 	import Dexie from 'dexie';
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import { db } from '$lib/db';
-	import type { Exercise, ExerciseRoutine, Workout } from '$lib/types';
+	import type { Exercise, ExerciseRoutine } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
@@ -14,15 +12,20 @@
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Card, ConfirmDialog, Textarea } from '$lib/ui';
 	import NumberSpinner from '$lib/ui/NumberSpinner.svelte';
+	import { invalidateWorkouts } from '$lib/invalidation';
 
-	const workoutId = $derived($page.params.id);
+	let { data } = $props();
 
-	let workout = $state<Workout | null>(null);
-	let loading = $state(true);
-	let availableExercises = $state<Exercise[]>([]);
-	let workoutName = $state('');
-	let workoutExercises = $state<ExerciseRoutine[]>([]);
-	let workoutNotes = $state('');
+	// Data from load function
+	const workout = $derived(data.workout);
+	const availableExercises = $derived(data.availableExercises);
+
+	// Form state (initialized from data)
+	let workoutName = $state(data.workout?.name ?? '');
+	let workoutExercises = $state<ExerciseRoutine[]>([...(data.workout?.exercises ?? [])]);
+	let workoutNotes = $state(data.workout?.notes ?? '');
+
+	// UI state
 	let exerciseSearch = $state('');
 	let selectedExercise = $state<Exercise | null>(null);
 	let newTargetSets = $state(3);
@@ -30,22 +33,6 @@
 	let newTargetWeight = $state(0);
 	let showDeleteConfirm = $state(false);
 	let saving = $state(false);
-
-	onMount(async () => {
-		workout = await db.workouts.get(workoutId) ?? null;
-
-		if (!workout) {
-			goto('/workout');
-			return;
-		}
-
-		workoutName = workout.name;
-		workoutExercises = [...workout.exercises];
-		workoutNotes = workout.notes || '';
-
-		availableExercises = await db.exercises.toArray();
-		loading = false;
-	});
 
 	const filteredExercises = $derived.by(() => {
 		if (!exerciseSearch) return availableExercises;
@@ -120,6 +107,7 @@
 			};
 
 			await db.workouts.update(workout.id, Dexie.deepClone(updates));
+			await invalidateWorkouts();
 			toastStore.showSuccess('Workout saved successfully');
 			goto('/workout');
 		} catch (error) {
@@ -135,6 +123,7 @@
 
 		try {
 			await db.workouts.delete(workout.id);
+			await invalidateWorkouts();
 			toastStore.showSuccess('Workout deleted');
 			goto('/workout');
 		} catch (error) {
@@ -154,18 +143,7 @@
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-4xl mx-auto w-full">
-		{#if loading}
-			<div class="flex items-center justify-center min-h-[50vh]">
-				<div class="text-text-muted">Loading workout...</div>
-			</div>
-		{:else if !workout}
-			<div class="flex items-center justify-center min-h-[50vh]">
-				<div class="text-center">
-					<p class="text-text-secondary mb-4">Workout not found</p>
-					<Button variant="primary" href="/workout">Back to Workouts</Button>
-				</div>
-			</div>
-		{:else}
+		{#if workout}
 			<!-- Header -->
 			<div class="flex items-center justify-between mb-4 sm:mb-6">
 				<Button variant="ghost" href="/workout">← Back</Button>

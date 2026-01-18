@@ -1,15 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Workout } from '$lib/types';
 	import { Button, Card, PageHeader } from '$lib/ui';
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
+	import { invalidateWorkouts } from '$lib/invalidation';
 
-	let workouts = $state<Workout[]>([]);
-
-	onMount(async () => {
-		workouts = await db.workouts.toArray();
-	});
+	let { data } = $props();
 
 	async function copyWorkout(workout: Workout) {
 		const copiedWorkout: Workout = {
@@ -28,7 +24,7 @@
 		};
 
 		await db.workouts.add(copiedWorkout);
-		workouts = await db.workouts.toArray();
+		await invalidateWorkouts();
 	}
 </script>
 
@@ -49,7 +45,7 @@
 
 		<Card>
 			{#snippet children()}
-				{#if workouts.length === 0}
+				{#if data.workouts.length === 0}
 					<div class="text-center py-8">
 						<p class="text-text-secondary mb-4">No workouts created yet.</p>
 						<Button variant="primary" href="/workout/new">
@@ -58,7 +54,7 @@
 					</div>
 				{:else}
 					<div class="space-y-3">
-						{#each workouts as workout}
+						{#each data.workouts as workout}
 							<div class="border border-border rounded-lg hover:bg-accent/5 hover:border-accent/50 transition-colors">
 								<div class="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 									<a

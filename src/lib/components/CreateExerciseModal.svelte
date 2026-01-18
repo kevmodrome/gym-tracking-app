@@ -5,6 +5,7 @@
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import { Button, Modal, TextInput, Select, InfoBox } from '$lib/ui';
+	import { invalidateExercises } from '$lib/invalidation';
 
 	let { onCreate, onClose } = $props<{
 		onCreate: (exercise: Exercise) => void;
@@ -68,6 +69,7 @@
 		};
 
 		await db.exercises.add(Dexie.deepClone(newExercise));
+		await invalidateExercises();
 		onCreate(newExercise);
 		onClose();
 	}

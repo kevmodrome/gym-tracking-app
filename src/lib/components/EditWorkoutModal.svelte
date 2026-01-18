@@ -11,6 +11,7 @@
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
 	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
 	import NumberSpinner from '$lib/ui/NumberSpinner.svelte';
+	import { invalidateWorkouts } from '$lib/invalidation';
 
 	let { onClose, onWorkoutUpdated, workout: initialWorkout } = $props<{
 		onClose: () => void;
@@ -118,6 +119,7 @@
 			};
 
 			await db.workouts.add(Dexie.deepClone(newWorkout));
+			await invalidateWorkouts();
 			onWorkoutUpdated(newWorkout);
 		} else if (initialWorkout) {
 			const updates = {
@@ -128,6 +130,7 @@
 			};
 
 			await db.workouts.update(initialWorkout.id, Dexie.deepClone(updates));
+			await invalidateWorkouts();
 			const updatedWorkout: Workout = { ...initialWorkout, ...updates };
 			onWorkoutUpdated(updatedWorkout);
 		}

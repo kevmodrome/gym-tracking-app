@@ -1,21 +1,25 @@
 <script lang="ts">
 	import Dexie from 'dexie';
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
-	import type { Workout, Exercise, Session, SessionExercise, ExerciseSet } from '$lib/types';
+	import type { Session, SessionExercise, ExerciseSet } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
 	import RestTimer from '$lib/components/RestTimer.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Trash2, Undo } from 'lucide-svelte';
 	import { Button, Card, Modal, ConfirmDialog, NumberSpinner, Textarea, InfoBox } from '$lib/ui';
+	import { invalidateSessions, invalidatePersonalRecords } from '$lib/invalidation';
 
-	const workoutId = $derived($page.params.id);
+	let { data } = $props();
 
-	let workout = $state<Workout | null>(null);
-	let exercises = $state<Exercise[]>([]);
+	// Data from load function
+	const workout = $derived(data.workout);
+	const exercises = $derived(data.exercises);
+	const workoutId = $derived(data.workoutId);
+
+	// Session state
 	let sessionExercises = $state<SessionExercise[]>([]);
 	let currentExerciseIndex = $state(0);
 	let currentSetIndex = $state(0);
@@ -50,10 +54,7 @@
 	let showExerciseUndoToast = $state(false);
 	let exerciseSaveRetries = $state(0);
 
-	onMount(async () => {
-		exercises = await db.exercises.toArray();
-		workout = await db.workouts.get(workoutId) ?? null;
-
+	onMount(() => {
 		if (!workout) {
 			goto('/workout');
 			return;
@@ -143,6 +144,8 @@
 
 		await db.sessions.add(Dexie.deepClone(session));
 		await calculatePersonalRecords();
+		await invalidateSessions();
+		await invalidatePersonalRecords();
 
 		localStorage.removeItem(`gym-app-session-${workout.id}`);
 

@@ -1,51 +1,26 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import { db, liveQuery } from '$lib/db';
-	import type { Exercise, Session } from '$lib/types';
-	import { getPersonalRecordsForExercise, getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
+	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
 	import type { PersonalRecord } from '$lib/types';
 	import Chart from 'chart.js/auto';
 	import zoomPlugin from 'chartjs-plugin-zoom';
 	import { Button, Card, Modal, Select } from '$lib/ui';
-	import { ArrowLeft, Edit, Trash2 } from 'lucide-svelte';
+	import { ArrowLeft } from 'lucide-svelte';
 
 	Chart.register(zoomPlugin);
 
-	const exerciseId = $derived($page.params.id);
+	let { data } = $props();
 
-	let exercise = $state<Exercise | null>(null);
-	let sessions = $state<Session[]>([]);
-	let personalRecords = $state<PersonalRecord[]>([]);
+	// Destructure data for easier access
+	const exercise = $derived(data.exercise);
+	const sessions = $derived(data.sessions);
+	const personalRecords = $derived(data.personalRecords);
+	const exerciseId = $derived(data.exerciseId);
+
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
 	let chartInstance: Chart | null = null;
 	let chartCanvas = $state<HTMLCanvasElement>();
 	let selectedPR = $state<PersonalRecord | null>(null);
 	let prHistory = $state<any[]>([]);
-	let loading = $state(true);
-
-	onMount(async () => {
-		if (!exerciseId) {
-			goto('/exercises');
-			return;
-		}
-
-		exercise = await db.exercises.get(exerciseId) ?? null;
-		if (!exercise) {
-			goto('/exercises');
-			return;
-		}
-
-		personalRecords = await getPersonalRecordsForExercise(exerciseId);
-
-		liveQuery(() => db.sessions.orderBy('date').reverse().toArray()).subscribe((data) => {
-			sessions = data.filter(s =>
-				s.exercises.some(e => e.exerciseId === exerciseId)
-			);
-			loading = false;
-		});
-	});
 
 	const exerciseSessions = $derived.by(() => {
 		return [...sessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -244,11 +219,7 @@
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-4xl mx-auto w-full">
-		{#if loading}
-			<div class="flex items-center justify-center min-h-[50vh]">
-				<div class="text-text-muted">Loading...</div>
-			</div>
-		{:else if exercise}
+		{#if exercise}
 			<!-- Header -->
 			<div class="flex items-center gap-4 mb-6">
 				<Button variant="ghost" href="/exercises">
