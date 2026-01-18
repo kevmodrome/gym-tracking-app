@@ -82,14 +82,9 @@
 	<div class="max-w-6xl mx-auto w-full">
 		<!-- Header -->
 		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-			<div class="flex items-center gap-4">
-				<Button variant="ghost" href="/">
-					← Back
-				</Button>
-				<h1 class="text-2xl sm:text-3xl font-bold font-display text-text-primary">
-					Browse Exercises
-				</h1>
-			</div>
+			<h1 class="text-2xl sm:text-3xl font-bold font-display text-text-primary">
+				Browse Exercises
+			</h1>
 			<Button variant="secondary" onclick={() => (showCreateModal = true)}>
 				<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
 				<span class="hidden sm:inline">Add Exercise</span>

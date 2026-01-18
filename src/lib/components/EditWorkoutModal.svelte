@@ -11,8 +11,10 @@
 	let { onClose, onWorkoutUpdated, workout: initialWorkout } = $props<{
 		onClose: () => void;
 		onWorkoutUpdated: (workout: Workout) => void;
-		workout: Workout;
+		workout?: Workout;
 	}>();
+
+	const isCreateMode = $derived(!initialWorkout || !initialWorkout.id);
 
 	let availableExercises = $state<Exercise[]>([]);
 	let workoutName = $state('');
@@ -25,9 +27,11 @@
 	let newTargetWeight = $state(0);
 
 	onMount(() => {
-		workoutName = initialWorkout.name;
-		workoutExercises = [...initialWorkout.exercises];
-		workoutNotes = initialWorkout.notes || '';
+		if (initialWorkout) {
+			workoutName = initialWorkout.name;
+			workoutExercises = [...initialWorkout.exercises];
+			workoutNotes = initialWorkout.notes || '';
+		}
 		loadExercises();
 	});
 
@@ -98,16 +102,31 @@
 	async function saveWorkout() {
 		if (!isFormValid) return;
 
-		const updates = {
-			name: workoutName.trim(),
-			exercises: workoutExercises,
-			notes: workoutNotes.trim() || undefined,
-			updatedAt: new Date().toISOString()
-		};
+		if (isCreateMode) {
+			const now = new Date().toISOString();
+			const newWorkout: Workout = {
+				id: Date.now().toString(),
+				name: workoutName.trim(),
+				exercises: workoutExercises,
+				notes: workoutNotes.trim() || undefined,
+				createdAt: now,
+				updatedAt: now
+			};
 
-		await db.workouts.update(initialWorkout.id, Dexie.deepClone(updates));
-		const updatedWorkout: Workout = { ...initialWorkout, ...updates };
-		onWorkoutUpdated(updatedWorkout);
+			await db.workouts.add(Dexie.deepClone(newWorkout));
+			onWorkoutUpdated(newWorkout);
+		} else if (initialWorkout) {
+			const updates = {
+				name: workoutName.trim(),
+				exercises: workoutExercises,
+				notes: workoutNotes.trim() || undefined,
+				updatedAt: new Date().toISOString()
+			};
+
+			await db.workouts.update(initialWorkout.id, Dexie.deepClone(updates));
+			const updatedWorkout: Workout = { ...initialWorkout, ...updates };
+			onWorkoutUpdated(updatedWorkout);
+		}
 		onClose();
 	}
 </script>
@@ -133,7 +152,7 @@
 	>
 		<div class="p-6 border-b border-border">
 			<div class="flex items-center justify-between">
-				<h2 id="modal-title" class="text-2xl font-display font-bold text-text-primary">Edit Workout Routine</h2>
+				<h2 id="modal-title" class="text-2xl font-display font-bold text-text-primary">{isCreateMode ? 'Create Workout' : 'Edit Workout Routine'}</h2>
 				<button
 					onclick={onClose}
 					class="p-2 hover:bg-surface-elevated rounded-full transition-colors"

@@ -300,12 +300,7 @@
 <div class="min-h-screen bg-bg p-4 md:p-8">
 	<div class="max-w-2xl mx-auto">
 		<div class="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
-			<div class="flex items-center gap-4 w-full sm:w-auto">
-				<Button variant="ghost" href="/">
-					← Back
-				</Button>
-				<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Settings</h1>
-			</div>
+			<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Settings</h1>
 			<Button onclick={saveSettings}>
 				Save Settings
 			</Button>

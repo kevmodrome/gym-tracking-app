@@ -27,6 +27,7 @@
 	let editingSetIndex = $state<number | null>(null);
 	let showEditModal = $state(false);
 	let editingWorkout = $state<Workout | null>(null);
+	let showCreateModal = $state(false);
 	let showDeleteConfirm = $state(false);
 	let deletingSetIndex = $state<number | null>(null);
 	let deletedSet = $state<{ exerciseIndex: number; setIndex: number; set: ExerciseSet } | null>(null);
@@ -255,6 +256,11 @@
 		if (selectedWorkout?.id === updatedWorkout.id) {
 			selectedWorkout = updatedWorkout;
 		}
+	}
+
+	async function handleWorkoutCreated(newWorkout: Workout) {
+		workouts = await db.workouts.toArray();
+		showCreateModal = false;
 	}
 
 	function editSet(setIndex: number) {
@@ -783,13 +789,15 @@
 				{#snippet children()}
 					<div class="flex items-center justify-between mb-4 sm:mb-6">
 						<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary">Select Workout</h1>
-						<Button variant="ghost" href="/">Cancel</Button>
+						<Button variant="secondary" onclick={() => (showCreateModal = true)}>
+							+ Create Workout
+						</Button>
 					</div>
 
 					{#if workouts.length === 0}
 						<div class="text-center py-8">
 							<p class="text-text-secondary mb-4">No workouts created yet.</p>
-							<Button variant="primary" href="/">
+							<Button variant="primary" onclick={() => (showCreateModal = true)}>
 								Create a Workout
 							</Button>
 						</div>
@@ -1296,6 +1304,13 @@
 				workout={editingWorkout}
 				onClose={closeEditModal}
 				onWorkoutUpdated={handleWorkoutUpdated}
+			/>
+		{/if}
+
+		{#if showCreateModal}
+			<EditWorkoutModal
+				onClose={() => (showCreateModal = false)}
+				onWorkoutUpdated={handleWorkoutCreated}
 			/>
 		{/if}
 	</div>
