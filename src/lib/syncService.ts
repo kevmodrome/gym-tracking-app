@@ -1,4 +1,5 @@
 import { db } from './db';
+import { setSuppressHooks } from './dbHooks';
 import type { Exercise, Workout, Session, PersonalRecord } from './types';
 import { writable, get } from 'svelte/store';
 
@@ -238,20 +239,30 @@ export async function syncData(): Promise<SyncServiceResult> {
 		const serverData = transformFromServer(result.data);
 
 		// Replace local data with merged server data
-		await db.transaction('rw', [db.exercises, db.workouts, db.sessions, db.personalRecords], async () => {
-			// Clear and replace each table
-			await db.exercises.clear();
-			await db.exercises.bulkAdd(serverData.exercises);
+		// Suppress hooks during sync writes to prevent recursive sync triggers
+		setSuppressHooks(true);
+		try {
+			await db.transaction(
+				'rw',
+				[db.exercises, db.workouts, db.sessions, db.personalRecords],
+				async () => {
+					// Clear and replace each table
+					await db.exercises.clear();
+					await db.exercises.bulkAdd(serverData.exercises);
 
-			await db.workouts.clear();
-			await db.workouts.bulkAdd(serverData.workouts);
+					await db.workouts.clear();
+					await db.workouts.bulkAdd(serverData.workouts);
 
-			await db.sessions.clear();
-			await db.sessions.bulkAdd(serverData.sessions);
+					await db.sessions.clear();
+					await db.sessions.bulkAdd(serverData.sessions);
 
-			await db.personalRecords.clear();
-			await db.personalRecords.bulkAdd(serverData.personalRecords);
-		});
+					await db.personalRecords.clear();
+					await db.personalRecords.bulkAdd(serverData.personalRecords);
+				}
+			);
+		} finally {
+			setSuppressHooks(false);
+		}
 
 		const syncTimestamp = result.data.syncTimestamp;
 		lastSyncTime.set(syncTimestamp);

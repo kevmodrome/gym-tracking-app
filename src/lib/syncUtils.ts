@@ -4,6 +4,7 @@ import type { SyncStatus, SyncResult, SyncProgress } from './types';
 
 export class SyncManager {
 	private syncInProgress = false;
+	private pendingSync = false;
 	private autoSyncInterval: ReturnType<typeof setInterval> | null = null;
 	private readonly AUTO_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -35,15 +36,30 @@ export class SyncManager {
 	}
 
 	async scheduleSync(): Promise<void> {
-		if (this.syncInProgress || !this.isOnline() || !isSyncEnabled()) {
+		if (!this.isOnline() || !isSyncEnabled()) {
+			return;
+		}
+
+		// If sync is running, queue a follow-up sync
+		if (this.syncInProgress) {
+			this.pendingSync = true;
 			return;
 		}
 
 		this.syncInProgress = true;
+		this.pendingSync = false;
+
 		// Small delay to batch rapid changes
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		await this.sync();
+
 		this.syncInProgress = false;
+
+		// If changes were made during sync, sync again
+		if (this.pendingSync) {
+			this.pendingSync = false;
+			this.scheduleSync();
+		}
 	}
 
 	async sync(onProgress?: (progress: SyncProgress) => void): Promise<SyncResult> {
