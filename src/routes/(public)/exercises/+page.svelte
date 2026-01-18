@@ -7,16 +7,14 @@
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
-	import CreateExerciseModal from '$lib/components/CreateExerciseModal.svelte';
-	import { Button, Card, SearchInput, Select } from '$lib/ui';
+		import { Button, Card, SearchInput, Select } from '$lib/ui';
 
 	let exercises = $state<Exercise[]>([]);
 	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
 	let searchQuery = $state('');
 	let selectedCategory = $state<ExerciseCategory | ''>('');
 	let selectedMuscle = $state<MuscleGroup | ''>('');
-	let showCreateModal = $state(false);
-
+	
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
 
@@ -63,10 +61,7 @@
 		exercisePRs = prMap;
 	}
 
-	async function handleExerciseCreated(newExercise: Exercise) {
-		exercises = await db.exercises.toArray();
-	}
-
+	
 	function clearFilters() {
 		searchQuery = '';
 		selectedCategory = '';
@@ -85,7 +80,7 @@
 			<h1 class="text-2xl sm:text-3xl font-bold font-display text-text-primary">
 				Browse Exercises
 			</h1>
-			<Button variant="secondary" onclick={() => (showCreateModal = true)}>
+			<Button variant="secondary" href="/exercises/new">
 				<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
 				<span class="hidden sm:inline">Add Exercise</span>
 			</Button>
@@ -150,9 +145,10 @@
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				{#each filteredExercises as exercise}
-					<Card hoverable>
-						{#snippet children()}
-							<div class="flex items-start justify-between mb-3">
+					<a href="/exercises/{exercise.id}" class="block">
+						<Card hoverable>
+							{#snippet children()}
+								<div class="flex items-start justify-between mb-3">
 								<h3 class="text-lg font-semibold text-text-primary">{exercise.name}</h3>
 								{#if exercise.is_custom}
 									<span class="px-2 py-1 text-xs font-medium bg-accent/20 text-accent rounded-full">
@@ -212,16 +208,11 @@
 								</div>
 							</div>
 						{/snippet}
-					</Card>
+						</Card>
+					</a>
 				{/each}
 			</div>
 		{/if}
 	</div>
 </div>
 
-{#if showCreateModal}
-	<CreateExerciseModal
-		onCreate={handleExerciseCreated}
-		onClose={() => (showCreateModal = false)}
-	/>
-{/if}

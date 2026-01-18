@@ -176,7 +176,7 @@
 					{#if selectedExercise}
 						<div class="bg-surface-elevated rounded-lg p-4 mb-4 border border-border">
 							<h3 class="font-semibold text-text-primary mb-3">Configure {selectedExercise.name}</h3>
-							<div class="grid grid-cols-3 gap-4 mb-4">
+							<div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4">
 								<div>
 									<label for="target-sets" class="block text-sm font-medium text-text-secondary mb-2">
 										Sets

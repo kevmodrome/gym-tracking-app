@@ -13,6 +13,7 @@
 		required?: boolean;
 		disabled?: boolean;
 		hint?: string;
+		size?: 'sm' | 'md';
 		class?: string;
 		onchange?: (value: string | number) => void;
 	}
@@ -26,9 +27,15 @@
 		required = false,
 		disabled = false,
 		hint,
+		size = 'md',
 		class: className = '',
 		onchange
 	}: SelectProps = $props();
+
+	const sizeClasses = {
+		sm: 'pl-3 pr-8 py-2 text-sm',
+		md: 'pl-4 pr-10 py-3 text-base'
+	};
 
 	const selectId = id || `select-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -53,7 +60,7 @@
 		{required}
 		{disabled}
 		onchange={handleChange}
-		class="w-full px-4 py-3 text-base bg-surface-elevated border border-border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent min-h-[44px] text-text-primary {disabled ? 'bg-surface opacity-60 cursor-not-allowed' : 'hover:border-border-active'}"
+		class="w-full {sizeClasses[size]} bg-surface-elevated border border-border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent min-h-[44px] text-text-primary {disabled ? 'bg-surface opacity-60 cursor-not-allowed' : 'hover:border-border-active'}"
 	>
 		{#if placeholder}
 			<option value="" disabled class="bg-surface-elevated text-text-muted">{placeholder}</option>

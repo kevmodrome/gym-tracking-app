@@ -219,7 +219,7 @@
 								</div>
 								<div class="flex-1 min-w-0">
 									<h4 class="font-medium text-text-primary mb-2">{exercise.exerciseName}</h4>
-									<div class="grid grid-cols-3 gap-2">
+									<div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
 										<div>
 											<label for="exercise-sets-{index}" class="block text-xs font-medium text-text-muted mb-1">Sets</label>
 											<input
@@ -305,7 +305,7 @@
 					{#if selectedExercise}
 						<div class="bg-surface-elevated border border-border rounded-lg p-4 mb-4">
 							<h3 class="font-semibold text-text-primary mb-3">Configure {selectedExercise.name}</h3>
-							<div class="grid grid-cols-3 gap-4 mb-4">
+							<div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4">
 								<div>
 									<label for="target-sets" class="block text-sm font-medium text-text-secondary mb-2">
 										Sets

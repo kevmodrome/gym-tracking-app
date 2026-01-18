@@ -22,8 +22,17 @@
 		if (path === '/') {
 			return currentPath === '/';
 		}
+		// Match /exercises and /exercises/new
 		if (path === '/exercises') {
-			return currentPath === '/exercises';
+			return currentPath === '/exercises' || currentPath.startsWith('/exercises/');
+		}
+		// Match /workout and /workout/new
+		if (path === '/workout') {
+			return currentPath === '/workout' || currentPath.startsWith('/workout/');
+		}
+		// Match /progress and all subroutes
+		if (path === '/progress') {
+			return currentPath === '/progress' || currentPath.startsWith('/progress/');
 		}
 		return currentPath.startsWith(path);
 	}
