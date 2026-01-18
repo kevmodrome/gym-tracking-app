@@ -163,7 +163,7 @@
 			<PageHeader title="Dashboard">
 				{#snippet actions()}
 					<Button variant="primary" href="/workout">
-						Start Your First Workout
+						Start
 					</Button>
 				{/snippet}
 			</PageHeader>
