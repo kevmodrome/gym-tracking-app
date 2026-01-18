@@ -26,6 +26,11 @@
 	let loading = $state(true);
 
 	onMount(async () => {
+		if (!exerciseId) {
+			goto('/exercises');
+			return;
+		}
+
 		exercise = await db.exercises.get(exerciseId) ?? null;
 		if (!exercise) {
 			goto('/exercises');
@@ -264,35 +269,37 @@
 			<!-- Exercise Details -->
 			<Card class="mb-6">
 				{#snippet children()}
-					<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-						<div>
-							<p class="text-xs text-text-muted mb-1">Category</p>
-							<p class="text-sm font-medium text-text-primary capitalize">{exercise.category}</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted mb-1">Primary Muscle</p>
-							<p class="text-sm font-medium text-text-primary capitalize">{exercise.primary_muscle}</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted mb-1">Equipment</p>
-							<p class="text-sm font-medium text-text-primary">{exercise.equipment}</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted mb-1">Sessions</p>
-							<p class="text-sm font-medium text-text-primary">{exerciseSessions.length}</p>
-						</div>
-					</div>
-					{#if exercise.secondary_muscles.length > 0}
-						<div class="mt-4 pt-4 border-t border-border">
-							<p class="text-xs text-text-muted mb-2">Secondary Muscles</p>
-							<div class="flex flex-wrap gap-2">
-								{#each exercise.secondary_muscles as muscle}
-									<span class="text-xs bg-surface-elevated text-text-secondary px-2 py-1 rounded capitalize">
-										{muscle}
-									</span>
-								{/each}
+					{#if exercise}
+						<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+							<div>
+								<p class="text-xs text-text-muted mb-1">Category</p>
+								<p class="text-sm font-medium text-text-primary capitalize">{exercise.category}</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted mb-1">Primary Muscle</p>
+								<p class="text-sm font-medium text-text-primary capitalize">{exercise.primary_muscle}</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted mb-1">Equipment</p>
+								<p class="text-sm font-medium text-text-primary">{exercise.equipment}</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted mb-1">Sessions</p>
+								<p class="text-sm font-medium text-text-primary">{exerciseSessions.length}</p>
 							</div>
 						</div>
+						{#if exercise.secondary_muscles.length > 0}
+							<div class="mt-4 pt-4 border-t border-border">
+								<p class="text-xs text-text-muted mb-2">Secondary Muscles</p>
+								<div class="flex flex-wrap gap-2">
+									{#each exercise.secondary_muscles as muscle}
+										<span class="text-xs bg-surface-elevated text-text-secondary px-2 py-1 rounded capitalize">
+											{muscle}
+										</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					{/if}
 				{/snippet}
 			</Card>
