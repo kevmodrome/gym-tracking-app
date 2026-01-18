@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { SCHEMA } from './schema';
+import { SCHEMA, TABLES } from './schema';
 import path from 'path';
 import fs from 'fs';
 
@@ -12,6 +12,21 @@ if (!fs.existsSync(DATA_DIR)) {
 
 // Cache of open database connections
 const dbCache = new Map<string, Database.Database>();
+
+// Check if a column exists in a table
+function columnExists(db: Database.Database, table: string, column: string): boolean {
+	const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+	return columns.some((col) => col.name === column);
+}
+
+// Migrate database schema to add deleted_at column if missing
+function migrateDatabase(db: Database.Database): void {
+	for (const table of TABLES) {
+		if (!columnExists(db, table, 'deleted_at')) {
+			db.exec(`ALTER TABLE ${table} ADD COLUMN deleted_at INTEGER`);
+		}
+	}
+}
 
 export function getDatabase(syncKey: string): Database.Database {
 	// Validate sync key format (UUID)
@@ -32,6 +47,9 @@ export function getDatabase(syncKey: string): Database.Database {
 
 	// Initialize schema
 	db.exec(SCHEMA);
+
+	// Run migrations for existing databases
+	migrateDatabase(db);
 
 	// Cache the connection
 	dbCache.set(syncKey, db);
