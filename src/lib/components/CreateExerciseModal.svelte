@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Dexie from 'dexie';
+	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
@@ -80,9 +81,11 @@
 	{#snippet children()}
 		<div class="space-y-4">
 			{#if validationError}
-				<InfoBox type="error">
-					{validationError}
-				</InfoBox>
+				<div transition:slide={{ duration: 150 }}>
+					<InfoBox type="error">
+						{validationError}
+					</InfoBox>
+				</div>
 			{/if}
 
 			<TextInput
@@ -124,9 +127,10 @@
 				</div>
 				{#if secondaryMuscles.length > 0}
 					<div class="flex flex-wrap gap-2">
-						{#each secondaryMuscles as muscle, index}
+						{#each secondaryMuscles as muscle, index (muscle)}
 							<span
 								class="inline-flex items-center gap-1 px-3 py-2 bg-surface-elevated text-text-secondary rounded-full text-sm min-h-[36px]"
+								transition:slide={{ duration: 150, axis: 'x' }}
 							>
 								{muscle}
 								<button

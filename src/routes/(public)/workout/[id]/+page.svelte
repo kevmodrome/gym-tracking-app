@@ -3,6 +3,8 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseRoutine, Workout } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
@@ -11,6 +13,7 @@
 	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Card, ConfirmDialog, Textarea } from '$lib/ui';
+	import NumberSpinner from '$lib/ui/NumberSpinner.svelte';
 
 	const workoutId = $derived($page.params.id);
 
@@ -194,74 +197,68 @@
 							</h3>
 							{#if workoutExercises.length > 0}
 								<div class="border border-border rounded-lg divide-y divide-border mb-4">
-									{#each workoutExercises as exercise, index (exercise.exerciseId + index)}
-										<div class="p-4 flex items-center gap-4">
+									{#each workoutExercises as exercise, index (exercise.exerciseId)}
+										<div
+											class="p-4 flex items-center gap-3"
+											animate:flip={{ duration: 250 }}
+											transition:slide={{ duration: 200 }}
+										>
 											<div class="flex-shrink-0 flex flex-col gap-1">
 												<button
 													onclick={() => moveExerciseUp(index)}
 													disabled={index === 0}
 													type="button"
-													class="p-1 hover:bg-surface-elevated rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+													class="size-9 flex items-center justify-center bg-surface-elevated border border-border rounded-lg hover:bg-surface hover:border-text-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 												>
-													<ChevronUpIcon class="w-4 h-4 text-text-secondary" />
+													<ChevronUpIcon class="w-5 h-5 text-text-secondary" />
 												</button>
 												<button
 													onclick={() => moveExerciseDown(index)}
 													disabled={index === workoutExercises.length - 1}
 													type="button"
-													class="p-1 hover:bg-surface-elevated rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+													class="size-9 flex items-center justify-center bg-surface-elevated border border-border rounded-lg hover:bg-surface hover:border-text-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 												>
-													<ChevronDownIcon class="w-4 h-4 text-text-secondary" />
+													<ChevronDownIcon class="w-5 h-5 text-text-secondary" />
 												</button>
 											</div>
 											<div class="flex-1 min-w-0">
-												<h4 class="font-medium text-text-primary mb-2">{exercise.exerciseName}</h4>
-												<div class="grid grid-cols-3 gap-3">
-													<div>
-														<label for="exercise-sets-{index}" class="block text-xs font-medium text-text-muted mb-1">Sets</label>
-														<input
-															id="exercise-sets-{index}"
-															type="number"
-															min="1"
-															inputmode="numeric"
-															value={exercise.targetSets}
-															oninput={(e) => updateExercise(index)('targetSets', parseInt((e.target as HTMLInputElement).value) || 1)}
-															class="w-full px-2 py-2 text-base text-center bg-surface-elevated border border-border rounded focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary min-h-[36px]"
-														/>
-													</div>
-													<div>
-														<label for="exercise-reps-{index}" class="block text-xs font-medium text-text-muted mb-1">Reps</label>
-														<input
-															id="exercise-reps-{index}"
-															type="number"
-															min="1"
-															inputmode="numeric"
-															value={exercise.targetReps}
-															oninput={(e) => updateExercise(index)('targetReps', parseInt((e.target as HTMLInputElement).value) || 1)}
-															class="w-full px-2 py-2 text-base text-center bg-surface-elevated border border-border rounded focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary min-h-[36px]"
-														/>
-													</div>
-													<div>
-														<label for="exercise-weight-{index}" class="block text-xs font-medium text-text-muted mb-1">Weight</label>
-														<input
-															id="exercise-weight-{index}"
-															type="number"
-															min="0"
-															inputmode="numeric"
-															value={exercise.targetWeight}
-															oninput={(e) => updateExercise(index)('targetWeight', parseInt((e.target as HTMLInputElement).value) || 0)}
-															class="w-full px-2 py-2 text-base text-center bg-surface-elevated border border-border rounded focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary min-h-[36px]"
-														/>
-													</div>
+												<div class="flex items-center justify-between mb-2">
+													<h4 class="font-medium text-text-primary">{exercise.exerciseName}</h4>
+													<button
+														onclick={() => removeExercise(index)}
+														type="button"
+														class="flex-shrink-0 size-8 flex items-center justify-center bg-danger/10 border border-danger/20 rounded-full hover:bg-danger/20 hover:border-danger/40 transition-colors text-danger"
+													>
+														<XIcon class="w-4 h-4" />
+													</button>
+												</div>
+												<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+													<NumberSpinner
+														label="Sets"
+														value={exercise.targetSets}
+														min={1}
+														step={1}
+														size="sm"
+														onchange={(v) => updateExercise(index)('targetSets', v)}
+													/>
+													<NumberSpinner
+														label="Reps"
+														value={exercise.targetReps}
+														min={1}
+														step={1}
+														size="sm"
+														onchange={(v) => updateExercise(index)('targetReps', v)}
+													/>
+													<NumberSpinner
+														label="Weight (lbs)"
+														value={exercise.targetWeight}
+														min={0}
+														step={5}
+														size="sm"
+														onchange={(v) => updateExercise(index)('targetWeight', v)}
+													/>
 												</div>
 											</div>
-											<button
-												onclick={() => removeExercise(index)}
-												type="button"
-												class="flex-shrink-0 p-2 hover:bg-danger/10 rounded-full transition-colors text-danger hover:text-danger"
-											>
-												<XIcon class="w-5 h-5" />
-											</button>
 										</div>
 									{/each}
 								</div>
@@ -289,7 +286,10 @@
 							</div>
 
 							{#if availableForSelection.length > 0}
-								<div class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4">
+								<div
+									class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4"
+									transition:slide={{ duration: 150 }}
+								>
 									{#each availableForSelection as exercise (exercise.id)}
 										<button
 											onclick={() => (selectedExercise = exercise)}
@@ -306,102 +306,33 @@
 							{/if}
 
 							{#if selectedExercise}
-								<div class="bg-surface-elevated border border-border rounded-lg p-4 mb-4">
-									<h3 class="font-semibold text-text-primary mb-3">Configure {selectedExercise.name}</h3>
-									<div class="grid grid-cols-3 gap-4 mb-4">
-										<div>
-											<label for="target-sets" class="block text-sm font-medium text-text-secondary mb-2">
-												Sets
-											</label>
-											<div class="flex gap-1">
-												<button
-													onclick={() => newTargetSets = Math.max(1, newTargetSets - 1)}
-													type="button"
-													class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-l-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
-													aria-label="Decrease sets"
-												>
-													-
-												</button>
-												<input
-													id="target-sets"
-													type="number"
-													min="1"
-													inputmode="numeric"
-													bind:value={newTargetSets}
-													class="flex-1 px-3 py-3 text-base text-center bg-surface border-y border-border focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary min-h-[44px]"
-												/>
-												<button
-													onclick={() => newTargetSets += 1}
-													type="button"
-													class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-r-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
-													aria-label="Increase sets"
-												>
-													+
-												</button>
-											</div>
-										</div>
-										<div>
-											<label for="target-reps" class="block text-sm font-medium text-text-secondary mb-2">
-												Reps
-											</label>
-											<div class="flex gap-1">
-												<button
-													onclick={() => newTargetReps = Math.max(1, newTargetReps - 1)}
-													type="button"
-													class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-l-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
-													aria-label="Decrease reps"
-												>
-													-
-												</button>
-												<input
-													id="target-reps"
-													type="number"
-													min="1"
-													inputmode="numeric"
-													bind:value={newTargetReps}
-													class="flex-1 px-3 py-3 text-base text-center bg-surface border-y border-border focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary min-h-[44px]"
-												/>
-												<button
-													onclick={() => newTargetReps += 1}
-													type="button"
-													class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-r-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
-													aria-label="Increase reps"
-												>
-													+
-												</button>
-											</div>
-										</div>
-										<div>
-											<label for="target-weight" class="block text-sm font-medium text-text-secondary mb-2">
-												Weight (lbs)
-											</label>
-											<div class="flex gap-1">
-												<button
-													onclick={() => newTargetWeight = Math.max(0, newTargetWeight - 5)}
-													type="button"
-													class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-l-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
-													aria-label="Decrease weight"
-												>
-													-
-												</button>
-												<input
-													id="target-weight"
-													type="number"
-													min="0"
-													inputmode="numeric"
-													bind:value={newTargetWeight}
-													class="flex-1 px-3 py-3 text-base text-center bg-surface border-y border-border focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary min-h-[44px]"
-												/>
-												<button
-													onclick={() => newTargetWeight += 5}
-													type="button"
-													class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-r-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
-													aria-label="Increase weight"
-												>
-													+
-												</button>
-											</div>
-										</div>
+								<div
+									class="bg-surface-elevated border border-border rounded-lg p-4 mb-4"
+									transition:slide={{ duration: 200 }}
+								>
+									<h3 class="font-semibold text-text-primary mb-4">Configure {selectedExercise.name}</h3>
+									<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+										<NumberSpinner
+											label="Sets"
+											bind:value={newTargetSets}
+											min={1}
+											step={1}
+											size="sm"
+										/>
+										<NumberSpinner
+											label="Reps"
+											bind:value={newTargetReps}
+											min={1}
+											step={1}
+											size="sm"
+										/>
+										<NumberSpinner
+											label="Weight (lbs)"
+											bind:value={newTargetWeight}
+											min={0}
+											step={5}
+											size="sm"
+										/>
 									</div>
 									<button
 										onclick={addExercise}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 
 	let deferredPrompt = $state<Event | null>(null);
 	let showInstallButton = $state(false);
@@ -61,7 +62,7 @@
 </script>
 
 {#if showInstallButton}
-	<div class="fixed bottom-4 right-4 z-50 left-4 md:left-auto">
+	<div class="fixed bottom-20 md:bottom-4 right-4 z-50 left-4 md:left-auto" transition:fly={{ y: 50, duration: 200 }}>
 		<div class="bg-surface rounded-xl shadow-lg border border-border p-4 max-w-xs">
 			<div class="flex items-start justify-between gap-3">
 				<div>

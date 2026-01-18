@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '../../app.css';
+	import { onNavigate } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
@@ -8,6 +9,19 @@
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
+
+	// Enable CSS View Transitions for page navigation
+	onNavigate((navigation) => {
+		// Skip if browser doesn't support view transitions
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 </script>
 
 <svelte:head>

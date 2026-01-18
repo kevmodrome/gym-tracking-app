@@ -148,3 +148,69 @@ body {
 	background-color: rgba(197, 255, 0, 0.3);
 	color: white;
 }
+
+/* View Transitions API - Page Navigation Animations */
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes fade-out {
+	from { opacity: 1; }
+	to { opacity: 0; }
+}
+
+@keyframes slide-from-right {
+	from { transform: translateX(30px); opacity: 0; }
+	to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slide-to-left {
+	from { transform: translateX(0); opacity: 1; }
+	to { transform: translateX(-30px); opacity: 0; }
+}
+
+/* Default view transition animations */
+::view-transition-old(root) {
+	animation: 150ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out,
+	           150ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
+}
+
+::view-transition-new(root) {
+	animation: 150ms cubic-bezier(0.4, 0, 0.2, 1) both fade-in,
+	           150ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
+}
+
+/* Keep navigation and toast stable during view transitions (no animation) */
+::view-transition-old(nav-desktop),
+::view-transition-new(nav-desktop),
+::view-transition-old(nav-mobile),
+::view-transition-new(nav-mobile),
+::view-transition-old(toast),
+::view-transition-new(toast) {
+	animation: none;
+}
+
+/* Page header cross-fades between different pages */
+::view-transition-old(page-header) {
+	animation: 150ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out;
+}
+
+::view-transition-new(page-header) {
+	animation: 150ms cubic-bezier(0.4, 0, 0.2, 1) both fade-in;
+}
+
+/* When navigating within the same section (e.g., Progress tabs),
+   keep the header completely stable with no animation */
+html.stable-header-transition::view-transition-old(page-header),
+html.stable-header-transition::view-transition-new(page-header) {
+	animation: none;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-old(root),
+	::view-transition-new(root) {
+		animation: none;
+	}
+}

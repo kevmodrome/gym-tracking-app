@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fly, fade } from 'svelte/transition';
 	import { toastStore, type Toast } from '$lib/stores/toast.svelte';
 	import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-svelte';
 
@@ -25,11 +26,13 @@
 </script>
 
 {#if toastStore.toasts.length > 0}
-	<div class="fixed top-4 left-4 right-4 z-[100] flex flex-col items-center gap-2 pointer-events-none md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
-		{#each toastStore.toasts as toast}
+	<div class="toast-container fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto z-[100] flex flex-col items-end gap-2 pointer-events-none md:max-w-md">
+		{#each toastStore.toasts as toast (toast.id)}
 			<div
-				class="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border backdrop-blur-sm transition-all duration-300 animate-in slide-in-from-top-2 fade-in {styles[toast.type]}"
+				class="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border backdrop-blur-sm {styles[toast.type]}"
 				role="alert"
+				in:fly={{ x: 100, duration: 200 }}
+				out:fade={{ duration: 150 }}
 			>
 				<svelte:component this={icons[toast.type]} class="w-5 h-5 flex-shrink-0 {iconColors[toast.type]}" />
 				<span class="text-sm font-medium flex-1">{toast.message}</span>
@@ -46,18 +49,9 @@
 {/if}
 
 <style>
-	@keyframes slideIn {
-		from {
-			opacity: 0;
-			transform: translateY(-10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.animate-in {
-		animation: slideIn 0.3s ease-out;
+	/* Keep toast above everything during view transitions */
+	.toast-container {
+		view-transition-name: toast;
 	}
 </style>
+

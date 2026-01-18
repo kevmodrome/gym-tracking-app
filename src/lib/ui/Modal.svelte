@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { fade, scale } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import XIcon from '$lib/components/XIcon.svelte';
 
 	type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
@@ -68,6 +70,7 @@
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
 		role="presentation"
+		transition:fade={{ duration: 150 }}
 	>
 		<div
 			role="dialog"
@@ -77,6 +80,7 @@
 			class="bg-surface rounded-xl border border-border shadow-2xl {sizeClasses[size]} w-full max-h-[90vh] overflow-y-auto"
 			onclick={handleContainerClick}
 			onkeydown={handleContainerKeydown}
+			transition:scale={{ duration: 150, start: 0.95, easing: cubicOut }}
 		>
 			<div class="p-6 border-b border-border">
 				<div class="flex items-center justify-between">

@@ -208,6 +208,7 @@ export async function syncData(): Promise<SyncServiceResult> {
 	}
 
 	isSyncing.set(true);
+	const startTime = Date.now();
 
 	try {
 		// Get all local data
@@ -259,6 +260,11 @@ export async function syncData(): Promise<SyncServiceResult> {
 	} catch (error) {
 		return { success: false, error: error instanceof Error ? error.message : 'Sync failed' };
 	} finally {
+		// Ensure minimum 500ms display time for sync indicator
+		const elapsed = Date.now() - startTime;
+		if (elapsed < 500) {
+			await new Promise((resolve) => setTimeout(resolve, 500 - elapsed));
+		}
 		isSyncing.set(false);
 	}
 }

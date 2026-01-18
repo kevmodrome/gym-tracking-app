@@ -13,7 +13,7 @@
 		calculateWeeklyComparison,
 		calculateMonthlyComparison
 	} from '$lib/dashboardMetrics';
-	import { Button, Card, MetricCard, ButtonGroup, TextInput } from '$lib/ui';
+	import { Button, Card, MetricCard, ButtonGroup, TextInput, PageHeader } from '$lib/ui';
 
 	let sessions = $state<Session[]>([]);
 	let allExercises = $state<Exercise[]>([]);
@@ -160,12 +160,19 @@
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
 		{#if sessions.length === 0}
+			<PageHeader title="Dashboard">
+				{#snippet actions()}
+					<Button variant="primary" href="/workout">
+						Start Your First Workout
+					</Button>
+				{/snippet}
+			</PageHeader>
 			<Card class="mb-4 sm:mb-6 text-center" padding="lg">
 				{#snippet children()}
 					<div class="w-20 h-20 sm:w-24 sm:h-24 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
 						<span class="text-4xl sm:text-5xl">🏋️</span>
 					</div>
-					<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary mb-2">Welcome to Your Gym Dashboard!</h1>
+					<h2 class="text-xl sm:text-2xl font-bold font-display text-text-primary mb-2">Welcome to Your Gym Dashboard!</h2>
 					<p class="text-text-secondary mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
 					<Button href="/workout">
 						Start Your First Workout
@@ -197,20 +204,20 @@
 				</a>
 			</div>
 		{:else}
-			<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 sm:mb-6">
-				<div class="flex items-center gap-4">
-					<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-text-primary">Dashboard</h1>
-				</div>
-				<div class="flex items-center gap-3">
-					<Button variant="success" href="/workout">
+			<PageHeader title="Dashboard">
+				{#snippet actions()}
+					<Button variant="primary" href="/workout">
 						▶ Start Workout
 					</Button>
-					<ButtonGroup
-						options={dateFilterOptions}
-						bind:value={dateFilter}
-						onchange={(v) => dateFilter = v as typeof dateFilter}
-					/>
-				</div>
+				{/snippet}
+			</PageHeader>
+
+			<div class="flex justify-end mb-4 sm:mb-6">
+				<ButtonGroup
+					options={dateFilterOptions}
+					bind:value={dateFilter}
+					onchange={(v) => dateFilter = v as typeof dateFilter}
+				/>
 			</div>
 
 			<!-- Quick Actions -->

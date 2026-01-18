@@ -70,7 +70,7 @@
 			{label}
 		</label>
 	{/if}
-	<div class="flex gap-1">
+	<div class="grid grid-cols-[auto_1fr_auto]">
 		<button
 			onclick={decrement}
 			{disabled}
@@ -78,7 +78,7 @@
 			class="bg-surface-elevated border border-border text-text-primary rounded-l-lg hover:bg-surface-hover hover:border-border-active font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 {sizeClasses[size].button}"
 			aria-label="Decrease {label || 'value'}"
 		>
-			-
+			−
 		</button>
 		<input
 			id={inputId}
@@ -89,7 +89,7 @@
 			{value}
 			{disabled}
 			oninput={handleInput}
-			class="flex-1 font-bold font-display text-center bg-surface-elevated border-y border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent min-h-[44px] disabled:bg-surface disabled:opacity-60 disabled:cursor-not-allowed {sizeClasses[size].input}"
+			class="w-full font-bold font-display text-center bg-surface-elevated border-y border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent min-h-[44px] disabled:bg-surface disabled:opacity-60 disabled:cursor-not-allowed {sizeClasses[size].input}"
 		/>
 		<button
 			onclick={increment}

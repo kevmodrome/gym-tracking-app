@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { db, liveQuery } from '$lib/db';
 	import type { Session } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
@@ -524,7 +525,10 @@
 
 <!-- Undo Toast -->
 {#if showUndoToast}
-	<div class="fixed bottom-4 right-4 bg-surface border border-warning/30 rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
+	<div
+		class="fixed bottom-20 md:bottom-4 right-4 bg-surface border border-warning/30 rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3"
+		transition:fly={{ x: 100, duration: 200 }}
+	>
 		<div class="flex-1">
 			<p class="font-medium text-text-primary mb-1">Workout deleted</p>
 			<p class="text-sm text-text-secondary mb-2">

@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Workout } from '$lib/types';
-	import { Button, Card } from '$lib/ui';
+	import { Button, Card, PageHeader } from '$lib/ui';
+	import PlusIcon from '$lib/components/PlusIcon.svelte';
 
 	let workouts = $state<Workout[]>([]);
 
@@ -37,15 +38,17 @@
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-4xl mx-auto w-full">
+		<PageHeader title="Workouts">
+			{#snippet actions()}
+				<Button variant="secondary" href="/workout/new">
+					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+					<span class="hidden sm:inline">Create Workout</span>
+				</Button>
+			{/snippet}
+		</PageHeader>
+
 		<Card>
 			{#snippet children()}
-				<div class="flex items-center justify-between mb-4 sm:mb-6">
-					<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary">Select Workout</h1>
-					<Button variant="secondary" href="/workout/new">
-						+ Create Workout
-					</Button>
-				</div>
-
 				{#if workouts.length === 0}
 					<div class="text-center py-8">
 						<p class="text-text-secondary mb-4">No workouts created yet.</p>
