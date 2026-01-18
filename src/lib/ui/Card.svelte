@@ -29,7 +29,7 @@
 	};
 
 	const baseClasses = 'bg-surface rounded-xl border border-border';
-	const hoverClasses = hoverable ? 'hover:border-border-active hover:bg-surface-elevated transition-all duration-200' : '';
+	const hoverClasses = $derived(hoverable ? 'hover:border-border-active hover:bg-surface-elevated transition-all duration-200' : '');
 </script>
 
 <div class="{baseClasses} {hoverClasses} {className}">

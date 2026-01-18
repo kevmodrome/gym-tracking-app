@@ -25,7 +25,8 @@
 		onchange
 	}: NumberSpinnerProps = $props();
 
-	const inputId = id || `spinner-${Math.random().toString(36).slice(2, 9)}`;
+	const fallbackId = `spinner-${Math.random().toString(36).slice(2, 9)}`;
+	const inputId = $derived(id || fallbackId);
 
 	const sizeClasses = {
 		sm: {

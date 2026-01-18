@@ -259,9 +259,9 @@
 			/>
 
 			<div>
-				<label class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
+				<span class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
 					Showing: {filteredSessions.length} sessions
-				</label>
+				</span>
 				<Button variant="ghost" onclick={clearFilters} fullWidth>
 					<XIcon class="w-4 h-4" />
 					Clear
