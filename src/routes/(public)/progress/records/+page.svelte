@@ -2,6 +2,7 @@
 	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
 	import type { PersonalRecord } from '$lib/types';
 	import { Card, Modal, Button } from '$lib/ui';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
 
@@ -74,7 +75,7 @@
 									</div>
 									<div>
 										<p class="font-semibold text-text-primary text-sm sm:text-base">
-											{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+											{getRepRangeLabel(pr.reps)}: {pr.weight} {preferencesStore.weightUnit}
 										</p>
 										<p class="text-xs sm:text-sm text-text-muted">
 											{new Date(pr.achievedDate).toLocaleDateString()}
@@ -116,7 +117,7 @@
 					>
 						<div>
 							<p class="font-semibold text-text-primary text-sm sm:text-base">
-								{entry.weight} lbs @ {entry.reps} reps
+								{entry.weight} {preferencesStore.weightUnit} @ {entry.reps} reps
 							</p>
 							<p class="text-xs sm:text-sm text-text-muted">
 								{new Date(entry.achievedDate).toLocaleDateString()}

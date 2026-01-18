@@ -5,6 +5,7 @@
 	import Chart from 'chart.js/auto';
 	import zoomPlugin from 'chartjs-plugin-zoom';
 	import { Select } from '$lib/ui';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	Chart.register(zoomPlugin);
 
@@ -205,9 +206,9 @@
 	function getMetricLabel(): string {
 		switch (selectedMetric) {
 			case 'weight':
-				return 'Weight (lbs)';
+				return `Weight (${preferencesStore.weightUnit})`;
 			case 'volume':
-				return 'Volume (lbs)';
+				return `Volume (${preferencesStore.weightUnit})`;
 			case 'reps':
 				return 'Max Reps';
 		}
@@ -216,9 +217,9 @@
 	function getMetricUnit(): string {
 		switch (selectedMetric) {
 			case 'weight':
-				return ' lbs';
+				return ` ${preferencesStore.weightUnit}`;
 			case 'volume':
-				return ' lbs';
+				return ` ${preferencesStore.weightUnit}`;
 			case 'reps':
 				return ' reps';
 		}

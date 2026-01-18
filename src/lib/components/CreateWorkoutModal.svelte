@@ -7,6 +7,7 @@
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import ChevronUpIcon from '$lib/components/ChevronUpIcon.svelte';
 	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { onClose, onWorkoutCreated } = $props<{
 		onClose: () => void;
@@ -313,7 +314,7 @@
 										<h4 class="font-medium text-text-primary truncate">{exercise.exerciseName}</h4>
 										<p class="text-sm text-text-muted">
 											{exercise.targetSets} sets × {exercise.targetReps} reps
-											{exercise.targetWeight > 0 ? ` @ ${exercise.targetWeight} lbs` : ''}
+											{exercise.targetWeight > 0 ? ` @ ${exercise.targetWeight} ${preferencesStore.weightUnit}` : ''}
 										</p>
 									</div>
 									<button
@@ -411,7 +412,7 @@
 									<h4 class="font-medium text-text-primary">{exercise.exerciseName}</h4>
 									<p class="text-sm text-text-muted">
 										{exercise.targetSets} sets × {exercise.targetReps} reps
-										{exercise.targetWeight > 0 ? ` @ ${exercise.targetWeight} lbs` : ''}
+										{exercise.targetWeight > 0 ? ` @ ${exercise.targetWeight} ${preferencesStore.weightUnit}` : ''}
 									</p>
 								</div>
 							</div>

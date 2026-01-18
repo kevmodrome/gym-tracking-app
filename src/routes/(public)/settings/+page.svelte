@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { AppSettings, NotificationPreferences, AppPreferences } from '$lib/types';
+	import type { AppSettings, NotificationPreferences } from '$lib/types';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
@@ -15,6 +15,7 @@
 		clearSyncKey
 	} from '$lib/syncService';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { Button, TextInput, Select, Toggle, Card, Modal, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
 
 	let settings = $state<AppSettings>({
@@ -23,12 +24,6 @@
 		vibrationEnabled: true
 	});
 
-	let appPreferences = $state<AppPreferences>({
-		theme: 'system',
-		weightUnit: 'kg',
-		distanceUnit: 'km',
-		decimalPlaces: 1
-	});
 
 	let notificationPreferences = $state<NotificationPreferences>({
 		workoutReminders: true,
@@ -59,7 +54,7 @@
 	// Auto-save settings when they change (with debounce)
 	$effect(() => {
 		// Read all settings to create dependencies
-		const _ = JSON.stringify(settings) + JSON.stringify(appPreferences) + JSON.stringify(notificationPreferences);
+		const _ = JSON.stringify(settings) + JSON.stringify(notificationPreferences);
 
 		// Don't save on initial load
 		if (!hasLoaded) return;
@@ -69,7 +64,6 @@
 		saveTimeout = setTimeout(() => {
 			localStorage.setItem('gym-app-settings', JSON.stringify(settings));
 			localStorage.setItem('gym-app-notification-prefs', JSON.stringify(notificationPreferences));
-			localStorage.setItem('gym-app-preferences', JSON.stringify(appPreferences));
 		}, 300);
 	});
 
@@ -95,7 +89,6 @@
 	onMount(() => {
 		loadSettings();
 		loadNotificationPreferences();
-		loadAppPreferences();
 		// Mark as loaded after initial load to enable auto-save
 		hasLoaded = true;
 	});
@@ -124,17 +117,6 @@
 		}
 	}
 
-	function loadAppPreferences() {
-		const saved = localStorage.getItem('gym-app-preferences');
-		if (saved) {
-			try {
-				const parsed = JSON.parse(saved);
-				appPreferences = { ...appPreferences, ...parsed };
-			} catch (e) {
-				console.error('Failed to parse app preferences:', e);
-			}
-		}
-	}
 
 
 	async function handleSync() {
@@ -264,17 +246,6 @@
 	const weightUnitOptions = [
 		{ value: 'kg', label: 'Kilograms (kg)' },
 		{ value: 'lb', label: 'Pounds (lb)' }
-	];
-
-	const distanceUnitOptions = [
-		{ value: 'km', label: 'Kilometers (km)' },
-		{ value: 'miles', label: 'Miles' }
-	];
-
-	const decimalPlacesOptions = [
-		{ value: 0, label: '0 decimal places (whole numbers)' },
-		{ value: 1, label: '1 decimal place' },
-		{ value: 2, label: '2 decimal places' }
 	];
 
 	const exportFormatOptions = [
@@ -414,7 +385,7 @@
 
 				<div class="space-y-4">
 					<Select
-						bind:value={appPreferences.theme}
+						bind:value={preferencesStore.theme}
 						options={themeOptions}
 						label="App Theme"
 						id="theme"
@@ -423,31 +394,11 @@
 
 					<div class="border-t border-border pt-4">
 						<Select
-							bind:value={appPreferences.weightUnit}
+							bind:value={preferencesStore.weightUnit}
 							options={weightUnitOptions}
 							label="Weight Unit"
 							id="weight-unit"
-								hint="Unit for displaying weight values"
-						/>
-					</div>
-
-					<div class="border-t border-border pt-4">
-						<Select
-							bind:value={appPreferences.distanceUnit}
-							options={distanceUnitOptions}
-							label="Distance Unit"
-							id="distance-unit"
-								hint="Unit for displaying distance values"
-						/>
-					</div>
-
-					<div class="border-t border-border pt-4">
-						<Select
-							bind:value={appPreferences.decimalPlaces}
-							options={decimalPlacesOptions}
-							label="Decimal Places"
-							id="decimal-places"
-								hint="Precision for displaying numeric values"
+							hint="Unit for displaying weight values"
 						/>
 					</div>
 				</div>
