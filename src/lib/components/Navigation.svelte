@@ -2,19 +2,17 @@
 	import { page } from '$app/stores';
 	import { fly } from 'svelte/transition';
 	import {
+		Home,
 		Dumbbell,
 		TrendingUp,
-		Trophy,
 		BarChart3,
-		History as HistoryIcon,
 		Settings
 	} from 'lucide-svelte';
 
 	const navItems = [
-		{ path: '/', label: 'Exercises', icon: Dumbbell },
+		{ path: '/', label: 'Home', icon: Home },
+		{ path: '/exercises', label: 'Exercises', icon: Dumbbell },
 		{ path: '/workout', label: 'Workout', icon: TrendingUp },
-		{ path: '/pr', label: 'Records', icon: Trophy },
-		{ path: '/history', label: 'History', icon: HistoryIcon },
 		{ path: '/progress', label: 'Progress', icon: BarChart3 },
 		{ path: '/settings', label: 'Settings', icon: Settings }
 	];
@@ -23,6 +21,9 @@
 		const currentPath = $page.url.pathname;
 		if (path === '/') {
 			return currentPath === '/';
+		}
+		if (path === '/exercises') {
+			return currentPath === '/exercises';
 		}
 		return currentPath.startsWith(path);
 	}

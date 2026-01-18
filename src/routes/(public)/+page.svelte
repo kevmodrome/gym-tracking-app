@@ -1,278 +1,569 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { db, initializeExercises } from '$lib/db';
-	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
-	import { getPersonalRecordsForExercise, getRepRangeLabel } from '$lib/prUtils';
-	import type { PersonalRecord } from '$lib/types';
-	import SearchIcon from '$lib/components/SearchIcon.svelte';
-	import XIcon from '$lib/components/XIcon.svelte';
-	import PlusIcon from '$lib/components/PlusIcon.svelte';
-	import CreateExerciseModal from '$lib/components/CreateExerciseModal.svelte';
-	import CreateWorkoutModal from '$lib/components/CreateWorkoutModal.svelte';
-	import { Button, Card, SearchInput, Select } from '$lib/ui';
+	import { db, liveQuery } from '$lib/db';
+	import type { Session, Exercise } from '$lib/types';
+	import {
+		filterSessionsByDateRange,
+		calculateDashboardMetrics,
+		calculateVolumeTrends,
+		calculateMuscleBreakdown,
+		calculateDailyWorkouts,
+		calculateDailyMetrics,
+		getLastWorkoutDate,
+		calculateWeeklyComparison,
+		calculateMonthlyComparison
+	} from '$lib/dashboardMetrics';
+	import { Button, Card, MetricCard, ButtonGroup, TextInput } from '$lib/ui';
 
-	let exercises = $state<Exercise[]>([]);
-	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
-	let searchQuery = $state('');
-	let selectedCategory = $state<ExerciseCategory | ''>('');
-	let selectedMuscle = $state<MuscleGroup | ''>('');
-	let showCreateModal = $state(false);
-	let showWorkoutModal = $state(false);
+	let sessions = $state<Session[]>([]);
+	let allExercises = $state<Exercise[]>([]);
+	let dateFilter = $state<'week' | 'month' | 'year' | 'custom'>('month');
+	let customStartDate = $state('');
+	let customEndDate = $state('');
+	let selectedPeriod = $state<'week' | 'month'>('week');
 
-	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
-	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
+	onMount(async () => {
+		allExercises = await db.exercises.toArray();
 
-	const categoryOptions = [
-		{ value: '', label: 'All Categories' },
-		...categories.map(c => ({ value: c, label: formatMuscle(c) }))
-	];
-
-	const muscleOptions = [
-		{ value: '', label: 'All Muscle Groups' },
-		...muscles.map(m => ({ value: m, label: formatMuscle(m) }))
-	];
-
-	const filteredExercises = $derived.by(() => {
-		return exercises.filter((exercise) => {
-			const matchesSearch =
-				searchQuery === '' ||
-				exercise.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-			const matchesCategory =
-				!selectedCategory || exercise.category === selectedCategory;
-
-			const matchesMuscle =
-				!selectedMuscle || exercise.primary_muscle === selectedMuscle;
-
-			return matchesSearch && matchesCategory && matchesMuscle;
+		liveQuery(() => db.sessions.orderBy('date').reverse().toArray()).subscribe((data) => {
+			sessions = data;
 		});
 	});
 
-	onMount(async () => {
-		await initializeExercises();
-		exercises = await db.exercises.toArray();
-		await loadPersonalRecords();
+	const filteredSessions = $derived.by(() => {
+		if (sessions.length === 0) return [];
+
+		const now = new Date();
+		let startDate: Date;
+
+		switch (dateFilter) {
+			case 'week':
+				startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+				break;
+			case 'month':
+				startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+				break;
+			case 'year':
+				startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+				break;
+			case 'custom':
+				startDate = customStartDate ? new Date(customStartDate) : new Date(0);
+				break;
+			default:
+				startDate = new Date(0);
+		}
+
+		let endDate = dateFilter === 'custom' && customEndDate ? new Date(customEndDate) : now;
+
+		return filterSessionsByDateRange(sessions, startDate, endDate);
 	});
 
-	async function loadPersonalRecords() {
-		const prMap = new Map<string, PersonalRecord[]>();
-		for (const exercise of exercises) {
-			const prs = await getPersonalRecordsForExercise(exercise.id);
-			if (prs.length > 0) {
-				prMap.set(exercise.id, prs);
-			}
+	const metrics = $derived.by(() => calculateDashboardMetrics(filteredSessions));
+
+	const totalSessions = $derived(metrics.totalSessions);
+	const totalTrainingTime = $derived(metrics.totalTrainingTime);
+	const totalVolume = $derived(metrics.totalVolume);
+	const uniqueWorkouts = $derived(metrics.uniqueWorkouts);
+	const averageDuration = $derived(metrics.averageDuration);
+
+	const workoutCalendar = $derived.by(() => {
+		return calculateDailyWorkouts(filteredSessions, 30);
+	});
+
+	const dailyMetrics = $derived.by(() => {
+		return calculateDailyMetrics(filteredSessions, 30);
+	});
+
+	const lastWorkoutDate = $derived.by(() => getLastWorkoutDate(sessions));
+
+	const muscleGroupBreakdown = $derived.by(() => {
+		return calculateMuscleBreakdown(filteredSessions);
+	});
+
+	const volumeTrends = $derived.by(() => {
+		const startDate = customStartDate ? new Date(customStartDate) : undefined;
+		const endDate = customEndDate ? new Date(customEndDate) : undefined;
+		return calculateVolumeTrends(filteredSessions, dateFilter, startDate, endDate);
+	});
+
+	const weeklyComparison = $derived.by(() => calculateWeeklyComparison(sessions));
+	const monthlyComparison = $derived.by(() => calculateMonthlyComparison(sessions));
+
+	function formatTime(minutes: number): string {
+		const hours = Math.floor(minutes / 60);
+		const mins = minutes % 60;
+		if (hours > 0) {
+			return `${hours}h ${mins}m`;
 		}
-		exercisePRs = prMap;
+		return `${mins}m`;
 	}
 
-	async function handleExerciseCreated(newExercise: Exercise) {
-		exercises = await db.exercises.toArray();
+	function formatVolume(lbs: number): string {
+		if (lbs >= 1000) {
+			return (lbs / 1000).toFixed(1) + 'k';
+		}
+		return lbs.toString();
 	}
 
-	function handleWorkoutCreated() {
-		showWorkoutModal = false;
+	function formatDateRange(start: Date, end: Date): string {
+		const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+		const startStr = start.toLocaleDateString('en-US', options);
+		const endStr = end.toLocaleDateString('en-US', options);
+		return `${startStr} - ${endStr}`;
 	}
 
-	function clearFilters() {
-		searchQuery = '';
-		selectedCategory = '';
-		selectedMuscle = '';
+	function getCalendarColor(count: number): string {
+		if (count === 0) return 'bg-surface-elevated';
+		if (count === 1) return 'bg-accent/30';
+		if (count === 2) return 'bg-accent/60';
+		return 'bg-accent';
 	}
 
-	function formatMuscle(muscle: string): string {
-		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
+	function isLastWorkoutDate(dateStr: string): boolean {
+		if (!lastWorkoutDate) return false;
+		const lastDateStr = lastWorkoutDate.toISOString().split('T')[0];
+		return dateStr === lastDateStr;
 	}
+
+	const pieChartData = $derived.by(() => {
+		const total = muscleGroupBreakdown.reduce((acc, item) => acc + item.count, 0);
+		let currentAngle = 0;
+
+		return muscleGroupBreakdown.map(({ muscle, count }) => {
+			const percentage = (count / total) * 100;
+			const angle = (percentage / 100) * 360;
+			const segment = {
+				muscle,
+				count,
+				percentage,
+				startAngle: currentAngle,
+				endAngle: currentAngle + angle
+			};
+			currentAngle += angle;
+			return segment;
+		});
+	});
+
+	const dateFilterOptions = [
+		{ value: 'week', label: 'Week' },
+		{ value: 'month', label: 'Month' },
+		{ value: 'year', label: 'Year' },
+		{ value: 'custom', label: 'Custom' }
+	];
+
+	const periodOptions = [
+		{ value: 'week', label: 'Week' },
+		{ value: 'month', label: 'Month' }
+	];
 </script>
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
-	<div class="max-w-6xl mx-auto w-full">
-		<!-- Header -->
-		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-			<h1 class="text-2xl sm:text-3xl font-bold font-display text-text-primary">
-				Browse Exercises
-			</h1>
-			<div class="flex flex-wrap gap-2 sm:gap-3">
-				<Button variant="success" onclick={() => (showWorkoutModal = true)}>
-					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
-					<span class="hidden sm:inline">Create Workout</span>
-				</Button>
-				<Button variant="primary" href="/workout">
-					▶ <span class="hidden sm:inline">Start Workout</span>
-				</Button>
-				<Button variant="secondary" onclick={() => (showCreateModal = true)}>
-					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
-					<span class="hidden sm:inline">Add Exercise</span>
-				</Button>
-			</div>
-		</div>
-
-		<!-- Quick Actions -->
-		<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-			<a href="/dashboard" class="bg-surface border border-border rounded-xl p-4 hover:border-border-active hover:bg-surface-elevated transition-all duration-200 group">
-				<div class="text-2xl mb-2">📊</div>
-				<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Dashboard</div>
-				<div class="text-xs text-text-muted">View analytics</div>
-			</a>
-			<a href="/pr" class="bg-surface border border-border rounded-xl p-4 hover:border-warning/50 hover:bg-warning/5 transition-all duration-200 group">
-				<div class="text-2xl mb-2">🏆</div>
-				<div class="font-semibold text-text-primary group-hover:text-warning transition-colors">PRs</div>
-				<div class="text-xs text-text-muted">Personal records</div>
-			</a>
-			<a href="/history" class="bg-surface border border-border rounded-xl p-4 hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 group">
-				<div class="text-2xl mb-2">📜</div>
-				<div class="font-semibold text-text-primary group-hover:text-secondary transition-colors">History</div>
-				<div class="text-xs text-text-muted">Past workouts</div>
-			</a>
-			<a href="/progress" class="bg-surface border border-border rounded-xl p-4 hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 group">
-				<div class="text-2xl mb-2">📈</div>
-				<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Progress</div>
-				<div class="text-xs text-text-muted">Track gains</div>
-			</a>
-			<a href="/settings" class="bg-surface border border-border rounded-xl p-4 hover:border-border-active hover:bg-surface-elevated transition-all duration-200 group">
-				<div class="text-2xl mb-2">⚙️</div>
-				<div class="font-semibold text-text-primary group-hover:text-text-secondary transition-colors">Settings</div>
-				<div class="text-xs text-text-muted">Preferences</div>
-			</a>
-		</div>
-
-		<!-- Filters -->
-		<Card class="mb-6">
-			{#snippet children()}
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<SearchInput
-						label="Search"
-						bind:value={searchQuery}
-						placeholder="Search exercises..."
-					/>
-
-					<Select
-						label="Category"
-						bind:value={selectedCategory}
-						options={categoryOptions}
-					/>
-
-					<Select
-						label="Muscle Group"
-						bind:value={selectedMuscle}
-						options={muscleOptions}
-					/>
-				</div>
-
-				{#if searchQuery || selectedCategory || selectedMuscle}
-					<div class="mt-4 flex items-center justify-between">
-						<p class="text-sm text-text-secondary">
-							Showing {filteredExercises.length} of {exercises.length} exercises
-						</p>
-						<button
-							onclick={clearFilters}
-							class="flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary transition-colors"
-						>
-							<XIcon class="w-4 h-4" />
-							Clear Filters
-						</button>
-					</div>
-				{/if}
-			{/snippet}
-		</Card>
-
-		{#if filteredExercises.length === 0}
-			<Card class="text-center" padding="lg">
+	<div class="max-w-7xl mx-auto w-full">
+		{#if sessions.length === 0}
+			<Card class="mb-4 sm:mb-6 text-center" padding="lg">
 				{#snippet children()}
-					<div class="text-text-muted mb-4">
-						<SearchIcon class="w-16 h-16 mx-auto opacity-50" />
+					<div class="w-20 h-20 sm:w-24 sm:h-24 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+						<span class="text-4xl sm:text-5xl">🏋️</span>
 					</div>
-					<h2 class="text-xl font-semibold font-display text-text-primary mb-2">No exercises found</h2>
-					<p class="text-text-secondary">
-						{#if searchQuery || selectedCategory || selectedMuscle}
-							Try adjusting your search or filters
-						{:else}
-							No exercises available yet
-						{/if}
-					</p>
+					<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary mb-2">Welcome to Your Gym Dashboard!</h1>
+					<p class="text-text-secondary mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
+					<Button href="/workout">
+						Start Your First Workout
+					</Button>
 				{/snippet}
 			</Card>
-		{:else}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-				{#each filteredExercises as exercise}
-					<Card hoverable>
-						{#snippet children()}
-							<div class="flex items-start justify-between mb-3">
-								<h3 class="text-lg font-semibold text-text-primary">{exercise.name}</h3>
-								{#if exercise.is_custom}
-									<span class="px-2 py-1 text-xs font-medium bg-accent/20 text-accent rounded-full">
-										Custom
-									</span>
-								{/if}
-							</div>
 
-							{#if exercisePRs.has(exercise.id)}
-								<div class="bg-warning/10 border border-warning/30 rounded-lg p-3 mb-3">
-									<div class="flex items-center gap-2 mb-2">
-										<span class="text-xl">🏆</span>
-										<span class="font-semibold text-sm text-warning">Personal Records</span>
+			<!-- Quick Actions for new users -->
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+				<a href="/exercises" class="bg-surface border border-border rounded-xl p-4 hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 group">
+					<div class="text-2xl mb-2">💪</div>
+					<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Exercises</div>
+					<div class="text-xs text-text-muted">Browse & add</div>
+				</a>
+				<a href="/workout" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
+					<div class="text-2xl mb-2">▶️</div>
+					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Workout</div>
+					<div class="text-xs text-text-muted">Start session</div>
+				</a>
+				<a href="/progress" class="bg-surface border border-border rounded-xl p-4 hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 group">
+					<div class="text-2xl mb-2">📈</div>
+					<div class="font-semibold text-text-primary group-hover:text-secondary transition-colors">Progress</div>
+					<div class="text-xs text-text-muted">Track gains</div>
+				</a>
+				<a href="/settings" class="bg-surface border border-border rounded-xl p-4 hover:border-border-active hover:bg-surface-elevated transition-all duration-200 group">
+					<div class="text-2xl mb-2">⚙️</div>
+					<div class="font-semibold text-text-primary group-hover:text-text-secondary transition-colors">Settings</div>
+					<div class="text-xs text-text-muted">Preferences</div>
+				</a>
+			</div>
+		{:else}
+			<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 sm:mb-6">
+				<div class="flex items-center gap-4">
+					<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-text-primary">Dashboard</h1>
+				</div>
+				<div class="flex items-center gap-3">
+					<Button variant="success" href="/workout">
+						▶ Start Workout
+					</Button>
+					<ButtonGroup
+						options={dateFilterOptions}
+						bind:value={dateFilter}
+						onchange={(v) => dateFilter = v as typeof dateFilter}
+					/>
+				</div>
+			</div>
+
+			<!-- Quick Actions -->
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+				<a href="/exercises" class="bg-surface border border-border rounded-xl p-4 hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 group">
+					<div class="text-2xl mb-2">💪</div>
+					<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Exercises</div>
+					<div class="text-xs text-text-muted">Browse & add</div>
+				</a>
+				<a href="/workout" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
+					<div class="text-2xl mb-2">▶️</div>
+					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Workout</div>
+					<div class="text-xs text-text-muted">Start session</div>
+				</a>
+				<a href="/progress" class="bg-surface border border-border rounded-xl p-4 hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 group">
+					<div class="text-2xl mb-2">📈</div>
+					<div class="font-semibold text-text-primary group-hover:text-secondary transition-colors">Progress</div>
+					<div class="text-xs text-text-muted">History & PRs</div>
+				</a>
+				<a href="/settings" class="bg-surface border border-border rounded-xl p-4 hover:border-border-active hover:bg-surface-elevated transition-all duration-200 group">
+					<div class="text-2xl mb-2">⚙️</div>
+					<div class="font-semibold text-text-primary group-hover:text-text-secondary transition-colors">Settings</div>
+					<div class="text-xs text-text-muted">Preferences</div>
+				</a>
+			</div>
+		{/if}
+
+		{#if dateFilter === 'custom'}
+			<Card class="mb-4 sm:mb-6" padding="sm">
+				{#snippet children()}
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+						<div>
+							<label for="start-date" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
+								Start Date
+							</label>
+							<input
+								id="start-date"
+								type="date"
+								bind:value={customStartDate}
+								class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent text-sm text-text-primary min-h-[44px]"
+							/>
+						</div>
+						<div>
+							<label for="end-date" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
+								End Date
+							</label>
+							<input
+								id="end-date"
+								type="date"
+								bind:value={customEndDate}
+								class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent text-sm text-text-primary min-h-[44px]"
+							/>
+						</div>
+					</div>
+				{/snippet}
+			</Card>
+		{/if}
+
+		{#if sessions.length > 0}
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+				<MetricCard label="Sessions" value={totalSessions} icon="📊" iconBgColor="bg-secondary/20" />
+				<MetricCard label="Time" value={formatTime(totalTrainingTime)} icon="⏱️" iconBgColor="bg-success/20" />
+				<MetricCard label="Volume" value="{formatVolume(totalVolume)} lbs" icon="🏋️" iconBgColor="bg-accent/20" />
+				<MetricCard
+					label="Avg Duration"
+					value={totalSessions > 0 ? formatTime(totalTrainingTime / totalSessions) : '0m'}
+					icon="📈"
+					iconBgColor="bg-warning/20"
+				/>
+			</div>
+
+			<Card class="mb-4 sm:mb-6" padding="sm">
+				{#snippet children()}
+					<div class="flex items-center justify-between mb-3 sm:mb-4">
+						<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary">Training Aggregates</h2>
+						<ButtonGroup
+							options={periodOptions}
+							bind:value={selectedPeriod}
+							onchange={(v) => selectedPeriod = v as typeof selectedPeriod}
+							size="sm"
+						/>
+					</div>
+
+					{#if selectedPeriod === 'week'}
+						<div class="space-y-3 sm:space-y-4">
+							<div class="grid grid-cols-2 gap-3 sm:gap-4">
+								<div class="bg-secondary/10 rounded-lg p-3 sm:p-4">
+									<div class="flex items-center justify-between mb-2">
+										<span class="text-xs sm:text-sm text-text-secondary">Volume</span>
+										<span class="text-[10px] sm:text-xs text-text-muted">{formatDateRange(weeklyComparison.current.startDate, weeklyComparison.current.endDate)}</span>
 									</div>
-									<div class="flex flex-wrap gap-2">
-										{#each exercisePRs.get(exercise.id)?.slice(0, 3) as pr}
-											<span class="text-xs bg-warning/20 text-warning px-2 py-1 rounded-full font-medium">
-												{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(weeklyComparison.current.volume)} lbs</p>
+									<div class="flex items-center gap-1 mt-1">
+										{#if weeklyComparison.volumeChange > 0}
+											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+											<span class="text-accent text-xs sm:text-sm font-medium">
+												{weeklyComparison.volumeChangePercent > 0 ? '+' : ''}{weeklyComparison.volumeChangePercent.toFixed(1)}%
 											</span>
-										{/each}
-										{#if (exercisePRs.get(exercise.id)?.length || 0) > 3}
-											<span class="text-xs bg-surface-elevated text-text-secondary px-2 py-1 rounded-full">
-												+{(exercisePRs.get(exercise.id)?.length || 0) - 3} more
+										{:else if weeklyComparison.volumeChange < 0}
+											<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+											<span class="text-danger text-xs sm:text-sm font-medium">
+												{weeklyComparison.volumeChangePercent.toFixed(1)}%
 											</span>
+										{:else}
+											<span class="text-text-muted text-xs sm:text-sm">-</span>
 										{/if}
 									</div>
 								</div>
-							{/if}
 
-							<div class="space-y-2">
-								<div class="flex items-center gap-2">
-									<span class="text-sm font-medium text-text-muted">Category:</span>
-									<span class="text-sm text-text-secondary capitalize">{exercise.category}</span>
-								</div>
-
-								<div class="flex items-center gap-2">
-									<span class="text-sm font-medium text-text-muted">Primary:</span>
-									<span class="text-sm text-text-secondary capitalize">{exercise.primary_muscle}</span>
-								</div>
-
-								{#if exercise.secondary_muscles.length > 0}
-									<div class="flex flex-wrap items-center gap-2">
-										<span class="text-sm font-medium text-text-muted">Secondary:</span>
-										<div class="flex flex-wrap gap-1">
-											{#each exercise.secondary_muscles as muscle}
-												<span class="text-xs bg-surface-elevated text-text-secondary px-2 py-0.5 rounded">
-													{muscle}
-												</span>
-											{/each}
-										</div>
+								<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
+									<div class="flex items-center justify-between mb-2">
+										<span class="text-xs sm:text-sm text-text-secondary">Workouts</span>
+										<span class="text-[10px] sm:text-xs text-text-muted">vs. previous week</span>
 									</div>
-								{/if}
-
-								<div class="flex items-center gap-2">
-									<span class="text-sm font-medium text-text-muted">Equipment:</span>
-									<span class="text-sm text-text-secondary">{exercise.equipment}</span>
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{weeklyComparison.current.workoutCount}</p>
+									<div class="flex items-center gap-1 mt-1">
+										{#if weeklyComparison.workoutCountChange > 0}
+											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+											<span class="text-accent text-xs sm:text-sm font-medium">
+												+{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent > 0 ? '+' : ''}{weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+											</span>
+										{:else if weeklyComparison.workoutCountChange < 0}
+											<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+											<span class="text-danger text-xs sm:text-sm font-medium">
+												{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+											</span>
+										{:else}
+											<span class="text-text-muted text-xs sm:text-sm">0 (0%)</span>
+										{/if}
+									</div>
 								</div>
 							</div>
-						{/snippet}
-					</Card>
-				{/each}
+
+							<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
+								<span class="text-xs text-text-muted">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.workoutCount} workouts</span>
+							</div>
+						</div>
+					{:else}
+						<div class="space-y-3 sm:space-y-4">
+							<div class="grid grid-cols-2 gap-3 sm:gap-4">
+								<div class="bg-secondary/10 rounded-lg p-3 sm:p-4">
+									<div class="flex items-center justify-between mb-2">
+										<span class="text-xs sm:text-sm text-text-secondary">Volume</span>
+										<span class="text-[10px] sm:text-xs text-text-muted">{formatDateRange(monthlyComparison.current.startDate, monthlyComparison.current.endDate)}</span>
+									</div>
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(monthlyComparison.current.volume)} lbs</p>
+									<div class="flex items-center gap-1 mt-1">
+										{#if monthlyComparison.volumeChange > 0}
+											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+											<span class="text-accent text-xs sm:text-sm font-medium">
+												{monthlyComparison.volumeChangePercent > 0 ? '+' : ''}{monthlyComparison.volumeChangePercent.toFixed(1)}%
+											</span>
+										{:else if monthlyComparison.volumeChange < 0}
+											<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+											<span class="text-danger text-xs sm:text-sm font-medium">
+												{monthlyComparison.volumeChangePercent.toFixed(1)}%
+											</span>
+										{:else}
+											<span class="text-text-muted text-xs sm:text-sm">-</span>
+										{/if}
+									</div>
+								</div>
+
+								<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
+									<div class="flex items-center justify-between mb-2">
+										<span class="text-xs sm:text-sm text-text-secondary">Workouts</span>
+										<span class="text-[10px] sm:text-xs text-text-muted">vs. previous month</span>
+									</div>
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{monthlyComparison.current.workoutCount}</p>
+									<div class="flex items-center gap-1 mt-1">
+										{#if monthlyComparison.workoutCountChange > 0}
+											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+											<span class="text-accent text-xs sm:text-sm font-medium">
+												+{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent > 0 ? '+' : ''}{monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+											</span>
+										{:else if monthlyComparison.workoutCountChange < 0}
+											<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+											<span class="text-danger text-xs sm:text-sm font-medium">
+												{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+											</span>
+										{:else}
+											<span class="text-text-muted text-xs sm:text-sm">0 (0%)</span>
+										{/if}
+									</div>
+								</div>
+							</div>
+
+							<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
+								<span class="text-xs text-text-muted">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.workoutCount} workouts</span>
+							</div>
+						</div>
+					{/if}
+				{/snippet}
+			</Card>
+
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+				<Card>
+					{#snippet children()}
+						<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Daily Metrics</h2>
+						{#if dailyMetrics.length > 0}
+							<div class="space-y-2 max-h-64 overflow-y-auto">
+								<div class="grid grid-cols-3 gap-2 text-xs font-semibold text-text-secondary border-b border-border pb-2">
+									<span>Date</span>
+									<span class="text-center">Workouts</span>
+									<span class="text-right">Volume</span>
+								</div>
+								{#each [...dailyMetrics].reverse() as metric}
+									<div
+										class="grid grid-cols-3 gap-2 text-xs sm:text-sm py-1 {isLastWorkoutDate(metric.date)
+											? 'bg-accent/10 border-l-4 border-accent'
+											: 'bg-surface-elevated'} rounded"
+									>
+										<span class="truncate text-text-primary">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+										<span class="text-center {metric.workoutCount === 0 ? 'text-text-muted' : 'font-semibold text-text-primary'}">{metric.workoutCount}</span>
+										<span class="text-right {metric.volume === 0 ? 'text-text-muted' : 'font-semibold text-accent'}">
+											{formatVolume(metric.volume)} lbs
+										</span>
+									</div>
+								{/each}
+							</div>
+							{#if lastWorkoutDate}
+								<div class="mt-3 text-xs text-text-muted">
+									Last workout: {lastWorkoutDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+								</div>
+							{/if}
+						{:else}
+							<p class="text-text-muted text-center py-4 text-sm">No workout data available</p>
+						{/if}
+					{/snippet}
+				</Card>
+
+				<Card>
+					{#snippet children()}
+						<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Muscle Breakdown</h2>
+						{#if muscleGroupBreakdown.length > 0}
+							<div class="flex items-center justify-center mb-3 sm:mb-4">
+								<svg viewBox="0 0 100 100" class="w-32 h-32 sm:w-48 sm:h-48">
+									{#each pieChartData as segment}
+										{#if segment.percentage > 0}
+											<path
+												d="M 50 50 L {
+													50 +
+													45 *
+													Math.cos(
+														(segment.startAngle - 90) * (Math.PI / 180)
+													)
+												} {
+													50 +
+													45 *
+													Math.sin(
+														(segment.startAngle - 90) * (Math.PI / 180)
+													)
+												} A 45 45 0 {
+													segment.percentage > 50 ? 1 : 0
+												} 1 {
+													50 +
+													45 *
+													Math.cos(
+														(segment.endAngle - 90) * (Math.PI / 180)
+													)
+												} {
+													50 +
+													45 *
+													Math.sin(
+														(segment.endAngle - 90) * (Math.PI / 180)
+													)
+												} Z"
+												fill={[
+													'#3b82f6',
+													'#10b981',
+													'#f59e0b',
+													'#ef4444',
+													'#8b5cf6',
+													'#ec4899',
+													'#06b6d4'
+												][muscleGroupBreakdown.findIndex((item) => item.muscle === segment.muscle)]}
+												stroke="white"
+												stroke-width="1"
+											/>
+										{/if}
+									{/each}
+								</svg>
+							</div>
+							<div class="grid grid-cols-2 gap-1 sm:gap-2">
+								{#each muscleGroupBreakdown.slice(0, 6) as { muscle, count }}
+									<div class="flex items-center justify-between p-2 bg-surface-elevated rounded">
+										<span class="capitalize text-xs sm:text-sm text-text-primary">{muscle}</span>
+										<span class="font-semibold text-xs sm:text-sm text-text-secondary">{count} ({(
+											pieChartData.find((s) => s.muscle === muscle)?.percentage || 0
+										).toFixed(0)}%)</span>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-text-muted text-center py-8 sm:py-12 text-sm">No workout data available</p>
+						{/if}
+					{/snippet}
+				</Card>
 			</div>
+
+			<Card>
+				{#snippet children()}
+					<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Volume Trends</h2>
+					{#if volumeTrends.some((t) => t.volume > 0)}
+						<div class="h-48 sm:h-64">
+							<svg viewBox="0 0 800 200" class="w-full h-full">
+								{#each volumeTrends as trend, i}
+									{#if trend.volume > 0}
+										<line
+											x1={i * (800 / volumeTrends.length)}
+											y1={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
+											x2={(i + 1) * (800 / volumeTrends.length)}
+											y2={200 -
+												(volumeTrends[i + 1]?.volume || trend.volume) /
+													Math.max(...volumeTrends.map((t) => t.volume)) * 180}
+											stroke="#c5ff00"
+											stroke-width="2"
+										/>
+										<circle
+											cx={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
+											cy={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
+											r="4"
+											fill="#c5ff00"
+										/>
+									{/if}
+								{/each}
+								{#each volumeTrends as trend, i}
+									<text
+										x={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
+										y={195}
+										text-anchor="middle"
+										class="text-xs"
+										fill="#8b8d97"
+									>
+										{i % 2 === 0 ? trend.date : ''}
+									</text>
+								{/each}
+							</svg>
+						</div>
+						<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+							{#each volumeTrends.slice(-4).reverse() as trend}
+								<div class="text-xs sm:text-sm">
+									<p class="text-text-muted">{trend.date}</p>
+									<p class="font-semibold text-text-primary">{formatVolume(trend.volume)} lbs</p>
+									<p class="text-[10px] sm:text-xs text-text-muted">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<p class="text-text-muted text-center py-8 sm:py-12 text-sm">No volume data available</p>
+					{/if}
+				{/snippet}
+			</Card>
 		{/if}
 	</div>
 </div>
-
-{#if showCreateModal}
-	<CreateExerciseModal
-		onCreate={handleExerciseCreated}
-		onClose={() => (showCreateModal = false)}
-	/>
-{/if}
-
-{#if showWorkoutModal}
-	<CreateWorkoutModal
-		onWorkoutCreated={handleWorkoutCreated}
-		onClose={() => (showWorkoutModal = false)}
-	/>
-{/if}
