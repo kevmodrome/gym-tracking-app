@@ -1,12 +1,19 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `gymtrack-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
 	'/',
 	'/manifest.webmanifest',
+	'/icon-60x60.png',
+	'/icon-76x76.png',
+	'/icon-120x120.png',
+	'/icon-152x152.png',
+	'/icon-180x180.png',
+	'/icon-192x192.png',
+	'/icon-512x512.png',
 	'/icon-192x192.svg',
 	'/icon-512x512.svg',
-    '/favicon.svg'
+	'/favicon.svg'
 ];
 
 const CACHEABLE_PATTERNS = [
