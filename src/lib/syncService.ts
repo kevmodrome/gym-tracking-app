@@ -2,6 +2,11 @@ import { db } from './db';
 import { setSuppressHooks } from './dbHooks';
 import type { Exercise, Workout, Session, PersonalRecord } from './types';
 import { writable, get } from 'svelte/store';
+import {
+	getAllPendingDeletions,
+	clearPendingDeletions,
+	type PendingDeletion
+} from './pendingDeletions';
 
 const SYNC_KEY_STORAGE = 'gym-app-sync-key';
 const LAST_SYNC_STORAGE = 'gym-app-last-sync';
@@ -97,50 +102,146 @@ export function clearSyncKey(): void {
 	lastSyncTime.set(null);
 }
 
+// Transform a deleted record to server format
+function transformDeletedRecord(
+	deletion: PendingDeletion
+): Record<string, unknown> {
+	const record = deletion.record;
+	const deletedAt = deletion.deletedAt;
+
+	switch (deletion.table) {
+		case 'exercises':
+			return {
+				id: record.id,
+				name: record.name,
+				category: record.category,
+				primary_muscle: record.primary_muscle,
+				secondary_muscles: record.secondary_muscles,
+				equipment: record.equipment,
+				is_custom: record.is_custom ? 1 : 0,
+				updated_at: deletedAt,
+				deleted_at: deletedAt
+			};
+		case 'workouts':
+			return {
+				id: record.id,
+				name: record.name,
+				exercises: record.exercises,
+				notes: record.notes || null,
+				created_at: record.createdAt,
+				updated_at: deletedAt,
+				deleted_at: deletedAt
+			};
+		case 'sessions':
+			return {
+				id: record.id,
+				workout_id: record.workoutId,
+				workout_name: record.workoutName,
+				exercises: record.exercises,
+				date: record.date,
+				duration: record.duration,
+				notes: record.notes || null,
+				created_at: record.createdAt,
+				updated_at: deletedAt,
+				deleted_at: deletedAt
+			};
+		case 'personalRecords':
+			return {
+				id: record.id,
+				exercise_id: record.exerciseId,
+				exercise_name: record.exerciseName,
+				reps: record.reps,
+				weight: record.weight,
+				achieved_date: record.achievedDate,
+				session_id: record.sessionId,
+				updated_at: deletedAt,
+				deleted_at: deletedAt
+			};
+		default:
+			return record;
+	}
+}
+
 // Transform local data to server format
-function transformToServer(exercises: Exercise[], workouts: Workout[], sessions: Session[], personalRecords: PersonalRecord[]) {
+function transformToServer(
+	exercises: Exercise[],
+	workouts: Workout[],
+	sessions: Session[],
+	personalRecords: PersonalRecord[],
+	pendingDeletions: PendingDeletion[]
+) {
 	const now = Date.now();
 
+	// Get deleted records by table
+	const deletedExercises = pendingDeletions
+		.filter((d) => d.table === 'exercises')
+		.map(transformDeletedRecord);
+	const deletedWorkouts = pendingDeletions
+		.filter((d) => d.table === 'workouts')
+		.map(transformDeletedRecord);
+	const deletedSessions = pendingDeletions
+		.filter((d) => d.table === 'sessions')
+		.map(transformDeletedRecord);
+	const deletedPersonalRecords = pendingDeletions
+		.filter((d) => d.table === 'personalRecords')
+		.map(transformDeletedRecord);
+
 	return {
-		exercises: exercises.map((e) => ({
-			id: e.id,
-			name: e.name,
-			category: e.category,
-			primary_muscle: e.primary_muscle,
-			secondary_muscles: e.secondary_muscles,
-			equipment: e.equipment,
-			is_custom: e.is_custom ? 1 : 0,
-			updated_at: now
-		})),
-		workouts: workouts.map((w) => ({
-			id: w.id,
-			name: w.name,
-			exercises: w.exercises,
-			notes: w.notes || null,
-			created_at: w.createdAt,
-			updated_at: new Date(w.updatedAt).getTime()
-		})),
-		sessions: sessions.map((s) => ({
-			id: s.id,
-			workout_id: s.workoutId,
-			workout_name: s.workoutName,
-			exercises: s.exercises,
-			date: s.date,
-			duration: s.duration,
-			notes: s.notes || null,
-			created_at: s.createdAt,
-			updated_at: new Date(s.createdAt).getTime()
-		})),
-		personal_records: personalRecords.map((pr) => ({
-			id: pr.id,
-			exercise_id: pr.exerciseId,
-			exercise_name: pr.exerciseName,
-			reps: pr.reps,
-			weight: pr.weight,
-			achieved_date: pr.achievedDate,
-			session_id: pr.sessionId,
-			updated_at: new Date(pr.achievedDate).getTime()
-		})),
+		exercises: [
+			...exercises.map((e) => ({
+				id: e.id,
+				name: e.name,
+				category: e.category,
+				primary_muscle: e.primary_muscle,
+				secondary_muscles: e.secondary_muscles,
+				equipment: e.equipment,
+				is_custom: e.is_custom ? 1 : 0,
+				updated_at: now,
+				deleted_at: null
+			})),
+			...deletedExercises
+		],
+		workouts: [
+			...workouts.map((w) => ({
+				id: w.id,
+				name: w.name,
+				exercises: w.exercises,
+				notes: w.notes || null,
+				created_at: w.createdAt,
+				updated_at: new Date(w.updatedAt).getTime(),
+				deleted_at: null
+			})),
+			...deletedWorkouts
+		],
+		sessions: [
+			...sessions.map((s) => ({
+				id: s.id,
+				workout_id: s.workoutId,
+				workout_name: s.workoutName,
+				exercises: s.exercises,
+				date: s.date,
+				duration: s.duration,
+				notes: s.notes || null,
+				created_at: s.createdAt,
+				updated_at: new Date(s.createdAt).getTime(),
+				deleted_at: null
+			})),
+			...deletedSessions
+		],
+		personal_records: [
+			...personalRecords.map((pr) => ({
+				id: pr.id,
+				exercise_id: pr.exerciseId,
+				exercise_name: pr.exerciseName,
+				reps: pr.reps,
+				weight: pr.weight,
+				achieved_date: pr.achievedDate,
+				session_id: pr.sessionId,
+				updated_at: new Date(pr.achievedDate).getTime(),
+				deleted_at: null
+			})),
+			...deletedPersonalRecords
+		],
 		lastSync: get(lastSyncTime) || 0
 	};
 }
@@ -212,16 +313,17 @@ export async function syncData(): Promise<SyncServiceResult> {
 	const startTime = Date.now();
 
 	try {
-		// Get all local data
+		// Get all local data and pending deletions
 		const [exercises, workouts, sessions, personalRecords] = await Promise.all([
 			db.exercises.toArray(),
 			db.workouts.toArray(),
 			db.sessions.toArray(),
 			db.personalRecords.toArray()
 		]);
+		const pendingDeletions = getAllPendingDeletions();
 
-		// Transform and send to server
-		const payload = transformToServer(exercises, workouts, sessions, personalRecords);
+		// Transform and send to server (including deleted records)
+		const payload = transformToServer(exercises, workouts, sessions, personalRecords, pendingDeletions);
 
 		const response = await fetch(`/api/sync/${key}`, {
 			method: 'POST',
@@ -266,6 +368,9 @@ export async function syncData(): Promise<SyncServiceResult> {
 
 		const syncTimestamp = result.data.syncTimestamp;
 		lastSyncTime.set(syncTimestamp);
+
+		// Clear pending deletions after successful sync
+		clearPendingDeletions();
 
 		return { success: true, syncTimestamp };
 	} catch (error) {

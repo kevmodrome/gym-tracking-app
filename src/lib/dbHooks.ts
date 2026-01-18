@@ -1,10 +1,19 @@
 import { db } from './db';
 import { get } from 'svelte/store';
 import { isSyncing, isSyncEnabled } from './syncService';
+import { addPendingDeletion, type TableName } from './pendingDeletions';
 
 let hooksInitialized = false;
 let syncManagerRef: { scheduleSync: () => Promise<void> } | null = null;
 let suppressHooks = false;
+
+// Map Dexie table names to our TableName type
+const tableNameMap: Record<string, TableName> = {
+	exercises: 'exercises',
+	workouts: 'workouts',
+	sessions: 'sessions',
+	personalRecords: 'personalRecords'
+};
 
 export function setSuppressHooks(value: boolean): void {
 	suppressHooks = value;
@@ -38,6 +47,11 @@ export function initializeDbHooks(): void {
 		});
 
 		table.hook('deleting', function (primKey, obj, trans) {
+			// Capture the deleted record for sync before the transaction completes
+			const tableName = tableNameMap[table.name];
+			if (tableName && obj && !suppressHooks) {
+				addPendingDeletion(tableName, obj as unknown as Record<string, unknown>);
+			}
 			trans.on('complete', () => triggerSync());
 		});
 	}

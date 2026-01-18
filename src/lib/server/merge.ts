@@ -33,9 +33,10 @@ const TABLE_COLUMNS: Record<TableName, string[]> = {
 		'secondary_muscles',
 		'equipment',
 		'is_custom',
-		'updated_at'
+		'updated_at',
+		'deleted_at'
 	],
-	workouts: ['id', 'name', 'exercises', 'notes', 'created_at', 'updated_at'],
+	workouts: ['id', 'name', 'exercises', 'notes', 'created_at', 'updated_at', 'deleted_at'],
 	sessions: [
 		'id',
 		'workout_id',
@@ -45,7 +46,8 @@ const TABLE_COLUMNS: Record<TableName, string[]> = {
 		'duration',
 		'notes',
 		'created_at',
-		'updated_at'
+		'updated_at',
+		'deleted_at'
 	],
 	personal_records: [
 		'id',
@@ -55,7 +57,8 @@ const TABLE_COLUMNS: Record<TableName, string[]> = {
 		'weight',
 		'achieved_date',
 		'session_id',
-		'updated_at'
+		'updated_at',
+		'deleted_at'
 	]
 };
 
@@ -113,7 +116,8 @@ function mergeTable(db: Database.Database, table: TableName, incomingRecords: Sy
 }
 
 function getAllRecords(db: Database.Database, table: TableName): SyncRecord[] {
-	const rows = db.prepare(`SELECT * FROM ${table}`).all() as SyncRecord[];
+	// Only return non-deleted records
+	const rows = db.prepare(`SELECT * FROM ${table} WHERE deleted_at IS NULL`).all() as SyncRecord[];
 
 	// Parse JSON fields
 	return rows.map((row) => {
