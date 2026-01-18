@@ -114,15 +114,17 @@ export function calculateVolumeTrends(
 	
 	for (let i = weeks - 1; i >= 0; i--) {
 		const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (i + 1) * 7);
+		weekStart.setHours(0, 0, 0, 0);
 		const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7);
-		
+		weekEnd.setHours(23, 59, 59, 999);
+
 		if (dateFilter === 'custom' && customStartDate && weekEnd < customStartDate) {
 			continue;
 		}
-		
+
 		const weekSessions = sessions.filter((session) => {
 			const sessionDate = new Date(session.date);
-			return sessionDate >= weekStart && sessionDate < weekEnd;
+			return sessionDate >= weekStart && sessionDate <= weekEnd;
 		});
 
 		const volume = weekSessions.reduce((total, session) => {
@@ -284,7 +286,9 @@ function getWeekStart(date: Date): Date {
 	const d = new Date(date);
 	const day = d.getDay();
 	const diff = d.getDate() - day;
-	return new Date(d.setDate(diff));
+	d.setDate(diff);
+	d.setHours(0, 0, 0, 0);
+	return d;
 }
 
 function getWeekEnd(date: Date): Date {
