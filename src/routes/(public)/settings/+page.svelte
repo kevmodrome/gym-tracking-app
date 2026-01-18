@@ -425,43 +425,6 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">Data Management</h2>
-
-				<div class="space-y-4">
-					<Select
-						bind:value={exportFormat}
-						options={exportFormatOptions}
-						label="Export File Format"
-						id="export-format"
-						hint="Choose the format for exported data files"
-					/>
-
-					<div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
-						<Button onclick={handleExport} disabled={showExportProgress} class="flex-1">
-							<span class="text-lg">📤</span>
-							<span>Export Data</span>
-						</Button>
-						<Button variant="success" onclick={showImportBackupModal} class="flex-1">
-							<span class="text-lg">📥</span>
-							<span>Import Data</span>
-						</Button>
-					</div>
-
-					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<h3 class="font-medium text-text-primary mb-2">ℹ️ About Import/Export</h3>
-						<ul class="text-sm text-text-secondary space-y-1">
-							<li>• Export creates a backup file with all your workout data</li>
-							<li>• Import restores data from a previously exported backup</li>
-							<li>• You can choose how to handle duplicate items during import</li>
-							<li>• Store backup files in a safe location for data security</li>
-						</ul>
-					</div>
-				</div>
-			{/snippet}
-		</Card>
-
-		<Card class="mb-6">
-			{#snippet children()}
 				<h2 class="text-xl font-bold text-text-primary mb-4">Rest Timer</h2>
 
 				<div class="space-y-4">
@@ -583,6 +546,43 @@
 				<li>• Typical rest periods: 2-3 minutes for compound exercises, 1-2 minutes for isolation</li>
 			</ul>
 		</InfoBox>
+
+		<Card class="mb-6 mt-6">
+			{#snippet children()}
+				<h2 class="text-xl font-bold text-text-primary mb-4">Data Management</h2>
+
+				<div class="space-y-4">
+					<Select
+						bind:value={exportFormat}
+						options={exportFormatOptions}
+						label="Export File Format"
+						id="export-format"
+						hint="Choose the format for exported data files"
+					/>
+
+					<div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
+						<Button onclick={handleExport} disabled={showExportProgress} class="flex-1">
+							<span class="text-lg">📤</span>
+							<span>Export Data</span>
+						</Button>
+						<Button variant="success" onclick={showImportBackupModal} class="flex-1">
+							<span class="text-lg">📥</span>
+							<span>Import Data</span>
+						</Button>
+					</div>
+
+					<div class="bg-surface-elevated border border-border rounded-lg p-4">
+						<h3 class="font-medium text-text-primary mb-2">ℹ️ About Import/Export</h3>
+						<ul class="text-sm text-text-secondary space-y-1">
+							<li>• Export creates a backup file with all your workout data</li>
+							<li>• Import restores data from a previously exported backup</li>
+							<li>• You can choose how to handle duplicate items during import</li>
+							<li>• Store backup files in a safe location for data security</li>
+						</ul>
+					</div>
+				</div>
+			{/snippet}
+		</Card>
 
 		{#if showSavedMessage}
 			<div class="fixed bottom-4 right-4 bg-success text-bg px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50">
