@@ -10,6 +10,7 @@
 	import Navigation from '$lib/components/Navigation.svelte';
 	import SwipeHandler from '$lib/components/SwipeHandler.svelte';
 	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
+	import SyncOverlay from '$lib/components/SyncOverlay.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
@@ -18,9 +19,9 @@
 		// Initialize Dexie hooks for auto-sync on data changes
 		initializeDbHooks();
 
-		// Initial sync on app open
+		// Initial sync on app open (blocking)
 		if (isSyncEnabled()) {
-			syncManager.scheduleSync();
+			syncManager.scheduleBlockingSync();
 		}
 	});
 
@@ -53,6 +54,7 @@
 </svelte:head>
 
 <Toast />
+<SyncOverlay />
 <SyncIndicator />
 <PWAInstallPrompt />
 <SwipeHandler />

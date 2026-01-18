@@ -27,3 +27,13 @@ export async function invalidatePersonalRecords() {
 export async function invalidateMultiple(...deps: (keyof typeof DEPS)[]) {
 	await Promise.all(deps.map((dep) => invalidate(DEPS[dep])));
 }
+
+// Invalidate all data dependencies (used after sync)
+export async function invalidateAll() {
+	await Promise.all([
+		invalidate(DEPS.exercises),
+		invalidate(DEPS.workouts),
+		invalidate(DEPS.sessions),
+		invalidate(DEPS.personalRecords)
+	]);
+}
