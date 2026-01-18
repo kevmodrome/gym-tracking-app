@@ -29,6 +29,40 @@
 	}
 </script>
 
+<!-- Desktop Navigation Header -->
+<nav
+	class="hidden md:block fixed top-0 left-0 right-0 z-50 glass border-b border-border"
+	transition:fly={{ y: -100, duration: 300 }}
+>
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+		<div class="flex items-center justify-between h-16">
+			<div class="flex items-center gap-2">
+				<Dumbbell class="w-8 h-8 text-accent" />
+				<span class="text-xl font-bold font-display text-text-primary">GymTrack</span>
+			</div>
+			<div class="flex items-center gap-1">
+				{#each navItems as item}
+					{@const active = isActive(item.path)}
+					<a
+						href={item.path}
+						class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 {active
+							? 'bg-accent/10 text-accent'
+							: 'text-text-muted hover:text-text-primary hover:bg-surface-hover'}"
+					>
+						<svelte:component
+							this={item.icon}
+							class="w-5 h-5"
+							strokeWidth={active ? 2.5 : 2}
+						/>
+						<span class="font-medium">{item.label}</span>
+					</a>
+				{/each}
+			</div>
+		</div>
+	</div>
+</nav>
+
+<!-- Mobile Navigation Footer -->
 <nav
 	class="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border md:hidden"
 	transition:fly={{ y: 100, duration: 300 }}
