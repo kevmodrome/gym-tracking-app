@@ -1,16 +1,26 @@
 import { get } from 'svelte/store';
-import { syncData, isSyncing, syncKey, lastSyncTime, isSyncEnabled } from './syncService';
+import {
+	syncData,
+	isSyncing,
+	syncKey,
+	lastSyncTime,
+	isSyncEnabled,
+	isBlockingSync
+} from './syncService';
 import type { SyncStatus, SyncResult, SyncProgress } from './types';
 
 export class SyncManager {
 	private syncInProgress = false;
 	private pendingSync = false;
 	private autoSyncInterval: ReturnType<typeof setInterval> | null = null;
+	private lastVisibilitySync: number = 0;
 	private readonly AUTO_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+	private readonly VISIBILITY_SYNC_COOLDOWN = 30 * 1000; // 30 seconds
 
 	constructor() {
 		this.setupNetworkListeners();
 		this.setupAutoSync();
+		this.setupVisibilityListener();
 	}
 
 	private setupNetworkListeners(): void {
@@ -35,6 +45,30 @@ export class SyncManager {
 		}
 	}
 
+	private setupVisibilityListener(): void {
+		if (typeof document !== 'undefined') {
+			document.addEventListener('visibilitychange', () => {
+				if (document.visibilityState === 'visible') {
+					this.handleVisibilityChange();
+				}
+			});
+		}
+	}
+
+	private handleVisibilityChange(): void {
+		if (!this.isOnline() || !isSyncEnabled()) {
+			return;
+		}
+
+		const now = Date.now();
+		if (now - this.lastVisibilitySync < this.VISIBILITY_SYNC_COOLDOWN) {
+			return;
+		}
+
+		this.lastVisibilitySync = now;
+		this.scheduleBlockingSync();
+	}
+
 	async scheduleSync(): Promise<void> {
 		if (!this.isOnline() || !isSyncEnabled()) {
 			return;
@@ -56,6 +90,35 @@ export class SyncManager {
 		this.syncInProgress = false;
 
 		// If changes were made during sync, sync again
+		if (this.pendingSync) {
+			this.pendingSync = false;
+			this.scheduleSync();
+		}
+	}
+
+	async scheduleBlockingSync(): Promise<void> {
+		if (!this.isOnline() || !isSyncEnabled()) {
+			return;
+		}
+
+		// If sync is already running, don't show blocking overlay
+		if (this.syncInProgress) {
+			this.pendingSync = true;
+			return;
+		}
+
+		this.syncInProgress = true;
+		this.pendingSync = false;
+		isBlockingSync.set(true);
+
+		try {
+			await this.sync();
+		} finally {
+			isBlockingSync.set(false);
+			this.syncInProgress = false;
+		}
+
+		// If changes were made during sync, sync again (non-blocking)
 		if (this.pendingSync) {
 			this.pendingSync = false;
 			this.scheduleSync();

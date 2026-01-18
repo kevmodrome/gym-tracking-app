@@ -16,6 +16,7 @@ export const syncKey = writable<string | null>(
 	typeof localStorage !== 'undefined' ? localStorage.getItem(SYNC_KEY_STORAGE) : null
 );
 export const isSyncing = writable(false);
+export const isBlockingSync = writable(false);
 export const lastSyncTime = writable<number | null>(
 	typeof localStorage !== 'undefined'
 		? parseInt(localStorage.getItem(LAST_SYNC_STORAGE) || '0') || null
@@ -371,6 +372,11 @@ export async function syncData(): Promise<SyncServiceResult> {
 
 		// Clear pending deletions after successful sync
 		clearPendingDeletions();
+
+		// Invalidate all data so load functions re-run with fresh data
+		// Use dynamic import to avoid test environment issues with $app/navigation
+		const { invalidateAll } = await import('./invalidation');
+		await invalidateAll();
 
 		return { success: true, syncTimestamp };
 	} catch (error) {
