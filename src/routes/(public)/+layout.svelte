@@ -1,7 +1,11 @@
 <script lang="ts">
 	import '../../app.css';
+	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
+	import { initializeDbHooks } from '$lib/dbHooks';
+	import { syncManager } from '$lib/syncUtils';
+	import { isSyncEnabled } from '$lib/syncService';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import SwipeHandler from '$lib/components/SwipeHandler.svelte';
@@ -9,6 +13,16 @@
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
+
+	onMount(() => {
+		// Initialize Dexie hooks for auto-sync on data changes
+		initializeDbHooks();
+
+		// Initial sync on app open
+		if (isSyncEnabled()) {
+			syncManager.scheduleSync();
+		}
+	});
 
 	// Enable CSS View Transitions for page navigation
 	onNavigate((navigation) => {
