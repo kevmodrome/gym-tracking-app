@@ -143,10 +143,6 @@
 		}, 3000);
 	}
 
-	function handleBack() {
-		window.location.href = '/';
-	}
-
 	async function handleSync() {
 		isSyncing = true;
 		syncResult = null;
@@ -305,10 +301,10 @@
 	<div class="max-w-2xl mx-auto">
 		<div class="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
 			<div class="flex items-center gap-4 w-full sm:w-auto">
-				<Button variant="ghost" onclick={handleBack}>
+				<Button variant="ghost" href="/">
 					← Back
 				</Button>
-				<h1 class="text-3xl font-display font-bold text-text-primary">Settings</h1>
+				<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Settings</h1>
 			</div>
 			<Button onclick={saveSettings}>
 				Save Settings

@@ -4,6 +4,7 @@
 	import type { Exercise, Session } from '$lib/types';
 	import Chart from 'chart.js/auto';
 	import zoomPlugin from 'chartjs-plugin-zoom';
+	import { Button } from '$lib/ui';
 
 	Chart.register(zoomPlugin);
 
@@ -243,11 +244,12 @@
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-6xl mx-auto w-full">
-		<div class="mb-4 sm:mb-6">
-			<a href="/" class="text-accent hover:text-accent-muted min-h-[44px] flex items-center">&larr; Back</a>
+		<div class="flex items-center gap-4 mb-4 sm:mb-6">
+			<Button variant="ghost" href="/">
+				← Back
+			</Button>
+			<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Exercise Progress</h1>
 		</div>
-
-		<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary mb-4 sm:mb-6">Exercise Progress</h1>
 
 		<div class="bg-surface rounded-xl border border-border p-4 sm:p-6 mb-4 sm:mb-6">
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">

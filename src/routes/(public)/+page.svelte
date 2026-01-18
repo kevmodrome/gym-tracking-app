@@ -9,9 +9,7 @@
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
 	import CreateExerciseModal from '$lib/components/CreateExerciseModal.svelte';
 	import CreateWorkoutModal from '$lib/components/CreateWorkoutModal.svelte';
-	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
-	import { exportBackupData } from '$lib/backupUtils';
-	import { Button, Card, SearchInput, Select, Modal } from '$lib/ui';
+	import { Button, Card, SearchInput, Select } from '$lib/ui';
 
 	let exercises = $state<Exercise[]>([]);
 	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
@@ -20,10 +18,6 @@
 	let selectedMuscle = $state<MuscleGroup | ''>('');
 	let showCreateModal = $state(false);
 	let showWorkoutModal = $state(false);
-	let showImportModal = $state(false);
-	let showExportModal = $state(false);
-	let exportProgress = $state({ current: 0, total: 0, stage: '' });
-	let exportResult = $state<{ success: boolean; message: string } | null>(null);
 
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
@@ -87,22 +81,6 @@
 
 	function formatMuscle(muscle: string): string {
 		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
-	}
-
-	async function handleExport() {
-		showExportModal = true;
-		exportResult = null;
-		exportProgress = { current: 0, total: 0, stage: 'Starting...' };
-
-		const result = await exportBackupData((current: number, total: number, stage: string) => {
-			exportProgress = { current, total, stage };
-		});
-
-		exportResult = result;
-
-		setTimeout(() => {
-			showExportModal = false;
-		}, 3000);
 	}
 </script>
 
@@ -196,16 +174,6 @@
 				{/if}
 			{/snippet}
 		</Card>
-
-		<!-- Data Management -->
-		<div class="flex justify-end gap-2 mb-6">
-			<Button variant="ghost" onclick={() => (showImportModal = true)} size="sm">
-				📥 Import
-			</Button>
-			<Button variant="ghost" onclick={handleExport} size="sm">
-				📤 Export
-			</Button>
-		</div>
 
 		{#if filteredExercises.length === 0}
 			<Card class="text-center" padding="lg">
@@ -308,50 +276,3 @@
 		onClose={() => (showWorkoutModal = false)}
 	/>
 {/if}
-
-{#if showImportModal}
-	<ImportBackupModal onClose={() => (showImportModal = false)} />
-{/if}
-
-<Modal
-	open={showExportModal}
-	title="Exporting Workout Data"
-	size="sm"
-	onclose={() => showExportModal = false}
->
-	{#snippet children()}
-		{#if exportResult === null}
-			<div class="space-y-4">
-				<div class="flex items-center gap-2">
-					<div class="flex-1 bg-surface-elevated rounded-full h-2 overflow-hidden">
-						<div
-							class="bg-accent h-full transition-all duration-300"
-							style:width={exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%'}
-						></div>
-					</div>
-					<span class="text-sm text-text-secondary">
-						{exportProgress.total > 0 ? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%` : '0%'}
-					</span>
-				</div>
-				<p class="text-sm text-text-secondary">{exportProgress.stage}</p>
-			</div>
-		{:else if exportResult.success}
-			<div class="space-y-3">
-				<div class="flex items-center gap-2 text-success">
-					<span class="text-2xl">✓</span>
-					<p class="font-medium">Export Complete!</p>
-				</div>
-				<p class="text-sm text-text-secondary">{exportResult.message}</p>
-				<p class="text-sm text-text-muted">File has been downloaded to your default download location.</p>
-			</div>
-		{:else}
-			<div class="space-y-3">
-				<div class="flex items-center gap-2 text-danger">
-					<span class="text-2xl">✗</span>
-					<p class="font-medium">Export Failed</p>
-				</div>
-				<p class="text-sm text-text-secondary">{exportResult.message}</p>
-			</div>
-		{/if}
-	{/snippet}
-</Modal>

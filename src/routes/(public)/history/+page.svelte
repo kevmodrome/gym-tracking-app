@@ -232,13 +232,11 @@
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
-		<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-			<div class="flex items-center gap-4">
-				<Button variant="secondary" href="/">
-					← Back
-				</Button>
-				<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Workout History</h1>
-			</div>
+		<div class="flex items-center gap-4 mb-6">
+			<Button variant="ghost" href="/">
+				← Back
+			</Button>
+			<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Workout History</h1>
 		</div>
 
 		<Card class="mb-6">
