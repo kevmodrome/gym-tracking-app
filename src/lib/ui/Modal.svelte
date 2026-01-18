@@ -101,7 +101,7 @@
 				{@render children()}
 			</div>
 			{#if footer}
-				<div class="p-6 border-t border-border bg-surface-elevated/50 flex items-center justify-end gap-3">
+				<div class="p-6 border-t border-border bg-surface-elevated/50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3">
 					{@render footer()}
 				</div>
 			{/if}
