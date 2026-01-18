@@ -36,9 +36,9 @@
 		<button
 			onclick={() => handleClick(option.value)}
 			type="button"
-			class="rounded-lg transition-colors whitespace-nowrap {sizeClasses[size]} {value === option.value
-				? 'bg-blue-600 text-white'
-				: 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'}"
+			class="rounded-lg transition-all duration-200 whitespace-nowrap font-medium {sizeClasses[size]} {value === option.value
+				? 'bg-accent text-bg shadow-[0_0_15px_rgba(197,255,0,0.2)]'
+				: 'bg-surface text-text-secondary hover:bg-surface-elevated hover:text-text-primary border border-border'}"
 		>
 			{option.label}
 		</button>

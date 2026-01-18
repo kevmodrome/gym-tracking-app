@@ -87,20 +87,20 @@
 					{
 						label: getMetricLabel(),
 						data: values,
-						borderColor: 'rgb(59, 130, 246)',
-						backgroundColor: 'rgba(59, 130, 246, 0.1)',
+						borderColor: '#c5ff00',
+						backgroundColor: 'rgba(197, 255, 0, 0.1)',
 						fill: true,
 						tension: 0.1,
 						pointRadius: 6,
 						pointHoverRadius: 8,
-						pointBackgroundColor: 'rgb(59, 130, 246)',
-						pointBorderColor: '#fff',
+						pointBackgroundColor: '#c5ff00',
+						pointBorderColor: '#0a0b0f',
 						pointBorderWidth: 2
 					},
 					{
 						label: 'Trend',
 						data: trendData,
-						borderColor: 'rgb(239, 68, 68)',
+						borderColor: '#7c5cff',
 						backgroundColor: 'transparent',
 						borderDash: [5, 5],
 						tension: 0,
@@ -115,7 +115,10 @@
 				plugins: {
 					legend: {
 						display: true,
-						position: 'top'
+						position: 'top',
+						labels: {
+							color: '#8b8d97'
+						}
 					},
 					tooltip: {
 						mode: 'index',
@@ -145,13 +148,27 @@
 					x: {
 						title: {
 							display: true,
-							text: 'Date'
+							text: 'Date',
+							color: '#8b8d97'
+						},
+						ticks: {
+							color: '#8b8d97'
+						},
+						grid: {
+							color: '#2a2b32'
 						}
 					},
 					y: {
 						title: {
 							display: true,
-							text: getMetricLabel()
+							text: getMetricLabel(),
+							color: '#8b8d97'
+						},
+						ticks: {
+							color: '#8b8d97'
+						},
+						grid: {
+							color: '#2a2b32'
 						},
 						beginAtZero: selectedMetric === 'volume' || selectedMetric === 'reps'
 					}
@@ -224,24 +241,24 @@
 	<title>Exercise Progress - Gym Recording App</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-6xl mx-auto w-full">
 		<div class="mb-4 sm:mb-6">
-			<a href="/" class="text-blue-600 hover:text-blue-800 min-h-[44px] flex items-center">&larr; Back</a>
+			<a href="/" class="text-accent hover:text-accent-muted min-h-[44px] flex items-center">&larr; Back</a>
 		</div>
 
-		<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Exercise Progress</h1>
+		<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary mb-4 sm:mb-6">Exercise Progress</h1>
 
-		<div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+		<div class="bg-surface rounded-xl border border-border p-4 sm:p-6 mb-4 sm:mb-6">
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
 				<div>
-					<label for="exercise-select" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+					<label for="exercise-select" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
 						Select Exercise
 					</label>
 					<select
 						id="exercise-select"
 						onchange={handleExerciseChange}
-						class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
+						class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary text-sm min-h-[44px]"
 					>
 						<option value="">Choose an exercise</option>
 						{#each exercises as exercise}
@@ -254,13 +271,13 @@
 
 				{#if selectedExercise}
 					<div>
-						<label for="metric-select" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+						<label for="metric-select" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
 							Metric
 						</label>
 						<select
 							id="metric-select"
 							bind:value={selectedMetric}
-							class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
+							class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary text-sm min-h-[44px]"
 						>
 							<option value="weight">Weight (lbs)</option>
 							<option value="volume">Volume (lbs × reps)</option>
@@ -272,8 +289,8 @@
 		</div>
 
 		{#if !selectedExercise}
-			<div class="bg-white rounded-lg shadow-md p-8 sm:p-12 text-center">
-				<div class="text-gray-400 mb-3 sm:mb-4">
+			<div class="bg-surface rounded-xl border border-border p-8 sm:p-12 text-center">
+				<div class="text-text-muted mb-3 sm:mb-4">
 					<svg
 						class="w-12 h-12 sm:w-16 sm:h-16 mx-auto"
 						fill="none"
@@ -288,12 +305,12 @@
 						/>
 					</svg>
 				</div>
-				<h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Select an Exercise</h2>
-				<p class="text-sm sm:text-base text-gray-600">Choose an exercise from the dropdown to view its progress</p>
+				<h2 class="text-lg sm:text-xl font-semibold text-text-primary mb-2">Select an Exercise</h2>
+				<p class="text-sm sm:text-base text-text-secondary">Choose an exercise from the dropdown to view its progress</p>
 			</div>
 		{:else if exerciseSessions.length === 0}
-			<div class="bg-white rounded-lg shadow-md p-8 sm:p-12 text-center">
-				<div class="text-gray-400 mb-3 sm:mb-4">
+			<div class="bg-surface rounded-xl border border-border p-8 sm:p-12 text-center">
+				<div class="text-text-muted mb-3 sm:mb-4">
 					<svg
 						class="w-12 h-12 sm:w-16 sm:h-16 mx-auto"
 						fill="none"
@@ -308,28 +325,28 @@
 						/>
 					</svg>
 				</div>
-				<h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No Data Yet</h2>
-				<p class="text-sm sm:text-base text-gray-600">
-					You haven't logged any sessions for <strong>{selectedExercise.name}</strong> yet.
+				<h2 class="text-lg sm:text-xl font-semibold text-text-primary mb-2">No Data Yet</h2>
+				<p class="text-sm sm:text-base text-text-secondary">
+					You haven't logged any sessions for <strong class="text-text-primary">{selectedExercise.name}</strong> yet.
 					Start logging workouts to see your progress!
 				</p>
 			</div>
 		{:else}
-			<div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+			<div class="bg-surface rounded-xl border border-border p-4 sm:p-6">
 				<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-					<h2 class="text-lg sm:text-xl font-semibold text-gray-900">{selectedExercise.name}</h2>
+					<h2 class="text-lg sm:text-xl font-semibold text-text-primary">{selectedExercise.name}</h2>
 					<button
 						onclick={resetZoom}
-						class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm min-h-[44px]"
+						class="px-3 py-2 bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors text-sm min-h-[44px]"
 						type="button"
 					>
 						Reset Zoom
 					</button>
 				</div>
 
-				<div class="mb-4 text-xs sm:text-sm text-gray-600">
+				<div class="mb-4 text-xs sm:text-sm text-text-secondary">
 					<p>
-						<strong>{exerciseSessions.length}</strong> sessions logged &bull; Toggle metrics to
+						<strong class="text-text-primary">{exerciseSessions.length}</strong> sessions logged &bull; Toggle metrics to
 						view different aspects of your progress
 					</p>
 				</div>
@@ -340,22 +357,22 @@
 
 				<div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 					{#if chartData}
-						<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
-							<p class="text-xs sm:text-sm text-blue-600 font-medium mb-1">Latest</p>
-							<p class="text-xl sm:text-2xl font-bold text-blue-800">
+						<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm text-accent font-medium mb-1">Latest</p>
+							<p class="text-xl sm:text-2xl font-display font-bold text-accent">
 								{chartData[chartData.length - 1].value}{getMetricUnit()}
 							</p>
 						</div>
-						<div class="bg-green-50 rounded-lg p-3 sm:p-4">
-							<p class="text-xs sm:text-sm text-green-600 font-medium mb-1">Best</p>
-							<p class="text-xl sm:text-2xl font-bold text-green-800">
+						<div class="bg-success/10 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm text-success font-medium mb-1">Best</p>
+							<p class="text-xl sm:text-2xl font-display font-bold text-success">
 								{Math.max(...chartData.map((d) => d.value))}
 								{getMetricUnit()}
 							</p>
 						</div>
-						<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
-							<p class="text-xs sm:text-sm text-purple-600 font-medium mb-1">Average</p>
-							<p class="text-xl sm:text-2xl font-bold text-purple-800">
+						<div class="bg-secondary/10 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm text-secondary font-medium mb-1">Average</p>
+							<p class="text-xl sm:text-2xl font-display font-bold text-secondary">
 								{Math.round(
 									chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length
 								)}

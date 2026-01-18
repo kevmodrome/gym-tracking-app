@@ -66,7 +66,7 @@
 
 <div class={className}>
 	{#if label}
-		<label for={inputId} class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+		<label for={inputId} class="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
 			{label}
 		</label>
 	{/if}
@@ -75,7 +75,7 @@
 			onclick={decrement}
 			{disabled}
 			type="button"
-			class="bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed {sizeClasses[size].button}"
+			class="bg-surface-elevated border border-border text-text-primary rounded-l-lg hover:bg-surface-hover hover:border-border-active font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 {sizeClasses[size].button}"
 			aria-label="Decrease {label || 'value'}"
 		>
 			-
@@ -89,13 +89,13 @@
 			{value}
 			{disabled}
 			oninput={handleInput}
-			class="flex-1 font-bold text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500 min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed {sizeClasses[size].input}"
+			class="flex-1 font-bold font-display text-center bg-surface-elevated border-y border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent min-h-[44px] disabled:bg-surface disabled:opacity-60 disabled:cursor-not-allowed {sizeClasses[size].input}"
 		/>
 		<button
 			onclick={increment}
 			{disabled}
 			type="button"
-			class="bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed {sizeClasses[size].button}"
+			class="bg-surface-elevated border border-border text-text-primary rounded-r-lg hover:bg-surface-hover hover:border-border-active font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 {sizeClasses[size].button}"
 			aria-label="Increase {label || 'value'}"
 		>
 			+

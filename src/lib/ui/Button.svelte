@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { HTMLButtonAttributes, HTMLAnchorAttributes } from 'svelte/elements';
 
 	type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success';
 	type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
@@ -31,14 +30,14 @@
 		children
 	}: ButtonProps = $props();
 
-	const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
+	const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-50 disabled:cursor-not-allowed';
 
 	const variantStyles: Record<ButtonVariant, string> = {
-		primary: 'bg-blue-600 text-white hover:bg-blue-700',
-		secondary: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
-		danger: 'bg-red-600 text-white hover:bg-red-700',
-		ghost: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
-		success: 'bg-green-600 text-white hover:bg-green-700'
+		primary: 'bg-accent text-bg hover:bg-accent-muted hover:shadow-[0_0_20px_rgba(197,255,0,0.3)] active:scale-[0.98]',
+		secondary: 'bg-surface border border-border text-text-primary hover:bg-surface-elevated hover:border-border-active active:scale-[0.98]',
+		danger: 'bg-danger text-white hover:bg-danger-muted hover:shadow-[0_0_15px_rgba(255,71,87,0.3)] active:scale-[0.98]',
+		ghost: 'bg-transparent text-text-secondary hover:bg-surface-elevated hover:text-text-primary active:scale-[0.98]',
+		success: 'bg-success text-bg hover:bg-success-muted hover:shadow-[0_0_15px_rgba(0,214,143,0.3)] active:scale-[0.98]'
 	};
 
 	const sizeStyles: Record<ButtonSize, string> = {

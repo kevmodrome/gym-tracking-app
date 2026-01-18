@@ -4,6 +4,7 @@
 	interface SearchInputProps {
 		value: string;
 		placeholder?: string;
+		label?: string;
 		id?: string;
 		disabled?: boolean;
 		class?: string;
@@ -14,6 +15,7 @@
 	let {
 		value = $bindable(),
 		placeholder = 'Search...',
+		label,
 		id,
 		disabled = false,
 		class: className = '',
@@ -31,15 +33,22 @@
 	}
 </script>
 
-<div class="relative {className}">
-	<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-	<input
-		id={inputId}
-		type="text"
-		{value}
-		{placeholder}
-		{disabled}
-		oninput={handleInput}
-		class="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px] {disabled ? 'bg-gray-100 cursor-not-allowed' : ''}"
-	/>
+<div class={className}>
+	{#if label}
+		<label for={inputId} class="block text-sm font-medium text-text-secondary mb-2">
+			{label}
+		</label>
+	{/if}
+	<div class="relative">
+		<SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+		<input
+			id={inputId}
+			type="text"
+			{value}
+			{placeholder}
+			{disabled}
+			oninput={handleInput}
+			class="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted text-base min-h-[44px] transition-colors {disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+		/>
+	</div>
 </div>

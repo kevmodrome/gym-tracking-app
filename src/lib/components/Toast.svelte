@@ -10,17 +10,17 @@
 	};
 
 	const styles = {
-		success: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200',
-		error: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-200',
-		warning: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-200',
-		info: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-200'
+		success: 'bg-surface border-success/30 text-text-primary',
+		error: 'bg-surface border-danger/30 text-text-primary',
+		warning: 'bg-surface border-warning/30 text-text-primary',
+		info: 'bg-surface border-secondary/30 text-text-primary'
 	};
 
 	const iconColors = {
-		success: 'text-green-500 dark:text-green-400',
-		error: 'text-red-500 dark:text-red-400',
-		warning: 'text-amber-500 dark:text-amber-400',
-		info: 'text-blue-500 dark:text-blue-400'
+		success: 'text-success',
+		error: 'text-danger',
+		warning: 'text-warning',
+		info: 'text-secondary'
 	};
 </script>
 
@@ -35,7 +35,7 @@
 				<span class="text-sm font-medium flex-1">{toast.message}</span>
 				<button
 					onclick={() => toastStore.remove(toast.id)}
-					class="flex-shrink-0 p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+					class="flex-shrink-0 p-1 rounded hover:bg-white/10 transition-colors text-text-muted hover:text-text-primary"
 					aria-label="Dismiss notification"
 				>
 					<X class="w-4 h-4" />

@@ -16,25 +16,25 @@
 		{#each newPRs as pr, i (pr.id)}
 			<div
 				transition:fly={{ y: -20, duration: 300 }}
-				class="bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-400 rounded-lg shadow-lg p-4 min-w-[300px]"
+				class="bg-gradient-to-r from-warning/20 to-warning/10 border-2 border-warning rounded-xl shadow-[0_0_30px_rgba(255,149,0,0.3)] p-4 min-w-[300px]"
 			>
 				<div class="flex items-start gap-3">
-					<div class="w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center text-2xl shrink-0">
+					<div class="w-12 h-12 bg-warning text-bg rounded-full flex items-center justify-center text-2xl shrink-0 shadow-[0_0_20px_rgba(255,149,0,0.5)]">
 						🏆
 					</div>
 					<div class="flex-1">
-						<h3 class="font-bold text-gray-900 mb-1">New Personal Record!</h3>
-						<p class="text-sm text-gray-700 font-semibold">{pr.exerciseName}</p>
-						<p class="text-lg font-bold text-yellow-800">
+						<h3 class="font-display font-bold text-text-primary mb-1">New Personal Record!</h3>
+						<p class="text-sm text-text-secondary font-semibold">{pr.exerciseName}</p>
+						<p class="text-lg font-display font-bold text-warning">
 							{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
 						</p>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="text-xs text-text-muted mt-1">
 							{new Date(pr.achievedDate).toLocaleDateString()}
 						</p>
 					</div>
 					<button
 						onclick={onClose}
-						class="text-gray-400 hover:text-gray-600"
+						class="text-text-muted hover:text-text-primary transition-colors"
 						type="button"
 					>
 						✕

@@ -11,7 +11,7 @@
 		message: string;
 		confirmText?: string;
 		cancelText?: string;
-		variant?: ConfirmVariant;
+		confirmVariant?: ConfirmVariant;
 		onconfirm: () => void;
 		oncancel: () => void;
 	}
@@ -22,7 +22,7 @@
 		message,
 		confirmText = 'Confirm',
 		cancelText = 'Cancel',
-		variant = 'danger',
+		confirmVariant = 'danger',
 		onconfirm,
 		oncancel
 	}: ConfirmDialogProps = $props();
@@ -33,19 +33,19 @@
 		info: 'info'
 	} as const;
 
-	const confirmButtonVariant = variant === 'danger' ? 'danger' : variant === 'warning' ? 'ghost' : 'primary';
+	const confirmButtonVariant = confirmVariant === 'danger' ? 'danger' : confirmVariant === 'warning' ? 'ghost' : 'primary';
 </script>
 
 <Modal {open} {title} size="sm" onclose={oncancel}>
 	{#snippet children()}
 		<div class="space-y-4">
-			<InfoBox type={variantToInfoBoxType[variant]}>
+			<InfoBox type={variantToInfoBoxType[confirmVariant]}>
 				{message}
 			</InfoBox>
 		</div>
 	{/snippet}
 	{#snippet footer()}
-		<div class="flex gap-3">
+		<div class="flex gap-3 w-full">
 			<Button variant="secondary" onclick={oncancel} class="flex-1">
 				{cancelText}
 			</Button>

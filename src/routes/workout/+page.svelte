@@ -779,19 +779,19 @@
 
 	</script>
 
-<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-4xl mx-auto w-full">
 		{#if showWorkoutSelector}
 			<Card>
 				{#snippet children()}
 					<div class="flex items-center justify-between mb-4 sm:mb-6">
-						<h1 class="text-xl sm:text-2xl font-bold text-gray-900">Select Workout</h1>
+						<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary">Select Workout</h1>
 						<Button variant="ghost" href="/">Cancel</Button>
 					</div>
 
 					{#if workouts.length === 0}
 						<div class="text-center py-8">
-							<p class="text-gray-600 mb-4">No workouts created yet.</p>
+							<p class="text-text-secondary mb-4">No workouts created yet.</p>
 							<Button variant="primary" href="/">
 								Create a Workout
 							</Button>
@@ -799,7 +799,7 @@
 					{:else}
 						<div class="space-y-3">
 							{#each workouts as workout}
-								<div class="border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+								<div class="border border-border rounded-lg hover:bg-accent/5 hover:border-accent/50 transition-colors">
 									<div class="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 										<button
 											onclick={() => selectWorkout(workout)}
@@ -807,21 +807,20 @@
 											type="button"
 										>
 											<div>
-												<h3 class="font-semibold text-gray-900 text-base sm:text-lg">{workout.name}</h3>
-												<p class="text-sm text-gray-600">
+												<h3 class="font-semibold text-text-primary text-base sm:text-lg">{workout.name}</h3>
+												<p class="text-sm text-text-secondary">
 													{workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
 												</p>
 											</div>
 										</button>
 										<div class="flex gap-2">
 											<Button
-												variant="ghost"
+												variant="secondary"
 												size="sm"
 												onclick={(e: MouseEvent) => {
 													e.stopPropagation();
 													openEditModal(workout);
 												}}
-												class="bg-blue-100 text-blue-700 hover:bg-blue-200"
 											>
 												Edit
 											</Button>
@@ -848,8 +847,8 @@
 				<div>
 					<Button variant="ghost" href="/">← Exit</Button>
 				</div>
-				<h1 class="text-lg sm:text-xl font-bold text-gray-900 text-center sm:text-auto">{selectedWorkout?.name}</h1>
-				<div class="text-sm text-gray-600 text-center sm:text-auto min-h-[44px] flex items-center justify-center sm:justify-end">
+				<h1 class="text-lg sm:text-xl font-bold font-display text-text-primary text-center sm:text-auto">{selectedWorkout?.name}</h1>
+				<div class="text-sm text-accent font-medium text-center sm:text-auto min-h-[44px] flex items-center justify-center sm:justify-end">
 					⏱️ {sessionDuration}m
 				</div>
 			</div>
@@ -877,25 +876,24 @@
 											onblur={handleExerciseBlur}
 											onkeydown={handleExerciseKeyDown}
 											disabled={isLibraryExercise(currentExercise.exerciseId)}
-											class="flex-1 px-3 py-2 text-lg font-bold border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+											class="flex-1 px-3 py-2 text-lg font-bold bg-surface-elevated border border-border rounded focus:ring-2 focus:ring-accent text-text-primary min-h-[44px]"
 											aria-label="Exercise name"
 										/>
 										{#if isLibraryExercise(currentExercise.exerciseId)}
-											<p class="text-xs text-gray-500 italic sm:self-center">Library exercise name cannot be edited</p>
+											<p class="text-xs text-text-muted italic sm:self-center">Library exercise name cannot be edited</p>
 										{/if}
 									</div>
 								{:else}
-									<h2 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">{currentExercise.exerciseName}</h2>
+									<h2 class="text-xl sm:text-2xl font-bold font-display text-text-primary truncate">{currentExercise.exerciseName}</h2>
 								{/if}
 							</div>
 							<div class="flex items-center gap-2 flex-shrink-0">
-								<p class="text-xs sm:text-sm text-gray-600 capitalize">{currentExercise.primaryMuscle}</p>
+								<p class="text-xs sm:text-sm text-text-secondary capitalize">{currentExercise.primaryMuscle}</p>
 								{#if editingExerciseIndex !== currentExerciseIndex}
 									<Button
-										variant="ghost"
+										variant="secondary"
 										size="sm"
 										onclick={() => editExercise(currentExerciseIndex)}
-										class="bg-blue-100 text-blue-700 hover:bg-blue-200"
 									>
 										Edit
 									</Button>
@@ -911,10 +909,10 @@
 						</div>
 
 						{#if editingExerciseIndex === currentExerciseIndex}
-							<div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+							<div class="mb-4 p-4 bg-surface-elevated rounded-lg border border-border">
 								<div class="space-y-3">
 									<div>
-										<label for="exercise-notes" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+										<label for="exercise-notes" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
 											Exercise Notes (optional)
 										</label>
 										<textarea
@@ -924,7 +922,7 @@
 											onkeydown={handleExerciseKeyDown}
 											placeholder="Add notes about this exercise..."
 											rows="2"
-											class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+											class="w-full px-3 py-2 text-sm sm:text-base bg-surface border border-border rounded-lg focus:ring-2 focus:ring-accent text-text-primary placeholder:text-text-muted min-h-[44px]"
 										></textarea>
 									</div>
 									{#if showExerciseSaveError}
@@ -962,7 +960,7 @@
 						{#if !showTimer && currentSet}
 							<div class="mb-4 sm:mb-6">
 								<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
-									<h3 class="text-base sm:text-lg font-semibold text-gray-900">
+									<h3 class="text-base sm:text-lg font-semibold text-text-primary">
 										Set {currentSetIndex + 1} / {currentExercise.sets.length}
 									</h3>
 									<div class="flex gap-2 justify-center sm:justify-start">
@@ -1016,7 +1014,7 @@
 							</div>
 						{:else}
 							<div class="text-center py-4">
-								<p class="text-sm sm:text-base text-gray-600">
+								<p class="text-sm sm:text-base text-text-secondary">
 									{currentSetIndex} / {currentExercise.sets.length} sets completed
 								</p>
 							</div>
@@ -1024,7 +1022,7 @@
 
 						<div class="mt-3 sm:mt-4">
 							<div class="flex items-center justify-between mb-2">
-								<h4 class="text-xs sm:text-sm font-medium text-gray-700">
+								<h4 class="text-xs sm:text-sm font-medium text-text-secondary">
 									Progress ({currentExercise.sets.filter((s) => s.completed).length} / {currentExercise.sets.length} sets)
 								</h4>
 							</div>
@@ -1042,20 +1040,20 @@
 										ontouchend={(e) => handleTouchEnd(e, idx)}
 										aria-grabbed={draggedSetIndex === idx}
 										aria-dropeffect={draggedOverSetIndex !== null && draggedSetIndex !== null ? 'move' : 'none'}
-										class="{draggedSetIndex === idx ? 'opacity-50' : ''} {draggedOverSetIndex === idx && draggedSetIndex !== null ? 'border-t-2 border-b-2 border-blue-500' : ''}"
+										class="{draggedSetIndex === idx ? 'opacity-50' : ''} {draggedOverSetIndex === idx && draggedSetIndex !== null ? 'border-t-2 border-b-2 border-accent' : ''}"
 									>
 										<div
 											class="w-full flex items-center gap-2 p-2 sm:p-3 rounded {set.completed
-												? 'bg-green-50 border border-green-200 hover:bg-green-100'
+												? 'bg-success/10 border border-success/30 hover:bg-success/15'
 												: idx === currentSetIndex
-													? 'bg-blue-50 border border-blue-200'
-													: 'bg-gray-50 border border-gray-200 hover:bg-gray-100'} transition-colors"
+													? 'bg-accent/10 border border-accent/30'
+													: 'bg-surface-elevated border border-border hover:bg-surface-hover'} transition-colors"
 										>
 											<div class="flex flex-col gap-1 flex-shrink-0">
 												<button
 													onclick={(e) => { e.stopPropagation(); moveSetUp(idx); }}
 													disabled={idx === 0}
-													class="px-1.5 py-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded {idx === 0 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
+													class="px-1.5 py-0.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded {idx === 0 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
 													type="button"
 													aria-label="Move set up"
 												>
@@ -1066,7 +1064,7 @@
 												<button
 													onclick={(e) => { e.stopPropagation(); moveSetDown(idx); }}
 													disabled={idx >= currentExercise.sets.length - 1}
-													class="px-1.5 py-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded {idx >= currentExercise.sets.length - 1 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
+													class="px-1.5 py-0.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded {idx >= currentExercise.sets.length - 1 ? 'opacity-30 cursor-not-allowed' : ''} min-w-[32px] min-h-[24px]"
 													type="button"
 													aria-label="Move set down"
 												>
@@ -1075,7 +1073,7 @@
 													</svg>
 												</button>
 											</div>
-											<div class="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 text-gray-400 hover:text-gray-600" role="button" aria-label="Drag to reorder this set" tabindex="0" onmousedown={(e) => e.preventDefault()}>
+											<div class="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 text-text-muted hover:text-text-secondary" role="button" aria-label="Drag to reorder this set" tabindex="0" onmousedown={(e) => e.preventDefault()}>
 												<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
 													<path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
 												</svg>
@@ -1084,7 +1082,7 @@
 												<div class="flex-1 flex flex-col gap-2">
 													<div class="grid grid-cols-3 gap-2">
 														<div>
-															<label for="edit-set-reps" class="block text-xs text-gray-600 mb-1">Reps</label>
+															<label for="edit-set-reps" class="block text-xs text-text-secondary mb-1">Reps</label>
 															<input
 																id="edit-set-reps"
 																type="number"
@@ -1092,11 +1090,11 @@
 																bind:value={editingSetReps}
 																onblur={handleSetBlur}
 																onkeydown={handleSetKeyDown}
-																class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[32px]"
+																class="w-full px-2 py-1 text-sm bg-surface border border-border rounded focus:ring-2 focus:ring-accent text-text-primary min-h-[32px]"
 															/>
 														</div>
 														<div>
-															<label for="edit-set-weight" class="block text-xs text-gray-600 mb-1">Weight (lbs)</label>
+															<label for="edit-set-weight" class="block text-xs text-text-secondary mb-1">Weight (lbs)</label>
 															<input
 																id="edit-set-weight"
 																type="number"
@@ -1105,11 +1103,11 @@
 																bind:value={editingSetWeight}
 																onblur={handleSetBlur}
 																onkeydown={handleSetKeyDown}
-																class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[32px]"
+																class="w-full px-2 py-1 text-sm bg-surface border border-border rounded focus:ring-2 focus:ring-accent text-text-primary min-h-[32px]"
 															/>
 														</div>
 														<div>
-															<label for="edit-set-rpe" class="block text-xs text-gray-600 mb-1">RPE (1-10)</label>
+															<label for="edit-set-rpe" class="block text-xs text-text-secondary mb-1">RPE (1-10)</label>
 															<input
 																id="edit-set-rpe"
 																type="number"
@@ -1119,7 +1117,7 @@
 																bind:value={editingSetRPE}
 																onblur={handleSetBlur}
 																onkeydown={handleSetKeyDown}
-																class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 min-h-[32px]"
+																class="w-full px-2 py-1 text-sm bg-surface border border-border rounded focus:ring-2 focus:ring-accent text-text-primary min-h-[32px]"
 															/>
 														</div>
 													</div>
@@ -1143,7 +1141,7 @@
 														>
 															Cancel
 														</Button>
-														<span class="text-xs text-gray-600 ml-auto">
+														<span class="text-xs text-text-secondary ml-auto">
 															Volume: {calculateSessionVolume().toLocaleString()} lbs
 														</span>
 													</div>
@@ -1155,33 +1153,33 @@
 													type="button"
 												>
 													<span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium {set.completed
-														? 'bg-green-500 text-white'
+														? 'bg-success text-bg'
 														: idx === currentSetIndex
-															? 'bg-blue-500 text-white'
-															: 'bg-gray-300 text-gray-600'}">
+															? 'bg-accent text-bg'
+															: 'bg-surface-hover text-text-secondary'}">
 														{set.completed ? '✓' : idx + 1}
 													</span>
 													<div class="flex-1 min-w-0">
-														<p class="text-xs sm:text-sm text-gray-700">
+														<p class="text-xs sm:text-sm text-text-primary">
 															{set.reps} reps @ {set.weight} lbs
 															{#if set.rpe}
-																<span class="text-gray-500">· RPE {set.rpe}</span>
+																<span class="text-text-muted">· RPE {set.rpe}</span>
 															{/if}
 														</p>
 														{#if set.notes}
-															<p class="text-xs text-gray-500 truncate">{set.notes}</p>
+															<p class="text-xs text-text-muted truncate">{set.notes}</p>
 														{/if}
 													</div>
 													{#if set.completed && idx !== currentSetIndex}
-														<span class="text-xs text-green-600 font-medium">Edit</span>
+														<span class="text-xs text-success font-medium">Edit</span>
 													{:else if !set.completed && idx === currentSetIndex}
-														<span class="text-xs text-blue-600 font-medium">Current</span>
+														<span class="text-xs text-accent font-medium">Current</span>
 													{/if}
 												</button>
 											{/if}
 											<button
 												onclick={(e) => { e.stopPropagation(); confirmDeleteSet(idx); }}
-												class="px-2 py-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors min-w-[32px] min-h-[32px]"
+												class="px-2 py-1 text-danger hover:text-danger-muted hover:bg-danger/10 rounded transition-colors min-w-[32px] min-h-[32px]"
 												type="button"
 												aria-label="Delete set"
 											>
@@ -1250,16 +1248,19 @@
 			/>
 
 			{#if showUndoToast}
-				<div class="fixed bottom-4 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
-					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-amber-50 border-amber-200 text-amber-800">
-						<Undo class="w-5 h-5 flex-shrink-0 text-amber-500" />
+				<div class="fixed bottom-20 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
+					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-warning/10 border-warning/30 text-warning">
+						<Undo class="w-5 h-5 flex-shrink-0" />
 						<span class="text-sm font-medium flex-1">Set deleted. Undo available for 30 seconds</span>
-						<Button variant="secondary" size="sm" onclick={undoDeleteSet} class="bg-amber-600 text-white hover:bg-amber-700">
+						<button
+							onclick={undoDeleteSet}
+							class="px-3 py-1.5 bg-warning text-bg rounded-lg font-medium text-sm hover:bg-warning-muted transition-colors"
+						>
 							Undo
-						</Button>
+						</button>
 						<button
 							onclick={() => showUndoToast = false}
-							class="flex-shrink-0 p-1 rounded hover:bg-amber-100 transition-colors"
+							class="flex-shrink-0 p-1 rounded hover:bg-warning/20 transition-colors"
 							aria-label="Dismiss"
 							type="button"
 						>
@@ -1270,16 +1271,19 @@
 			{/if}
 
 			{#if showExerciseUndoToast}
-				<div class="fixed bottom-4 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
-					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-amber-50 border-amber-200 text-amber-800">
-						<Undo class="w-5 h-5 flex-shrink-0 text-amber-500" />
+				<div class="fixed bottom-20 left-4 right-4 z-[100] md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md">
+					<div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border bg-warning/10 border-warning/30 text-warning">
+						<Undo class="w-5 h-5 flex-shrink-0" />
 						<span class="text-sm font-medium flex-1">Exercise deleted. Undo available for 30 seconds</span>
-						<Button variant="secondary" size="sm" onclick={undoDeleteExercise} class="bg-amber-600 text-white hover:bg-amber-700">
+						<button
+							onclick={undoDeleteExercise}
+							class="px-3 py-1.5 bg-warning text-bg rounded-lg font-medium text-sm hover:bg-warning-muted transition-colors"
+						>
 							Undo
-						</Button>
+						</button>
 						<button
 							onclick={() => showExerciseUndoToast = false}
-							class="flex-shrink-0 p-1 rounded hover:bg-amber-100 transition-colors"
+							class="flex-shrink-0 p-1 rounded hover:bg-warning/20 transition-colors"
 							aria-label="Dismiss"
 							type="button"
 						>

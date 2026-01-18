@@ -113,10 +113,10 @@
 	}
 
 	function getCalendarColor(count: number): string {
-		if (count === 0) return 'bg-gray-100';
-		if (count === 1) return 'bg-green-200';
-		if (count === 2) return 'bg-green-400';
-		return 'bg-green-600';
+		if (count === 0) return 'bg-surface-elevated';
+		if (count === 1) return 'bg-accent/30';
+		if (count === 2) return 'bg-accent/60';
+		return 'bg-accent';
 	}
 
 	function isLastWorkoutDate(dateStr: string): boolean {
@@ -157,16 +157,16 @@
 	];
 </script>
 
-<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
 		{#if sessions.length === 0}
 			<Card class="mb-4 sm:mb-6 text-center" padding="lg">
 				{#snippet children()}
-					<div class="w-20 h-20 sm:w-24 sm:h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+					<div class="w-20 h-20 sm:w-24 sm:h-24 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
 						<span class="text-4xl sm:text-5xl">🏋️</span>
 					</div>
-					<h1 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Your Gym Dashboard!</h1>
-					<p class="text-gray-600 mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
+					<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary mb-2">Welcome to Your Gym Dashboard!</h1>
+					<p class="text-text-secondary mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
 					<Button href="/">
 						Start Your First Workout
 					</Button>
@@ -178,9 +178,9 @@
 					<Button variant="ghost" href="/">
 						← Back
 					</Button>
-					<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Analytics</h1>
+					<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-text-primary">Analytics</h1>
 				</div>
-				<Button variant="success" href="/pr" class="bg-yellow-600 hover:bg-yellow-700">
+				<Button variant="success" href="/pr" class="bg-warning hover:bg-warning-muted text-bg">
 					🏆 PRs
 				</Button>
 				<ButtonGroup
@@ -196,25 +196,25 @@
 				{#snippet children()}
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
 						<div>
-							<label for="start-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+							<label for="start-date" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
 								Start Date
 							</label>
 							<input
 								id="start-date"
 								type="date"
 								bind:value={customStartDate}
-								class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
+								class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent text-sm text-text-primary min-h-[44px]"
 							/>
 						</div>
 						<div>
-							<label for="end-date" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+							<label for="end-date" class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
 								End Date
 							</label>
 							<input
 								id="end-date"
 								type="date"
 								bind:value={customEndDate}
-								class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[44px]"
+								class="w-full px-3 py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent text-sm text-text-primary min-h-[44px]"
 							/>
 						</div>
 					</div>
@@ -223,21 +223,21 @@
 		{/if}
 
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-			<MetricCard label="Sessions" value={totalSessions} icon="📊" iconBgColor="bg-blue-100" />
-			<MetricCard label="Time" value={formatTime(totalTrainingTime)} icon="⏱️" iconBgColor="bg-green-100" />
-			<MetricCard label="Volume" value="{formatVolume(totalVolume)} lbs" icon="🏋️" iconBgColor="bg-purple-100" />
+			<MetricCard label="Sessions" value={totalSessions} icon="📊" iconBgColor="bg-secondary/20" />
+			<MetricCard label="Time" value={formatTime(totalTrainingTime)} icon="⏱️" iconBgColor="bg-success/20" />
+			<MetricCard label="Volume" value="{formatVolume(totalVolume)} lbs" icon="🏋️" iconBgColor="bg-accent/20" />
 			<MetricCard
 				label="Avg Duration"
 				value={totalSessions > 0 ? formatTime(totalTrainingTime / totalSessions) : '0m'}
 				icon="📈"
-				iconBgColor="bg-orange-100"
+				iconBgColor="bg-warning/20"
 			/>
 		</div>
 
 		<Card class="mb-4 sm:mb-6" padding="sm">
 			{#snippet children()}
 				<div class="flex items-center justify-between mb-3 sm:mb-4">
-					<h2 class="text-lg sm:text-xl font-bold text-gray-900">Training Aggregates</h2>
+					<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary">Training Aggregates</h2>
 					<ButtonGroup
 						options={periodOptions}
 						bind:value={selectedPeriod}
@@ -249,109 +249,109 @@
 				{#if selectedPeriod === 'week'}
 					<div class="space-y-3 sm:space-y-4">
 						<div class="grid grid-cols-2 gap-3 sm:gap-4">
-							<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
+							<div class="bg-secondary/10 rounded-lg p-3 sm:p-4">
 								<div class="flex items-center justify-between mb-2">
-									<span class="text-xs sm:text-sm text-gray-600">Volume</span>
-									<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(weeklyComparison.current.startDate, weeklyComparison.current.endDate)}</span>
+									<span class="text-xs sm:text-sm text-text-secondary">Volume</span>
+									<span class="text-[10px] sm:text-xs text-text-muted">{formatDateRange(weeklyComparison.current.startDate, weeklyComparison.current.endDate)}</span>
 								</div>
-								<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(weeklyComparison.current.volume)} lbs</p>
+								<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(weeklyComparison.current.volume)} lbs</p>
 								<div class="flex items-center gap-1 mt-1">
 									{#if weeklyComparison.volumeChange > 0}
-										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-										<span class="text-green-600 text-xs sm:text-sm font-medium">
+										<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-accent text-xs sm:text-sm font-medium">
 											{weeklyComparison.volumeChangePercent > 0 ? '+' : ''}{weeklyComparison.volumeChangePercent.toFixed(1)}%
 										</span>
 									{:else if weeklyComparison.volumeChange < 0}
-										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-										<span class="text-red-600 text-xs sm:text-sm font-medium">
+										<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-danger text-xs sm:text-sm font-medium">
 											{weeklyComparison.volumeChangePercent.toFixed(1)}%
 										</span>
 									{:else}
-										<span class="text-gray-500 text-xs sm:text-sm">-</span>
+										<span class="text-text-muted text-xs sm:text-sm">-</span>
 									{/if}
 								</div>
 							</div>
 
-							<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
+							<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
 								<div class="flex items-center justify-between mb-2">
-									<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
-									<span class="text-[10px] sm:text-xs text-gray-500">vs. previous week</span>
+									<span class="text-xs sm:text-sm text-text-secondary">Workouts</span>
+									<span class="text-[10px] sm:text-xs text-text-muted">vs. previous week</span>
 								</div>
-								<p class="text-lg sm:text-2xl font-bold text-gray-900">{weeklyComparison.current.workoutCount}</p>
+								<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{weeklyComparison.current.workoutCount}</p>
 								<div class="flex items-center gap-1 mt-1">
 									{#if weeklyComparison.workoutCountChange > 0}
-										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-										<span class="text-green-600 text-xs sm:text-sm font-medium">
+										<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-accent text-xs sm:text-sm font-medium">
 											+{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent > 0 ? '+' : ''}{weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
 										</span>
 									{:else if weeklyComparison.workoutCountChange < 0}
-										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-										<span class="text-red-600 text-xs sm:text-sm font-medium">
+										<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-danger text-xs sm:text-sm font-medium">
 											{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
 										</span>
 									{:else}
-										<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
+										<span class="text-text-muted text-xs sm:text-sm">0 (0%)</span>
 									{/if}
 								</div>
 							</div>
 						</div>
 
-						<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
-							<span class="text-xs text-gray-500">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.workoutCount} workouts</span>
+						<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
+							<span class="text-xs text-text-muted">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.workoutCount} workouts</span>
 						</div>
 					</div>
 				{:else}
 					<div class="space-y-3 sm:space-y-4">
 						<div class="grid grid-cols-2 gap-3 sm:gap-4">
-							<div class="bg-blue-50 rounded-lg p-3 sm:p-4">
+							<div class="bg-secondary/10 rounded-lg p-3 sm:p-4">
 								<div class="flex items-center justify-between mb-2">
-									<span class="text-xs sm:text-sm text-gray-600">Volume</span>
-									<span class="text-[10px] sm:text-xs text-gray-500">{formatDateRange(monthlyComparison.current.startDate, monthlyComparison.current.endDate)}</span>
+									<span class="text-xs sm:text-sm text-text-secondary">Volume</span>
+									<span class="text-[10px] sm:text-xs text-text-muted">{formatDateRange(monthlyComparison.current.startDate, monthlyComparison.current.endDate)}</span>
 								</div>
-								<p class="text-lg sm:text-2xl font-bold text-gray-900">{formatVolume(monthlyComparison.current.volume)} lbs</p>
+								<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(monthlyComparison.current.volume)} lbs</p>
 								<div class="flex items-center gap-1 mt-1">
 									{#if monthlyComparison.volumeChange > 0}
-										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-										<span class="text-green-600 text-xs sm:text-sm font-medium">
+										<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-accent text-xs sm:text-sm font-medium">
 											{monthlyComparison.volumeChangePercent > 0 ? '+' : ''}{monthlyComparison.volumeChangePercent.toFixed(1)}%
 										</span>
 									{:else if monthlyComparison.volumeChange < 0}
-										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-										<span class="text-red-600 text-xs sm:text-sm font-medium">
+										<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-danger text-xs sm:text-sm font-medium">
 											{monthlyComparison.volumeChangePercent.toFixed(1)}%
 										</span>
 									{:else}
-										<span class="text-gray-500 text-xs sm:text-sm">-</span>
+										<span class="text-text-muted text-xs sm:text-sm">-</span>
 									{/if}
 								</div>
 							</div>
 
-							<div class="bg-purple-50 rounded-lg p-3 sm:p-4">
+							<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
 								<div class="flex items-center justify-between mb-2">
-									<span class="text-xs sm:text-sm text-gray-600">Workouts</span>
-									<span class="text-[10px] sm:text-xs text-gray-500">vs. previous month</span>
+									<span class="text-xs sm:text-sm text-text-secondary">Workouts</span>
+									<span class="text-[10px] sm:text-xs text-text-muted">vs. previous month</span>
 								</div>
-								<p class="text-lg sm:text-2xl font-bold text-gray-900">{monthlyComparison.current.workoutCount}</p>
+								<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{monthlyComparison.current.workoutCount}</p>
 								<div class="flex items-center gap-1 mt-1">
 									{#if monthlyComparison.workoutCountChange > 0}
-										<span class="text-green-600 text-xs sm:text-sm font-medium">↑</span>
-										<span class="text-green-600 text-xs sm:text-sm font-medium">
+										<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
+										<span class="text-accent text-xs sm:text-sm font-medium">
 											+{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent > 0 ? '+' : ''}{monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
 										</span>
 									{:else if monthlyComparison.workoutCountChange < 0}
-										<span class="text-red-600 text-xs sm:text-sm font-medium">↓</span>
-										<span class="text-red-600 text-xs sm:text-sm font-medium">
+										<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
+										<span class="text-danger text-xs sm:text-sm font-medium">
 											{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
 										</span>
 									{:else}
-										<span class="text-gray-500 text-xs sm:text-sm">0 (0%)</span>
+										<span class="text-text-muted text-xs sm:text-sm">0 (0%)</span>
 									{/if}
 								</div>
 							</div>
 						</div>
 
-						<div class="bg-gray-50 rounded-lg p-2 sm:p-3">
-							<span class="text-xs text-gray-500">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.workoutCount} workouts</span>
+						<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
+							<span class="text-xs text-text-muted">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.workoutCount} workouts</span>
 						</div>
 					</div>
 				{/if}
@@ -361,10 +361,10 @@
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
 			<Card>
 				{#snippet children()}
-					<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Daily Metrics</h2>
+					<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Daily Metrics</h2>
 					{#if dailyMetrics.length > 0}
 						<div class="space-y-2 max-h-64 overflow-y-auto">
-							<div class="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600 border-b pb-2">
+							<div class="grid grid-cols-3 gap-2 text-xs font-semibold text-text-secondary border-b border-border pb-2">
 								<span>Date</span>
 								<span class="text-center">Workouts</span>
 								<span class="text-right">Volume</span>
@@ -372,31 +372,31 @@
 							{#each [...dailyMetrics].reverse() as metric}
 								<div
 									class="grid grid-cols-3 gap-2 text-xs sm:text-sm py-1 {isLastWorkoutDate(metric.date)
-										? 'bg-blue-50 border-l-4 border-blue-600'
-										: 'bg-gray-50'} rounded"
+										? 'bg-accent/10 border-l-4 border-accent'
+										: 'bg-surface-elevated'} rounded"
 								>
-									<span class="truncate">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-									<span class="text-center {metric.workoutCount === 0 ? 'text-gray-400' : 'font-semibold'}">{metric.workoutCount}</span>
-									<span class="text-right {metric.volume === 0 ? 'text-gray-400' : 'font-semibold text-blue-600'}">
+									<span class="truncate text-text-primary">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+									<span class="text-center {metric.workoutCount === 0 ? 'text-text-muted' : 'font-semibold text-text-primary'}">{metric.workoutCount}</span>
+									<span class="text-right {metric.volume === 0 ? 'text-text-muted' : 'font-semibold text-accent'}">
 										{formatVolume(metric.volume)} lbs
 									</span>
 								</div>
 							{/each}
 						</div>
 						{#if lastWorkoutDate}
-							<div class="mt-3 text-xs text-gray-500">
+							<div class="mt-3 text-xs text-text-muted">
 								Last workout: {lastWorkoutDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
 							</div>
 						{/if}
 					{:else}
-						<p class="text-gray-500 text-center py-4 text-sm">No workout data available</p>
+						<p class="text-text-muted text-center py-4 text-sm">No workout data available</p>
 					{/if}
 				{/snippet}
 			</Card>
 
 			<Card>
 				{#snippet children()}
-					<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Muscle Breakdown</h2>
+					<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Muscle Breakdown</h2>
 					{#if muscleGroupBreakdown.length > 0}
 						<div class="flex items-center justify-center mb-3 sm:mb-4">
 							<svg viewBox="0 0 100 100" class="w-32 h-32 sm:w-48 sm:h-48">
@@ -448,16 +448,16 @@
 						</div>
 						<div class="grid grid-cols-2 gap-1 sm:gap-2">
 							{#each muscleGroupBreakdown.slice(0, 6) as { muscle, count }}
-								<div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-									<span class="capitalize text-xs sm:text-sm">{muscle}</span>
-									<span class="font-semibold text-xs sm:text-sm">{count} ({(
+								<div class="flex items-center justify-between p-2 bg-surface-elevated rounded">
+									<span class="capitalize text-xs sm:text-sm text-text-primary">{muscle}</span>
+									<span class="font-semibold text-xs sm:text-sm text-text-secondary">{count} ({(
 										pieChartData.find((s) => s.muscle === muscle)?.percentage || 0
 									).toFixed(0)}%)</span>
 								</div>
 							{/each}
 						</div>
 					{:else}
-						<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No workout data available</p>
+						<p class="text-text-muted text-center py-8 sm:py-12 text-sm">No workout data available</p>
 					{/if}
 				{/snippet}
 			</Card>
@@ -465,7 +465,7 @@
 
 		<Card>
 			{#snippet children()}
-				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Volume Trends</h2>
+				<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Volume Trends</h2>
 				{#if volumeTrends.some((t) => t.volume > 0)}
 					<div class="h-48 sm:h-64">
 						<svg viewBox="0 0 800 200" class="w-full h-full">
@@ -478,14 +478,14 @@
 										y2={200 -
 											(volumeTrends[i + 1]?.volume || trend.volume) /
 												Math.max(...volumeTrends.map((t) => t.volume)) * 180}
-										stroke="#3b82f6"
+										stroke="#c5ff00"
 										stroke-width="2"
 									/>
 									<circle
 										cx={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
 										cy={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
 										r="4"
-										fill="#3b82f6"
+										fill="#c5ff00"
 									/>
 								{/if}
 							{/each}
@@ -495,7 +495,7 @@
 									y={195}
 									text-anchor="middle"
 									class="text-xs"
-									fill="#6b7280"
+									fill="#8b8d97"
 								>
 									{i % 2 === 0 ? trend.date : ''}
 								</text>
@@ -505,14 +505,14 @@
 					<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
 						{#each volumeTrends.slice(-4).reverse() as trend}
 							<div class="text-xs sm:text-sm">
-								<p class="text-gray-500">{trend.date}</p>
-								<p class="font-semibold">{formatVolume(trend.volume)} lbs</p>
-								<p class="text-[10px] sm:text-xs text-gray-400">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
+								<p class="text-text-muted">{trend.date}</p>
+								<p class="font-semibold text-text-primary">{formatVolume(trend.volume)} lbs</p>
+								<p class="text-[10px] sm:text-xs text-text-muted">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
 							</div>
 						{/each}
 					</div>
 				{:else}
-					<p class="text-gray-500 text-center py-8 sm:py-12 text-sm">No volume data available</p>
+					<p class="text-text-muted text-center py-8 sm:py-12 text-sm">No volume data available</p>
 				{/if}
 			{/snippet}
 		</Card>

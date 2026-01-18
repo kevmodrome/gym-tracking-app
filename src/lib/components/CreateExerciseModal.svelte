@@ -107,14 +107,14 @@
 			/>
 
 			<fieldset class="border-none p-0 m-0">
-				<legend class="text-sm font-medium text-gray-700 mb-2 block">Secondary Muscle Groups</legend>
+				<legend class="text-sm font-medium text-text-secondary mb-2 block">Secondary Muscle Groups</legend>
 				<div class="flex gap-2 mb-2">
 					<input
 						type="text"
 						bind:value={newSecondaryMuscle}
 						onkeypress={(e) => e.key === 'Enter' && (addSecondaryMuscle(), e.preventDefault())}
 						placeholder="e.g., triceps (press Enter to add)"
-						class="flex-1 px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+						class="flex-1 px-4 py-3 text-base bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted min-h-[44px]"
 					/>
 					<Button
 						variant="secondary"
@@ -128,12 +128,12 @@
 					<div class="flex flex-wrap gap-2">
 						{#each secondaryMuscles as muscle, index}
 							<span
-								class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-full text-sm min-h-[36px]"
+								class="inline-flex items-center gap-1 px-3 py-2 bg-surface-elevated text-text-secondary rounded-full text-sm min-h-[36px]"
 							>
 								{muscle}
 								<button
 									onclick={() => removeSecondaryMuscle(index)}
-									class="ml-1 p-1 text-gray-500 hover:text-gray-700 min-w-[28px] min-h-[28px] rounded-full hover:bg-gray-200"
+									class="ml-1 p-1 text-text-muted hover:text-text-primary min-w-[28px] min-h-[28px] rounded-full hover:bg-surface"
 									type="button"
 									aria-label={`Remove ${muscle}`}
 								>

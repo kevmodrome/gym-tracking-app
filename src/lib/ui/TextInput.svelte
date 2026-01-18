@@ -51,9 +51,9 @@
 
 <div class={className}>
 	{#if label}
-		<label for={inputId} class="block text-sm font-medium text-gray-700 mb-2">
+		<label for={inputId} class="block text-sm font-medium text-text-secondary mb-2">
 			{label}
-			{#if required}<span class="text-red-500">*</span>{/if}
+			{#if required}<span class="text-danger">*</span>{/if}
 		</label>
 	{/if}
 	<!-- svelte-ignore a11y_autofocus -->
@@ -70,11 +70,11 @@
 		{inputmode}
 		oninput={handleInput}
 		{onblur}
-		class="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] {error ? 'border-red-500' : 'border-gray-300'} {disabled ? 'bg-gray-100 cursor-not-allowed' : ''}"
+		class="w-full px-4 py-3 text-base bg-surface-elevated border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent min-h-[44px] text-text-primary placeholder:text-text-muted {error ? 'border-danger' : 'border-border'} {disabled ? 'bg-surface opacity-60 cursor-not-allowed' : 'hover:border-border-active'}"
 	/>
 	{#if error}
-		<p class="mt-1 text-sm text-red-600">{error}</p>
+		<p class="mt-1 text-sm text-danger">{error}</p>
 	{:else if hint}
-		<p class="mt-1 text-sm text-gray-500">{hint}</p>
+		<p class="mt-1 text-sm text-text-muted">{hint}</p>
 	{/if}
 </div>

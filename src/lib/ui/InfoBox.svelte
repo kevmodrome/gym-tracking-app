@@ -24,27 +24,27 @@
 
 	const typeStyles: Record<InfoBoxType, { bg: string; border: string; text: string; icon: string }> = {
 		info: {
-			bg: 'bg-blue-50',
-			border: 'border-blue-200',
-			text: 'text-blue-800',
+			bg: 'bg-secondary/10',
+			border: 'border-l-4 border-secondary',
+			text: 'text-text-primary',
 			icon: 'ℹ️'
 		},
 		success: {
-			bg: 'bg-green-50',
-			border: 'border-green-200',
-			text: 'text-green-800',
+			bg: 'bg-success/10',
+			border: 'border-l-4 border-success',
+			text: 'text-text-primary',
 			icon: '✅'
 		},
 		warning: {
-			bg: 'bg-amber-50',
-			border: 'border-amber-200',
-			text: 'text-amber-800',
+			bg: 'bg-warning/10',
+			border: 'border-l-4 border-warning',
+			text: 'text-text-primary',
 			icon: '⚠️'
 		},
 		error: {
-			bg: 'bg-red-50',
-			border: 'border-red-200',
-			text: 'text-red-800',
+			bg: 'bg-danger/10',
+			border: 'border-l-4 border-danger',
+			text: 'text-text-primary',
 			icon: '❌'
 		}
 	};
@@ -52,7 +52,7 @@
 	const styles = $derived(typeStyles[type]);
 </script>
 
-<div class="{styles.bg} border {styles.border} rounded-lg p-3 sm:p-4 {className}">
+<div class="{styles.bg} {styles.border} rounded-lg p-3 sm:p-4 {className}">
 	<div class="flex items-start justify-between gap-2">
 		<div class="flex-1">
 			{#if title}
@@ -68,11 +68,11 @@
 		{#if dismissible && onclose}
 			<button
 				onclick={onclose}
-				class="p-1 rounded hover:bg-black/5 transition-colors flex-shrink-0"
+				class="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
 				type="button"
 				aria-label="Dismiss"
 			>
-				<XIcon class="w-4 h-4 {styles.text}" />
+				<XIcon class="w-4 h-4 text-text-secondary" />
 			</button>
 		{/if}
 	</div>

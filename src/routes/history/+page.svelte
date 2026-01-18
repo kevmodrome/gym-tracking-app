@@ -234,14 +234,14 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
 		<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
 			<div class="flex items-center gap-4">
 				<Button variant="secondary" href="/">
 					← Back
 				</Button>
-				<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Workout History</h1>
+				<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Workout History</h1>
 			</div>
 		</div>
 
@@ -249,12 +249,12 @@
 			{#snippet children()}
 				<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
 					<div class="relative">
-						<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+						<SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
 						<input
 							type="text"
 							bind:value={searchQuery}
 							placeholder="Search workouts..."
-							class="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
+							class="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted text-sm sm:text-base min-h-[44px]"
 						/>
 					</div>
 
@@ -271,7 +271,7 @@
 					/>
 
 					<div>
-						<label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+						<label class="block text-xs sm:text-sm font-medium text-text-secondary mb-1">
 							Showing: {filteredSessions.length} sessions
 						</label>
 						<Button variant="ghost" onclick={clearFilters} fullWidth>
@@ -282,7 +282,7 @@
 				</div>
 
 				{#if dateFilter === 'custom'}
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 pt-4 border-t border-gray-200">
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 pt-4 border-t border-border">
 						<TextInput
 							label="Start Date"
 							type="date"
@@ -301,11 +301,11 @@
 		{#if filteredSessions.length === 0}
 			<Card class="text-center" padding="lg">
 				{#snippet children()}
-					<div class="text-gray-400 mb-4">
+					<div class="text-text-muted mb-4">
 						<SearchIcon class="w-16 h-16 mx-auto" />
 					</div>
-					<h2 class="text-xl font-semibold text-gray-900 mb-2">No workout sessions found</h2>
-					<p class="text-gray-600">
+					<h2 class="text-xl font-semibold text-text-primary mb-2">No workout sessions found</h2>
+					<p class="text-text-secondary">
 						{#if sessions.length === 0}
 							Start working out to see your history here
 						{:else}
@@ -331,29 +331,29 @@
 							>
 								<div class="flex items-start justify-between">
 									<div class="flex-1">
-										<h3 class="text-xl font-semibold text-gray-900 mb-2">{session.workoutName}</h3>
+										<h3 class="text-xl font-semibold text-text-primary mb-2">{session.workoutName}</h3>
 										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
 											<div class="flex items-center gap-2">
-												<span class="text-gray-500">📅</span>
-												<span class="text-sm text-gray-700">{formatDate(session.date)}</span>
+												<span class="text-text-muted">📅</span>
+												<span class="text-sm text-text-secondary">{formatDate(session.date)}</span>
 											</div>
 											<div class="flex items-center gap-2">
-												<span class="text-gray-500">⏱️</span>
-												<span class="text-sm text-gray-700">{formatDuration(session.duration)}</span>
+												<span class="text-text-muted">⏱️</span>
+												<span class="text-sm text-text-secondary">{formatDuration(session.duration)}</span>
 											</div>
 											<div class="flex items-center gap-2">
-												<span class="text-gray-500">💪</span>
-												<span class="text-sm text-gray-700">{getSessionSummary(session)}</span>
+												<span class="text-text-muted">💪</span>
+												<span class="text-sm text-text-secondary">{getSessionSummary(session)}</span>
 											</div>
 										</div>
 										{#if session.notes}
-											<p class="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+											<p class="text-sm text-text-secondary mt-2 bg-surface-elevated p-2 rounded">
 												{session.notes}
 											</p>
 										{/if}
 									</div>
 									<div class="flex items-center gap-2 ml-4">
-										<ChevronDownIcon class="w-5 h-5 text-gray-400" />
+										<ChevronDownIcon class="w-5 h-5 text-text-muted" />
 									</div>
 								</div>
 							</button>
@@ -382,11 +382,11 @@
 	{#snippet children()}
 		{#if showSessionDetail}
 			<div class="flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-4">
-				<p class="text-sm text-gray-600">{formatDate(showSessionDetail.date)}</p>
+				<p class="text-sm text-text-secondary">{formatDate(showSessionDetail.date)}</p>
 				<div class="flex items-center gap-2 sm:gap-4">
 					<div class="text-right">
-						<p class="text-xs sm:text-sm text-gray-500">Duration</p>
-						<p class="text-base sm:text-lg font-semibold">{formatDuration(showSessionDetail.duration)}</p>
+						<p class="text-xs sm:text-sm text-text-muted">Duration</p>
+						<p class="text-base sm:text-lg font-semibold text-text-primary">{formatDuration(showSessionDetail.duration)}</p>
 					</div>
 					<Button variant="primary" size="sm" onclick={openEditModal}>
 						Edit
@@ -406,34 +406,34 @@
 
 			<div class="space-y-3 sm:space-y-4">
 				{#each showSessionDetail.exercises as exercise}
-					<div class="border border-gray-200 rounded-lg overflow-hidden">
-						<div class="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
-							<h4 class="font-semibold text-gray-900 text-base sm:text-lg">{exercise.exerciseName}</h4>
-							<p class="text-xs sm:text-sm text-gray-600 capitalize">{exercise.primaryMuscle}</p>
+					<div class="border border-border rounded-lg overflow-hidden">
+						<div class="bg-surface-elevated px-3 sm:px-4 py-2 sm:py-3 border-b border-border">
+							<h4 class="font-semibold text-text-primary text-base sm:text-lg">{exercise.exerciseName}</h4>
+							<p class="text-xs sm:text-sm text-text-secondary capitalize">{exercise.primaryMuscle}</p>
 						</div>
 
 						<div class="p-3 sm:p-4">
 							<div class="hidden sm:block">
 								<table class="w-full">
 									<thead>
-										<tr class="border-b border-gray-200">
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Set</th>
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Reps</th>
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Weight</th>
-											<th class="text-left py-2 text-sm font-medium text-gray-700">Status</th>
+										<tr class="border-b border-border">
+											<th class="text-left py-2 text-sm font-medium text-text-secondary">Set</th>
+											<th class="text-left py-2 text-sm font-medium text-text-secondary">Reps</th>
+											<th class="text-left py-2 text-sm font-medium text-text-secondary">Weight</th>
+											<th class="text-left py-2 text-sm font-medium text-text-secondary">Status</th>
 										</tr>
 									</thead>
 									<tbody>
 										{#each exercise.sets as set, idx}
-											<tr class:completed={set.completed}>
-												<td class="py-2 text-sm text-gray-700">{idx + 1}</td>
-												<td class="py-2 text-sm text-gray-700">{set.reps}</td>
-												<td class="py-2 text-sm text-gray-700">{set.weight} lbs</td>
+											<tr class={set.completed ? 'bg-success/5' : ''}>
+												<td class="py-2 text-sm text-text-secondary">{idx + 1}</td>
+												<td class="py-2 text-sm text-text-secondary">{set.reps}</td>
+												<td class="py-2 text-sm text-text-secondary">{set.weight} lbs</td>
 												<td class="py-2 text-sm">
 													<span
 														class="px-2 py-1 rounded-full text-xs font-medium {set.completed
-															? 'bg-green-100 text-green-800'
-															: 'bg-gray-100 text-gray-600'}"
+															? 'bg-success/20 text-success'
+															: 'bg-surface-elevated text-text-muted'}"
 													>
 														{set.completed ? '✓ Completed' : '— Skipped'}
 													</span>
@@ -446,14 +446,14 @@
 
 							<div class="sm:hidden space-y-2">
 								{#each exercise.sets as set, idx}
-									<div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg {set.completed ? 'bg-green-50' : 'bg-gray-50'}">
+									<div class="flex items-center justify-between p-3 border border-border rounded-lg {set.completed ? 'bg-success/10' : 'bg-surface-elevated'}">
 										<div class="flex items-center gap-3">
-											<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}">{idx + 1}</span>
+											<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed ? 'bg-success text-bg' : 'bg-surface text-text-muted'}">{idx + 1}</span>
 											<div>
-												<p class="text-sm font-medium text-gray-900">{set.reps} reps × {set.weight} lbs</p>
+												<p class="text-sm font-medium text-text-primary">{set.reps} reps × {set.weight} lbs</p>
 											</div>
 										</div>
-										<span class="text-xs font-medium px-2 py-1 rounded-full {set.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">
+										<span class="text-xs font-medium px-2 py-1 rounded-full {set.completed ? 'bg-success/20 text-success' : 'bg-surface text-text-muted'}">
 											{set.completed ? 'Done' : 'Skip'}
 										</span>
 									</div>
@@ -528,10 +528,10 @@
 </Modal>
 
 {#if showUndoToast}
-	<div class="fixed bottom-4 right-4 bg-gray-900 text-white rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
+	<div class="fixed bottom-4 right-4 bg-surface border border-warning/30 rounded-lg shadow-xl p-4 max-w-md z-[70] flex items-start gap-3">
 		<div class="flex-1">
-			<p class="font-medium mb-1">Workout deleted</p>
-			<p class="text-sm text-gray-300 mb-2">
+			<p class="font-medium text-text-primary mb-1">Workout deleted</p>
+			<p class="text-sm text-text-secondary mb-2">
 				"{deletedSession?.workoutName}" has been removed from your history.
 			</p>
 			<Button variant="primary" size="sm" onclick={undoDelete}>
@@ -545,7 +545,7 @@
 				undoTimeout = null;
 				deletedSession = null;
 			}}
-			class="text-gray-400 hover:text-white"
+			class="text-text-muted hover:text-text-primary"
 			type="button"
 		>
 			<XIcon class="w-5 h-5" />
@@ -553,11 +553,3 @@
 	</div>
 {/if}
 
-<style>
-	tr.completed:nth-child(even) {
-		background-color: #f0fdf4;
-	}
-	tr.completed:nth-child(odd) {
-		background-color: #dcfce7;
-	}
-</style>

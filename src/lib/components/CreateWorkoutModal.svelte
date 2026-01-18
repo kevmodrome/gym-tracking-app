@@ -95,7 +95,7 @@
 </script>
 
 <div
-	class="fixed inset-0 bg-black-50 bg-opacity-50 flex items-center justify-center p-4 z-50"
+	class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
 	onclick={onClose}
 	onkeydown={(e) => e.key === 'Escape' && onClose()}
 >
@@ -104,7 +104,7 @@
 		aria-modal="true"
 		aria-labelledby="modal-title"
 		tabindex="-1"
-		class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+		class="bg-surface border border-border rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col"
 		onclick={(e) => e.stopPropagation()}
 		onkeydown={(e) => {
 			if (e.key === 'Escape') {
@@ -113,15 +113,15 @@
 			}
 		}}
 	>
-		<div class="p-6 border-b border-gray-200">
+		<div class="p-6 border-b border-border">
 			<div class="flex items-center justify-between">
-				<h2 id="modal-title" class="text-2xl font-bold text-gray-900">Create Workout Routine</h2>
+				<h2 id="modal-title" class="text-2xl font-display font-bold text-text-primary">Create Workout Routine</h2>
 				<button
 					onclick={onClose}
-					class="p-2 hover:bg-gray-100 rounded-full transition-colors"
+					class="p-2 hover:bg-surface-elevated rounded-full transition-colors"
 					type="button"
 				>
-					<XIcon class="w-6 h-6 text-gray-500" />
+					<XIcon class="w-6 h-6 text-text-muted" />
 				</button>
 			</div>
 		</div>
@@ -129,7 +129,7 @@
 		<div class="flex-1 overflow-y-auto p-6">
 			<div class="space-y-6">
 				<div>
-					<label for="workout-name" class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="workout-name" class="block text-sm font-medium text-text-secondary mb-2">
 						Workout Name *
 					</label>
 					<!-- svelte-ignore a11y_autofocus -->
@@ -140,54 +140,54 @@
 						bind:value={workoutName}
 						placeholder="e.g., Push Day A, Leg Day, Upper Body"
 						autofocus
-						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+						class="w-full px-4 py-3 text-base bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted min-h-[44px]"
 					/>
 
 				</div>
 
 				<div>
-					<label for="exercise-search" class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="exercise-search" class="block text-sm font-medium text-text-secondary mb-2">
 						Add Exercises
 					</label>
 					<div class="relative mb-3">
-						<SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+						<SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
 						<input
 							id="exercise-search"
 							type="text"
 							bind:value={exerciseSearch}
 							placeholder="Search exercises..."
-							class="w-full pl-12 pr-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+							class="w-full pl-12 pr-4 py-3 text-base bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted min-h-[44px]"
 						/>
 					</div>
 
 					{#if filteredExercises.length > 0}
-						<div class="border border-gray-200 rounded-lg max-h-48 overflow-y-auto mb-4">
+						<div class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4">
 							{#each filteredExercises as exercise (exercise.id)}
 								<button
 									onclick={() => (selectedExercise = exercise)}
 									type="button"
-									class="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+									class="w-full px-4 py-3 text-left hover:bg-surface-elevated border-b border-border last:border-b-0 transition-colors"
 								>
-									<span class="text-gray-900">{exercise.name}</span>
-									<span class="ml-2 text-sm text-gray-500">({exercise.equipment})</span>
+									<span class="text-text-primary">{exercise.name}</span>
+									<span class="ml-2 text-sm text-text-muted">({exercise.equipment})</span>
 								</button>
 							{/each}
 						</div>
 					{/if}
 
 					{#if selectedExercise}
-						<div class="bg-gray-50 rounded-lg p-4 mb-4">
-							<h3 class="font-semibold text-gray-900 mb-3">Configure {selectedExercise.name}</h3>
+						<div class="bg-surface-elevated rounded-lg p-4 mb-4 border border-border">
+							<h3 class="font-semibold text-text-primary mb-3">Configure {selectedExercise.name}</h3>
 							<div class="grid grid-cols-3 gap-4 mb-4">
 								<div>
-									<label for="target-sets" class="block text-sm font-medium text-gray-700 mb-2">
+									<label for="target-sets" class="block text-sm font-medium text-text-secondary mb-2">
 										Sets
 									</label>
 									<div class="flex gap-1">
 										<button
 											onclick={() => newTargetSets = Math.max(1, newTargetSets - 1)}
 											type="button"
-											class="px-3 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg font-semibold"
+											class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-l-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
 											aria-label="Decrease sets"
 										>
 											-
@@ -198,12 +198,12 @@
 											min="1"
 											inputmode="numeric"
 											bind:value={newTargetSets}
-											class="flex-1 px-3 py-3 text-base text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+											class="flex-1 px-3 py-3 text-base text-center bg-surface border-y border-border text-text-primary focus:ring-2 focus:ring-accent focus:border-transparent min-h-[44px]"
 										/>
 										<button
 											onclick={() => newTargetSets += 1}
 											type="button"
-											class="px-3 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg font-semibold"
+											class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-r-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
 											aria-label="Increase sets"
 										>
 											+
@@ -211,14 +211,14 @@
 									</div>
 								</div>
 								<div>
-									<label for="target-reps" class="block text-sm font-medium text-gray-700 mb-2">
+									<label for="target-reps" class="block text-sm font-medium text-text-secondary mb-2">
 										Reps
 									</label>
 									<div class="flex gap-1">
 										<button
 											onclick={() => newTargetReps = Math.max(1, newTargetReps - 1)}
 											type="button"
-											class="px-3 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg font-semibold"
+											class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-l-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
 											aria-label="Decrease reps"
 										>
 											-
@@ -229,12 +229,12 @@
 											min="1"
 											inputmode="numeric"
 											bind:value={newTargetReps}
-											class="flex-1 px-3 py-3 text-base text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+											class="flex-1 px-3 py-3 text-base text-center bg-surface border-y border-border text-text-primary focus:ring-2 focus:ring-accent focus:border-transparent min-h-[44px]"
 										/>
 										<button
 											onclick={() => newTargetReps += 1}
 											type="button"
-											class="px-3 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg font-semibold"
+											class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-r-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
 											aria-label="Increase reps"
 										>
 											+
@@ -242,14 +242,14 @@
 									</div>
 								</div>
 								<div>
-									<label for="target-weight" class="block text-sm font-medium text-gray-700 mb-2">
+									<label for="target-weight" class="block text-sm font-medium text-text-secondary mb-2">
 										Weight (lbs)
 									</label>
 									<div class="flex gap-1">
 										<button
 											onclick={() => newTargetWeight = Math.max(0, newTargetWeight - 5)}
 											type="button"
-											class="px-3 py-3 bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg font-semibold"
+											class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-l-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
 											aria-label="Decrease weight"
 										>
 											-
@@ -260,12 +260,12 @@
 											min="0"
 											inputmode="numeric"
 											bind:value={newTargetWeight}
-											class="flex-1 px-3 py-3 text-base text-center border-y border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+											class="flex-1 px-3 py-3 text-base text-center bg-surface border-y border-border text-text-primary focus:ring-2 focus:ring-accent focus:border-transparent min-h-[44px]"
 										/>
 										<button
 											onclick={() => newTargetWeight += 5}
 											type="button"
-											class="px-3 py-3 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300 min-w-[44px] min-h-[44px] text-lg font-semibold"
+											class="px-3 py-3 bg-surface border border-border text-text-secondary rounded-r-lg hover:bg-surface-elevated hover:text-text-primary min-w-[44px] min-h-[44px] text-lg font-semibold"
 											aria-label="Increase weight"
 										>
 											+
@@ -276,7 +276,7 @@
 							<button
 								onclick={addExercise}
 								type="button"
-								class="w-full px-4 py-3 text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
+								class="w-full px-4 py-3 text-base bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_15px_rgba(197,255,0,0.3)] transition-all min-h-[44px]"
 							>
 								Add Exercise
 							</button>
@@ -286,10 +286,10 @@
 
 				{#if workoutExercises.length > 0}
 					<div>
-						<h3 class="block text-sm font-medium text-gray-700 mb-2">
+						<h3 class="block text-sm font-medium text-text-secondary mb-2">
 							Exercises ({workoutExercises.length})
 						</h3>
-						<div class="border border-gray-200 rounded-lg divide-y divide-gray-100">
+						<div class="border border-border rounded-lg divide-y divide-border">
 							{#each workoutExercises as exercise, index (exercise.exerciseId + index)}
 								<div class="p-4 flex items-center gap-4">
 									<div class="flex-shrink-0 flex flex-col gap-1">
@@ -297,22 +297,22 @@
 											onclick={() => moveExerciseUp(index)}
 											disabled={index === 0}
 											type="button"
-											class="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+											class="p-1 hover:bg-surface-elevated rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 										>
-											<ChevronUpIcon class="w-4 h-4 text-gray-600" />
+											<ChevronUpIcon class="w-4 h-4 text-text-muted" />
 										</button>
 										<button
 											onclick={() => moveExerciseDown(index)}
 											disabled={index === workoutExercises.length - 1}
 											type="button"
-											class="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+											class="p-1 hover:bg-surface-elevated rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 										>
-											<ChevronDownIcon class="w-4 h-4 text-gray-600" />
+											<ChevronDownIcon class="w-4 h-4 text-text-muted" />
 										</button>
 									</div>
 									<div class="flex-1 min-w-0">
-										<h4 class="font-medium text-gray-900 truncate">{exercise.exerciseName}</h4>
-										<p class="text-sm text-gray-500">
+										<h4 class="font-medium text-text-primary truncate">{exercise.exerciseName}</h4>
+										<p class="text-sm text-text-muted">
 											{exercise.targetSets} sets × {exercise.targetReps} reps
 											{exercise.targetWeight > 0 ? ` @ ${exercise.targetWeight} lbs` : ''}
 										</p>
@@ -320,7 +320,7 @@
 									<button
 										onclick={() => removeExercise(index)}
 										type="button"
-										class="flex-shrink-0 p-2 hover:bg-red-50 rounded-full transition-colors text-red-500 hover:text-red-700"
+										class="flex-shrink-0 p-2 hover:bg-danger/10 rounded-full transition-colors text-danger hover:text-danger"
 									>
 										<XIcon class="w-5 h-5" />
 									</button>
@@ -331,7 +331,7 @@
 				{/if}
 
 				<div>
-					<label for="workout-notes" class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="workout-notes" class="block text-sm font-medium text-text-secondary mb-2">
 						Notes (optional)
 					</label>
 					<textarea
@@ -339,26 +339,26 @@
 						bind:value={workoutNotes}
 						placeholder="Add any notes about this workout routine..."
 						rows="3"
-						class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+						class="w-full px-4 py-3 text-base bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted min-h-[44px]"
 					></textarea>
 				</div>
 			</div>
 		</div>
 
-		<div class="p-6 border-t border-gray-200 bg-gray-50">
+		<div class="p-6 border-t border-border bg-surface-elevated">
 			<div class="flex flex-col sm:flex-row gap-3">
 				<button
 					onclick={() => (showPreview = true)}
 					disabled={!isFormValid}
 					type="button"
-					class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+					class="flex-1 px-4 py-3 text-base border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
 				>
 					Preview
 				</button>
 				<button
 					onclick={onClose}
 					type="button"
-					class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-colors min-h-[44px]"
+					class="flex-1 px-4 py-3 text-base border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors min-h-[44px]"
 				>
 					Cancel
 				</button>
@@ -366,7 +366,7 @@
 					onclick={() => (showPreview ? saveWorkout() : (showPreview = true))}
 					disabled={!isFormValid}
 					type="button"
-					class="flex-1 px-4 py-3 text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+					class="flex-1 px-4 py-3 text-base bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_15px_rgba(197,255,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all min-h-[44px]"
 				>
 					{showPreview ? 'Save Workout' : 'Preview & Save'}
 				</button>
@@ -376,24 +376,24 @@
 </div>
 
 {#if showPreview}
-	<div class="fixed inset-0 bg-black-50 bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-		<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] overflow-y-auto p-6">
+	<div class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+		<div class="bg-surface border border-border rounded-xl shadow-xl max-w-2xl w-full max-h-[95vh] overflow-y-auto p-6">
 			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-2xl font-bold text-gray-900">Workout Preview</h2>
+				<h2 class="text-2xl font-display font-bold text-text-primary">Workout Preview</h2>
 				<button
 					onclick={() => (showPreview = false)}
-					class="p-2 hover:bg-gray-100 rounded-full transition-colors"
+					class="p-2 hover:bg-surface-elevated rounded-full transition-colors"
 					type="button"
 				>
-					<XIcon class="w-6 h-6 text-gray-500" />
+					<XIcon class="w-6 h-6 text-text-muted" />
 				</button>
 			</div>
 
 			<div class="space-y-6">
 				<div>
-					<h3 class="text-xl font-bold text-gray-900">{workoutName}</h3>
+					<h3 class="text-xl font-bold text-text-primary">{workoutName}</h3>
 					{#if workoutExercises.length > 0}
-						<p class="text-gray-600">
+						<p class="text-text-secondary">
 							{workoutExercises.length} exercise{workoutExercises.length > 1 ? 's' : ''}
 						</p>
 					{/if}
@@ -402,15 +402,15 @@
 				{#if workoutExercises.length > 0}
 					<div class="space-y-3">
 						{#each workoutExercises as exercise, index (exercise.exerciseId + index)}
-							<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+							<div class="flex items-center gap-3 p-3 bg-surface-elevated rounded-lg border border-border">
 								<span
-									class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full font-semibold text-sm"
+									class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-accent/20 text-accent rounded-full font-semibold text-sm"
 								>
 									{index + 1}
 								</span>
 								<div class="flex-1">
-									<h4 class="font-medium text-gray-900">{exercise.exerciseName}</h4>
-									<p class="text-sm text-gray-500">
+									<h4 class="font-medium text-text-primary">{exercise.exerciseName}</h4>
+									<p class="text-sm text-text-muted">
 										{exercise.targetSets} sets × {exercise.targetReps} reps
 										{exercise.targetWeight > 0 ? ` @ ${exercise.targetWeight} lbs` : ''}
 									</p>
@@ -422,24 +422,24 @@
 
 				{#if workoutNotes}
 					<div>
-						<h4 class="font-medium text-gray-900 mb-1">Notes</h4>
-						<p class="text-gray-600">{workoutNotes}</p>
+						<h4 class="font-medium text-text-primary mb-1">Notes</h4>
+						<p class="text-text-secondary">{workoutNotes}</p>
 					</div>
 				{/if}
 			</div>
 
-			<div class="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+			<div class="flex gap-3 mt-6 pt-6 border-t border-border">
 				<button
 					onclick={() => (showPreview = false)}
 					type="button"
-					class="flex-1 px-4 py-3 text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px]"
+					class="flex-1 px-4 py-3 text-base border border-border text-text-secondary rounded-lg hover:bg-surface-elevated hover:text-text-primary transition-colors min-h-[44px]"
 				>
 					Back to Edit
 				</button>
 				<button
 					onclick={saveWorkout}
 					type="button"
-					class="flex-1 px-4 py-3 text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors min-h-[44px]"
+					class="flex-1 px-4 py-3 text-base bg-success text-bg rounded-lg hover:opacity-90 transition-colors min-h-[44px]"
 				>
 					Save Workout
 				</button>
