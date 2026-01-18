@@ -84,6 +84,14 @@
 	const filteredSessions = $derived.by(() => {
 		let filtered = sessions;
 
+		// Filter by search query (workout name)
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase().trim();
+			filtered = filtered.filter((session) =>
+				session.workoutName.toLowerCase().includes(query)
+			);
+		}
+
 		if (selectedWorkout) {
 			filtered = filtered.filter((session) => session.workoutId === selectedWorkout);
 		}

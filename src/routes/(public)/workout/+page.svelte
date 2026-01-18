@@ -1297,6 +1297,24 @@
 					</div>
 				</div>
 			{/if}
+		{:else}
+			<!-- Empty state when workout has no exercises -->
+			<Card>
+				{#snippet children()}
+					<div class="text-center py-8">
+						<h2 class="text-xl font-bold text-text-primary mb-2">No Exercises</h2>
+						<p class="text-text-secondary mb-4">This workout doesn't have any exercises yet.</p>
+						<div class="flex flex-col sm:flex-row gap-3 justify-center">
+							<Button variant="secondary" onclick={() => openEditModal(selectedWorkout)}>
+								Add Exercises
+							</Button>
+							<Button variant="ghost" onclick={() => { showWorkoutSelector = true; selectedWorkout = null; sessionExercises = []; }}>
+								Choose Different Workout
+							</Button>
+						</div>
+					</div>
+				{/snippet}
+			</Card>
 		{/if}
 
 		{#if showEditModal && editingWorkout}
