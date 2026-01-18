@@ -1,19 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { db } from '$lib/db';
+	import { db, liveQuery } from '$lib/db';
 	import type { Exercise } from '$lib/types';
-	import { getAllPersonalRecords, getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
+	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
 	import type { PersonalRecord } from '$lib/types';
-	import { Button, Card, Modal } from '$lib/ui';
+	import { Card, Modal, Button } from '$lib/ui';
 
 	let exercises = $state<Exercise[]>([]);
 	let allPRs = $state<PersonalRecord[]>([]);
 	let selectedExerciseId = $state<string | null>(null);
 	let prHistory = $state<any[]>([]);
 
-	onMount(async () => {
-		exercises = await db.exercises.toArray();
-		allPRs = await getAllPersonalRecords();
+	onMount(() => {
+		liveQuery(() => db.exercises.toArray()).subscribe((data) => {
+			exercises = data;
+		});
+		liveQuery(() => db.personalRecords.toArray()).subscribe((data) => {
+			allPRs = data;
+		});
 	});
 
 	async function showHistory(pr: PersonalRecord) {
@@ -48,16 +52,7 @@
 		}));
 	});
 
-	async function refreshPRs() {
-		allPRs = await getAllPersonalRecords();
-	}
 </script>
-
-<div class="flex justify-end mb-4">
-	<Button onclick={refreshPRs}>
-		Refresh
-	</Button>
-</div>
 
 {#if allPRs.length === 0}
 	<Card class="text-center" padding="lg">

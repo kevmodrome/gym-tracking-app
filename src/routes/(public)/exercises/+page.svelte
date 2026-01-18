@@ -7,7 +7,7 @@
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
-		import { Button, Card, SearchInput, Select } from '$lib/ui';
+		import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
 
 	let exercises = $state<Exercise[]>([]);
 	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
@@ -75,16 +75,14 @@
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-6xl mx-auto w-full">
-		<!-- Header -->
-		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-			<h1 class="text-2xl sm:text-3xl font-bold font-display text-text-primary">
-				Browse Exercises
-			</h1>
-			<Button variant="secondary" href="/exercises/new">
-				<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
-				<span class="hidden sm:inline">Add Exercise</span>
-			</Button>
-		</div>
+		<PageHeader title="Browse Exercises">
+			{#snippet actions()}
+				<Button variant="secondary" href="/exercises/new">
+					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+					<span class="hidden sm:inline">Add Exercise</span>
+				</Button>
+			{/snippet}
+		</PageHeader>
 
 		<!-- Filters -->
 		<Card class="mb-6">

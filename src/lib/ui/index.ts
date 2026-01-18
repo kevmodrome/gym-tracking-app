@@ -15,3 +15,4 @@ export { default as ConfirmDialog } from './ConfirmDialog.svelte';
 export { default as ButtonGroup } from './ButtonGroup.svelte';
 export { default as Toggle } from './Toggle.svelte';
 export { default as FilterPanel } from './FilterPanel.svelte';
+export { default as PageHeader } from './PageHeader.svelte';

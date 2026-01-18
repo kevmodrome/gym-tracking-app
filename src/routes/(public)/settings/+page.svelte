@@ -14,7 +14,8 @@
 		setSyncKey,
 		clearSyncKey
 	} from '$lib/syncService';
-	import { Button, TextInput, Select, Toggle, Card, Modal, InfoBox } from '$lib/ui';
+	import { toastStore } from '$lib/stores/toast.svelte';
+	import { Button, TextInput, Select, Toggle, Card, Modal, InfoBox, PageHeader } from '$lib/ui';
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
@@ -36,15 +37,12 @@
 		emailNotifications: false
 	});
 
-	let showSavedMessage = $state(false);
 	let showImportModal = $state(false);
 	let showExportProgress = $state(false);
 	let exportProgress = $state({ current: 0, total: 0, stage: '' });
 	let exportResult = $state<{ success: boolean; message: string } | null>(null);
 	let exportFormat = $state<'json'>('json');
-	let messageTimeout: number | null = null;
 	let isSyncing = $state(false);
-	let syncResult = $state<{ success: boolean; message: string } | null>(null);
 
 	// Sync key state
 	let currentSyncKey = $state<string | null>(null);
@@ -54,8 +52,26 @@
 	let isGeneratingKey = $state(false);
 	let isEnteringKey = $state(false);
 	let syncKeyError = $state<string | null>(null);
-	let syncKeySuccess = $state<string | null>(null);
 	let showCopiedMessage = $state(false);
+	let hasLoaded = $state(false);
+	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Auto-save settings when they change (with debounce)
+	$effect(() => {
+		// Read all settings to create dependencies
+		const _ = JSON.stringify(settings) + JSON.stringify(appPreferences) + JSON.stringify(notificationPreferences);
+
+		// Don't save on initial load
+		if (!hasLoaded) return;
+
+		// Debounce saves
+		if (saveTimeout) clearTimeout(saveTimeout);
+		saveTimeout = setTimeout(() => {
+			localStorage.setItem('gym-app-settings', JSON.stringify(settings));
+			localStorage.setItem('gym-app-notification-prefs', JSON.stringify(notificationPreferences));
+			localStorage.setItem('gym-app-preferences', JSON.stringify(appPreferences));
+		}, 300);
+	});
 
 	// Subscribe to sync stores
 	$effect(() => {
@@ -80,6 +96,8 @@
 		loadSettings();
 		loadNotificationPreferences();
 		loadAppPreferences();
+		// Mark as loaded after initial load to enable auto-save
+		hasLoaded = true;
 	});
 
 	function loadSettings() {
@@ -118,52 +136,30 @@
 		}
 	}
 
-	function saveSettings() {
-		localStorage.setItem('gym-app-settings', JSON.stringify(settings));
-		localStorage.setItem('gym-app-notification-prefs', JSON.stringify(notificationPreferences));
-		localStorage.setItem('gym-app-preferences', JSON.stringify(appPreferences));
-
-		showSavedMessage = true;
-		if (messageTimeout) {
-			clearTimeout(messageTimeout);
-		}
-		messageTimeout = window.setTimeout(() => {
-			showSavedMessage = false;
-		}, 3000);
-	}
-
-	function saveAppPreferences() {
-		localStorage.setItem('gym-app-preferences', JSON.stringify(appPreferences));
-		showSavedMessage = true;
-		if (messageTimeout) {
-			clearTimeout(messageTimeout);
-		}
-		messageTimeout = window.setTimeout(() => {
-			showSavedMessage = false;
-		}, 3000);
-	}
 
 	async function handleSync() {
 		isSyncing = true;
-		syncResult = null;
-		const result = await syncManager.sync((progress) => {
-			exportProgress = {
-				current: progress.current,
-				total: progress.total,
-				stage: progress.stage
-			};
-		});
-		isSyncing = false;
-		syncResult = { success: result.success, message: formatSyncMessage(result) };
 
-		showSavedMessage = result.success;
-		if (messageTimeout) {
-			clearTimeout(messageTimeout);
+		// Run sync with a minimum 500ms delay to avoid jarring UI
+		const minDelay = new Promise((resolve) => setTimeout(resolve, 500));
+		const [result] = await Promise.all([
+			syncManager.sync((progress) => {
+				exportProgress = {
+					current: progress.current,
+					total: progress.total,
+					stage: progress.stage
+				};
+			}),
+			minDelay
+		]);
+
+		isSyncing = false;
+
+		if (result.success) {
+			toastStore.showSuccess(result.message);
+		} else {
+			toastStore.showError(result.message);
 		}
-		messageTimeout = window.setTimeout(() => {
-			showSavedMessage = false;
-			syncResult = null;
-		}, 5000);
 	}
 
 	async function handleExport() {
@@ -192,20 +188,15 @@
 
 	async function handleGenerateSyncKey() {
 		isGeneratingKey = true;
-		syncKeyError = null;
-		syncKeySuccess = null;
 
 		const result = await generateSyncKey();
 
 		isGeneratingKey = false;
 
 		if (result.success) {
-			syncKeySuccess = 'Sync key generated! Your data has been synced.';
-			setTimeout(() => {
-				syncKeySuccess = null;
-			}, 5000);
+			toastStore.showSuccess('Sync key generated! Your data has been synced.');
 		} else {
-			syncKeyError = result.error || 'Failed to generate sync key';
+			toastStore.showError(result.error || 'Failed to generate sync key');
 		}
 	}
 
@@ -237,22 +228,16 @@
 		if (result.success) {
 			showEnterKeyModal = false;
 			enterKeyInput = '';
-			syncKeySuccess = 'Sync key connected! Your data has been synced.';
-			setTimeout(() => {
-				syncKeySuccess = null;
-			}, 5000);
+			toastStore.showSuccess('Sync key connected! Your data has been synced.');
 		} else {
-			syncKeyError = result.error || 'Failed to connect sync key';
+			toastStore.showError(result.error || 'Failed to connect sync key');
 		}
 	}
 
 	function handleDisconnectSync() {
 		if (confirm('Are you sure you want to disconnect? Your data will remain on this device but will no longer sync.')) {
 			clearSyncKey();
-			syncKeySuccess = 'Sync disconnected.';
-			setTimeout(() => {
-				syncKeySuccess = null;
-			}, 3000);
+			toastStore.showInfo('Sync disconnected.');
 		}
 	}
 
@@ -299,30 +284,13 @@
 
 <div class="min-h-screen bg-bg p-4 md:p-8">
 	<div class="max-w-2xl mx-auto">
-		<div class="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
-			<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Settings</h1>
-			<Button onclick={saveSettings}>
-				Save Settings
-			</Button>
-		</div>
+		<PageHeader title="Settings" />
 
 		<Card class="mb-6">
 			{#snippet children()}
 				<h2 class="text-xl font-bold text-text-primary mb-4">Data Sync</h2>
 
 				<div class="space-y-4">
-					{#if syncKeySuccess}
-						<InfoBox type="success">
-							{syncKeySuccess}
-						</InfoBox>
-					{/if}
-
-					{#if syncKeyError}
-						<InfoBox type="error">
-							{syncKeyError}
-						</InfoBox>
-					{/if}
-
 					{#if currentSyncKey}
 						<!-- Sync is enabled - show key and controls -->
 						<div class="bg-surface-elevated border border-border rounded-lg p-4">
@@ -364,22 +332,13 @@
 									loading={isSyncing}
 									class="flex-1"
 								>
-									{#if !isSyncing}
-										<span class="text-lg">🔄</span>
-									{/if}
-									<span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
+									Sync Now
 								</Button>
 								<Button variant="ghost" onclick={handleDisconnectSync}>
 									Disconnect
 								</Button>
 							</div>
 						</div>
-
-						{#if syncResult}
-							<InfoBox type={syncResult.success ? 'success' : 'error'}>
-								{syncResult.message}
-							</InfoBox>
-						{/if}
 					{:else}
 						<!-- Sync not enabled - show setup options -->
 						<div class="text-center py-4">
@@ -459,7 +418,6 @@
 						options={themeOptions}
 						label="App Theme"
 						id="theme"
-						onchange={saveAppPreferences}
 						hint="Choose your preferred color scheme"
 					/>
 
@@ -469,8 +427,7 @@
 							options={weightUnitOptions}
 							label="Weight Unit"
 							id="weight-unit"
-							onchange={saveAppPreferences}
-							hint="Unit for displaying weight values"
+								hint="Unit for displaying weight values"
 						/>
 					</div>
 
@@ -480,8 +437,7 @@
 							options={distanceUnitOptions}
 							label="Distance Unit"
 							id="distance-unit"
-							onchange={saveAppPreferences}
-							hint="Unit for displaying distance values"
+								hint="Unit for displaying distance values"
 						/>
 					</div>
 
@@ -491,8 +447,7 @@
 							options={decimalPlacesOptions}
 							label="Decimal Places"
 							id="decimal-places"
-							onchange={saveAppPreferences}
-							hint="Precision for displaying numeric values"
+								hint="Precision for displaying numeric values"
 						/>
 					</div>
 				</div>
@@ -574,13 +529,6 @@
 				</div>
 			{/snippet}
 		</Card>
-
-		{#if showSavedMessage}
-			<div class="fixed bottom-4 right-4 bg-success text-bg px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50">
-				<span class="text-xl">✓</span>
-				<span>Settings saved!</span>
-			</div>
-		{/if}
 
 		{#if showExportProgress}
 			<div class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50" role="presentation">

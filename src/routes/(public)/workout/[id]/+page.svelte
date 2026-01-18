@@ -3,6 +3,8 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseRoutine, Workout } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
@@ -195,8 +197,12 @@
 							</h3>
 							{#if workoutExercises.length > 0}
 								<div class="border border-border rounded-lg divide-y divide-border mb-4">
-									{#each workoutExercises as exercise, index (exercise.exerciseId + index)}
-										<div class="p-4 flex items-center gap-3">
+									{#each workoutExercises as exercise, index (exercise.exerciseId)}
+										<div
+											class="p-4 flex items-center gap-3"
+											animate:flip={{ duration: 250 }}
+											transition:slide={{ duration: 200 }}
+										>
 											<div class="flex-shrink-0 flex flex-col gap-1">
 												<button
 													onclick={() => moveExerciseUp(index)}
@@ -280,7 +286,10 @@
 							</div>
 
 							{#if availableForSelection.length > 0}
-								<div class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4">
+								<div
+									class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4"
+									transition:slide={{ duration: 150 }}
+								>
 									{#each availableForSelection as exercise (exercise.id)}
 										<button
 											onclick={() => (selectedExercise = exercise)}
@@ -297,7 +306,10 @@
 							{/if}
 
 							{#if selectedExercise}
-								<div class="bg-surface-elevated border border-border rounded-lg p-4 mb-4">
+								<div
+									class="bg-surface-elevated border border-border rounded-lg p-4 mb-4"
+									transition:slide={{ duration: 200 }}
+								>
 									<h3 class="font-semibold text-text-primary mb-4">Configure {selectedExercise.name}</h3>
 									<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 										<NumberSpinner

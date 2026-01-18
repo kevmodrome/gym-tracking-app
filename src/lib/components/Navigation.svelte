@@ -40,7 +40,7 @@
 
 <!-- Desktop Navigation Header -->
 <nav
-	class="hidden md:block fixed top-0 left-0 right-0 z-50 glass border-b border-border"
+	class="hidden md:block fixed top-0 left-0 right-0 z-50 glass border-b border-border nav-desktop"
 	transition:fly={{ y: -100, duration: 300 }}
 >
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -73,7 +73,7 @@
 
 <!-- Mobile Navigation Footer -->
 <nav
-	class="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border md:hidden"
+	class="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border md:hidden nav-mobile"
 	transition:fly={{ y: 100, duration: 300 }}
 >
 	<div class="flex items-center justify-around h-16">
@@ -101,3 +101,14 @@
 	<!-- Safe Area for devices with home indicators -->
 	<div class="h-[env(safe-area-inset-bottom,0px)] bg-surface/90"></div>
 </nav>
+
+<style>
+	/* Exclude navigation from view transitions so it stays stable during page navigation */
+	.nav-desktop {
+		view-transition-name: nav-desktop;
+	}
+
+	.nav-mobile {
+		view-transition-name: nav-mobile;
+	}
+</style>

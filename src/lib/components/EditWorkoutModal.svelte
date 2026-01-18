@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Dexie from 'dexie';
 	import { onMount } from 'svelte';
+	import { fade, scale, slide } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
+	import { cubicOut } from 'svelte/easing';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseRoutine, Workout } from '$lib/types';
 	import XIcon from '$lib/components/XIcon.svelte';
@@ -136,6 +139,7 @@
 	class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
 	onclick={onClose}
 	onkeydown={(e) => e.key === 'Escape' && onClose()}
+	transition:fade={{ duration: 150 }}
 >
 	<div
 		role="dialog"
@@ -150,6 +154,7 @@
 				onClose();
 			}
 		}}
+		transition:scale={{ duration: 150, start: 0.95, easing: cubicOut }}
 	>
 		<div class="p-6 border-b border-border">
 			<div class="flex items-center justify-between">
@@ -188,8 +193,12 @@
 						Exercises ({workoutExercises.length})
 					</h3>
 					<div class="border border-border rounded-lg divide-y divide-border">
-						{#each workoutExercises as exercise, index (exercise.exerciseId + index)}
-							<div class="p-4 flex items-center gap-3">
+						{#each workoutExercises as exercise, index (exercise.exerciseId)}
+							<div
+								class="p-4 flex items-center gap-3"
+								animate:flip={{ duration: 250 }}
+								transition:slide={{ duration: 200 }}
+							>
 								<div class="flex-shrink-0 flex flex-col gap-1">
 									<button
 										onclick={() => moveExerciseUp(index)}
@@ -265,7 +274,10 @@
 					</div>
 
 					{#if availableForSelection.length > 0}
-						<div class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4">
+						<div
+							class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4"
+							transition:slide={{ duration: 150 }}
+						>
 							{#each availableForSelection as exercise (exercise.id)}
 								<button
 									onclick={() => (selectedExercise = exercise)}
@@ -282,7 +294,10 @@
 					{/if}
 
 					{#if selectedExercise}
-						<div class="bg-surface-elevated border border-border rounded-lg p-4 mb-4">
+						<div
+							class="bg-surface-elevated border border-border rounded-lg p-4 mb-4"
+							transition:slide={{ duration: 200 }}
+						>
 							<h3 class="font-semibold text-text-primary mb-4">Configure {selectedExercise.name}</h3>
 							<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 								<NumberSpinner
