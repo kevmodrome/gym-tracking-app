@@ -270,14 +270,14 @@
 	];
 </script>
 
-<div class="min-h-screen bg-gray-100 p-4 md:p-8">
+<div class="min-h-screen bg-bg p-4 md:p-8">
 	<div class="max-w-2xl mx-auto">
 		<div class="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
 			<div class="flex items-center gap-4 w-full sm:w-auto">
 				<Button variant="ghost" onclick={handleBack}>
 					← Back
 				</Button>
-				<h1 class="text-3xl font-bold text-gray-900">Settings</h1>
+				<h1 class="text-3xl font-display font-bold text-text-primary">Settings</h1>
 			</div>
 			<Button onclick={saveSettings}>
 				Save Settings
@@ -286,7 +286,7 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Account</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Account</h2>
 
 				<div class="space-y-4">
 					<TextInput
@@ -304,22 +304,22 @@
 						onblur={saveProfile}
 					/>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<h3 class="font-medium text-gray-900">Account Status</h3>
-								<span class="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full {userProfile.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+								<h3 class="font-medium text-text-primary">Account Status</h3>
+								<span class="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full {userProfile.status === 'active' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}">
 									{userProfile.status}
 								</span>
 							</div>
 						</div>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<h3 class="font-medium text-gray-900">Password</h3>
-								<p class="text-sm text-gray-600">Change your password</p>
+								<h3 class="font-medium text-text-primary">Password</h3>
+								<p class="text-sm text-text-secondary">Change your password</p>
 							</div>
 							<Button variant="ghost" onclick={showPasswordChangeModal}>
 								Change
@@ -327,17 +327,17 @@
 						</div>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Button variant="ghost" fullWidth onclick={handleLogout}>
 							Logout
 						</Button>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Button variant="danger" fullWidth onclick={showDeleteAccountConfirm}>
 							Delete Account
 						</Button>
-						<p class="mt-2 text-sm text-gray-500">This action cannot be undone. All your data will be permanently deleted.</p>
+						<p class="mt-2 text-sm text-text-muted">This action cannot be undone. All your data will be permanently deleted.</p>
 					</div>
 				</div>
 			{/snippet}
@@ -345,7 +345,7 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Notifications</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Notifications</h2>
 
 				<div class="space-y-4">
 					<Toggle
@@ -354,7 +354,7 @@
 						description="Get notified about upcoming workouts"
 					/>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Toggle
 							bind:checked={notificationPreferences.prAchievements}
 							label="PR Achievements"
@@ -362,7 +362,7 @@
 						/>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Toggle
 							bind:checked={notificationPreferences.progressUpdates}
 							label="Progress Updates"
@@ -370,7 +370,7 @@
 						/>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Toggle
 							bind:checked={notificationPreferences.emailNotifications}
 							label="Email Notifications"
@@ -383,7 +383,7 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Rest Timer</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Rest Timer</h2>
 
 				<div class="space-y-4">
 					<TextInput
@@ -397,7 +397,7 @@
 						hint="Duration automatically used when rest timer starts"
 					/>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Toggle
 							bind:checked={settings.soundEnabled}
 							label="Sound Notifications"
@@ -405,7 +405,7 @@
 						/>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Toggle
 							bind:checked={settings.vibrationEnabled}
 							label="Vibration"
@@ -418,7 +418,7 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-gray-900 mb-4">App Preferences</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">App Preferences</h2>
 
 				<div class="space-y-4">
 					<Select
@@ -430,7 +430,7 @@
 						hint="Choose your preferred color scheme"
 					/>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Select
 							bind:value={appPreferences.weightUnit}
 							options={weightUnitOptions}
@@ -441,7 +441,7 @@
 						/>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Select
 							bind:value={appPreferences.distanceUnit}
 							options={distanceUnitOptions}
@@ -452,7 +452,7 @@
 						/>
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
+					<div class="border-t border-border pt-4">
 						<Select
 							bind:value={appPreferences.decimalPlaces}
 							options={decimalPlacesOptions}
@@ -468,7 +468,7 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Data Management</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Data Management</h2>
 
 				<div class="space-y-4">
 					<Select
@@ -479,7 +479,7 @@
 						hint="Choose the format for exported data files"
 					/>
 
-					<div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+					<div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
 						<Button onclick={handleExport} disabled={showExportProgress} class="flex-1">
 							<span class="text-lg">📤</span>
 							<span>Export Data</span>
@@ -490,9 +490,9 @@
 						</Button>
 					</div>
 
-					<div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-						<h3 class="font-medium text-gray-900 mb-2">ℹ️ About Import/Export</h3>
-						<ul class="text-sm text-gray-600 space-y-1">
+					<div class="bg-surface-elevated border border-border rounded-lg p-4">
+						<h3 class="font-medium text-text-primary mb-2">ℹ️ About Import/Export</h3>
+						<ul class="text-sm text-text-secondary space-y-1">
 							<li>• Export creates a backup file with all your workout data</li>
 							<li>• Import restores data from a previously exported backup</li>
 							<li>• You can choose how to handle duplicate items during import</li>
@@ -505,22 +505,22 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Data Sync</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Data Sync</h2>
 
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
 						<div>
-							<h3 class="font-medium text-gray-900">Connection Status</h3>
-							<p class="text-sm text-gray-600">
+							<h3 class="font-medium text-text-primary">Connection Status</h3>
+							<p class="text-sm text-text-secondary">
 								{syncManager.isOnline() ? 'You are online - changes will sync automatically' : 'You are offline - changes will sync when connection is restored'}
 							</p>
 						</div>
 						<SyncIndicator />
 					</div>
 
-					<div class="border-t border-gray-200 pt-4">
-						<h3 class="font-medium text-gray-900 mb-2">Manual Sync</h3>
-						<p class="text-sm text-gray-600 mb-3">
+					<div class="border-t border-border pt-4">
+						<h3 class="font-medium text-text-primary mb-2">Manual Sync</h3>
+						<p class="text-sm text-text-secondary mb-3">
 							Force sync your data to the cloud. Pending changes will be uploaded immediately.
 						</p>
 						<Button
@@ -547,18 +547,18 @@
 								<span class="text-sm font-medium">{exportProgress.stage}</span>
 								<span class="text-xs">{exportProgress.current}/{exportProgress.total}</span>
 							</div>
-							<div class="w-full bg-blue-200 rounded-full h-2">
+							<div class="w-full bg-secondary/30 rounded-full h-2">
 								<div
-									class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+									class="bg-accent h-2 rounded-full transition-all duration-300"
 									style="width: {(exportProgress.current / exportProgress.total) * 100}%"
 								></div>
 							</div>
 						</InfoBox>
 					{/if}
 
-					<div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-						<h3 class="font-medium text-gray-900 mb-2">ℹ️ About Sync</h3>
-						<ul class="text-sm text-gray-600 space-y-1">
+					<div class="bg-surface-elevated border border-border rounded-lg p-4">
+						<h3 class="font-medium text-text-primary mb-2">ℹ️ About Sync</h3>
+						<ul class="text-sm text-text-secondary space-y-1">
 							<li>• Changes sync automatically when online</li>
 							<li>• Data is queued when offline and syncs when connection restores</li>
 							<li>• Failed syncs retry automatically with exponential backoff</li>
@@ -596,7 +596,7 @@
 						type="password"
 						placeholder="Confirm new password"
 					/>
-					<p class="text-sm text-gray-500">Password must be at least 8 characters long.</p>
+					<p class="text-sm text-text-muted">Password must be at least 8 characters long.</p>
 				</div>
 			{/snippet}
 			{#snippet footer()}
@@ -617,56 +617,56 @@
 			message="This action cannot be undone. All your data, including workouts, exercises, and personal records, will be permanently deleted."
 			confirmText="Delete Account"
 			cancelText="Cancel"
-			variant="danger"
+			confirmVariant="danger"
 			onconfirm={handleDeleteAccount}
 			oncancel={hideDeleteAccountConfirm}
 		/>
 
 		{#if showSavedMessage}
-			<div class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+			<div class="fixed bottom-4 right-4 bg-success text-bg px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50">
 				<span class="text-xl">✓</span>
 				<span>Settings saved!</span>
 			</div>
 		{/if}
 
 		{#if showExportProgress}
-			<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="presentation">
-				<div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+			<div class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50" role="presentation">
+				<div class="bg-surface border border-border rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
 					<div class="flex items-center justify-between mb-4">
-						<h3 class="text-xl font-bold text-gray-900">Exporting Data</h3>
+						<h3 class="text-xl font-bold text-text-primary">Exporting Data</h3>
 					</div>
 
 					{#if exportResult === null}
 						<div class="space-y-4">
 							<div class="flex items-center gap-2">
-								<div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+								<div class="flex-1 bg-surface-elevated rounded-full h-2 overflow-hidden">
 									<div
-										class="bg-blue-600 h-full transition-all duration-300"
+										class="bg-accent h-full transition-all duration-300"
 										style:width={exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%'}
 									></div>
 								</div>
-								<span class="text-sm text-gray-600 font-medium min-w-[3rem]">
+								<span class="text-sm text-text-secondary font-medium min-w-[3rem]">
 									{exportProgress.total > 0 ? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%` : '0%'}
 								</span>
 							</div>
-							<p class="text-sm text-gray-600">{exportProgress.stage}</p>
+							<p class="text-sm text-text-secondary">{exportProgress.stage}</p>
 						</div>
 					{:else if exportResult.success}
 						<div class="space-y-3">
-							<div class="flex items-center gap-2 text-green-600">
+							<div class="flex items-center gap-2 text-success">
 								<span class="text-2xl">✅</span>
 								<p class="font-medium">Export Complete!</p>
 							</div>
-							<p class="text-sm text-gray-600">{exportResult.message}</p>
-							<p class="text-sm text-gray-500">File has been downloaded to your default download location.</p>
+							<p class="text-sm text-text-secondary">{exportResult.message}</p>
+							<p class="text-sm text-text-muted">File has been downloaded to your default download location.</p>
 						</div>
 					{:else}
 						<div class="space-y-3">
-							<div class="flex items-center gap-2 text-red-600">
+							<div class="flex items-center gap-2 text-danger">
 								<span class="text-2xl">❌</span>
 								<p class="font-medium">Export Failed</p>
 							</div>
-							<p class="text-sm text-gray-600">{exportResult.message}</p>
+							<p class="text-sm text-text-secondary">{exportResult.message}</p>
 						</div>
 					{/if}
 				</div>

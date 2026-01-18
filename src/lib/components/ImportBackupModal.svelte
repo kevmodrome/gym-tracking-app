@@ -174,10 +174,10 @@
 		{#if !backupData}
 			<div class="space-y-4">
 				<div>
-					<label for="backup-file" class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="backup-file" class="block text-sm font-medium text-text-secondary mb-2">
 						Select Backup File (JSON)
 					</label>
-					<p class="text-sm text-gray-500 mb-3">
+					<p class="text-sm text-text-muted mb-3">
 						Choose a JSON backup file previously exported from this app.
 					</p>
 					<input
@@ -187,14 +187,14 @@
 						accept=".json,application/json"
 						onchange={handleFileSelect}
 						disabled={isParsing || isImporting}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+						class="w-full px-4 py-2 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary disabled:opacity-50 disabled:cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-accent file:text-bg file:font-medium"
 					/>
 				</div>
 
 				{#if isParsing || isDetecting}
 					<InfoBox variant="info">
 						<div class="flex items-center gap-3">
-							<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+							<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-secondary"></div>
 							<p>
 								{isParsing ? 'Parsing file...' : 'Detecting duplicates...'}
 							</p>
@@ -216,21 +216,21 @@
 				</InfoBox>
 
 				<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-					<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-						<div class="text-2xl font-bold text-gray-900">{backupData.exercises.length}</div>
-						<div class="text-sm text-gray-600">Exercises</div>
+					<div class="bg-surface-elevated border border-border rounded-lg p-4 text-center">
+						<div class="text-2xl font-bold text-text-primary">{backupData.exercises.length}</div>
+						<div class="text-sm text-text-secondary">Exercises</div>
 					</div>
-					<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-						<div class="text-2xl font-bold text-gray-900">{backupData.workouts.length}</div>
-						<div class="text-sm text-gray-600">Workouts</div>
+					<div class="bg-surface-elevated border border-border rounded-lg p-4 text-center">
+						<div class="text-2xl font-bold text-text-primary">{backupData.workouts.length}</div>
+						<div class="text-sm text-text-secondary">Workouts</div>
 					</div>
-					<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-						<div class="text-2xl font-bold text-gray-900">{backupData.sessions.length}</div>
-						<div class="text-sm text-gray-600">Sessions</div>
+					<div class="bg-surface-elevated border border-border rounded-lg p-4 text-center">
+						<div class="text-2xl font-bold text-text-primary">{backupData.sessions.length}</div>
+						<div class="text-sm text-text-secondary">Sessions</div>
 					</div>
-					<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-						<div class="text-2xl font-bold text-gray-900">{backupData.personalRecords.length}</div>
-						<div class="text-sm text-gray-600">Personal Records</div>
+					<div class="bg-surface-elevated border border-border rounded-lg p-4 text-center">
+						<div class="text-2xl font-bold text-text-primary">{backupData.personalRecords.length}</div>
+						<div class="text-sm text-text-secondary">Personal Records</div>
 					</div>
 				</div>
 
@@ -249,7 +249,7 @@
 										bind:value={resolution.exercises}
 										options={resolutionOptions}
 									/>
-									<div class="mt-2 text-xs text-gray-500">
+									<div class="mt-2 text-xs text-text-muted">
 										{duplicates.exercises.slice(0, 3).join(', ')}
 										{duplicates.exercises.length > 3 ? ` +${duplicates.exercises.length - 3} more...` : ''}
 									</div>
@@ -263,7 +263,7 @@
 										bind:value={resolution.workouts}
 										options={resolutionOptions}
 									/>
-									<div class="mt-2 text-xs text-gray-500">
+									<div class="mt-2 text-xs text-text-muted">
 										{duplicates.workouts.slice(0, 3).join(', ')}
 										{duplicates.workouts.length > 3 ? ` +${duplicates.workouts.length - 3} more...` : ''}
 									</div>
@@ -277,7 +277,7 @@
 										bind:value={resolution.sessions}
 										options={resolutionOptions}
 									/>
-									<div class="mt-2 text-xs text-gray-500">
+									<div class="mt-2 text-xs text-text-muted">
 										{duplicates.sessions.slice(0, 3).join(', ')}
 										{duplicates.sessions.length > 3 ? ` +${duplicates.sessions.length - 3} more...` : ''}
 									</div>
@@ -295,7 +295,7 @@
 											{ value: 'merge', label: 'Merge duplicates (keep most recent)' }
 										]}
 									/>
-									<div class="mt-2 text-xs text-gray-500">
+									<div class="mt-2 text-xs text-text-muted">
 										{duplicates.personalRecords.slice(0, 3).join(', ')}
 										{duplicates.personalRecords.length > 3 ? ` +${duplicates.personalRecords.length - 3} more...` : ''}
 									</div>
@@ -327,21 +327,21 @@
 					</div>
 
 					<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-						<div class="bg-white border border-green-200 rounded-lg p-4 text-center">
-							<div class="text-2xl font-bold text-green-600">{importResult.importedItems}</div>
-							<div class="text-sm text-gray-600">Imported</div>
+						<div class="bg-success/10 border border-success/30 rounded-lg p-4 text-center">
+							<div class="text-2xl font-bold text-success">{importResult.importedItems}</div>
+							<div class="text-sm text-text-secondary">Imported</div>
 						</div>
-						<div class="bg-white border border-yellow-200 rounded-lg p-4 text-center">
-							<div class="text-2xl font-bold text-yellow-600">{importResult.skippedItems}</div>
-							<div class="text-sm text-gray-600">Skipped</div>
+						<div class="bg-warning/10 border border-warning/30 rounded-lg p-4 text-center">
+							<div class="text-2xl font-bold text-warning">{importResult.skippedItems}</div>
+							<div class="text-sm text-text-secondary">Skipped</div>
 						</div>
-						<div class="bg-white border border-blue-200 rounded-lg p-4 text-center">
-							<div class="text-2xl font-bold text-blue-600">{importResult.replacedItems}</div>
-							<div class="text-sm text-gray-600">Replaced</div>
+						<div class="bg-secondary/10 border border-secondary/30 rounded-lg p-4 text-center">
+							<div class="text-2xl font-bold text-secondary">{importResult.replacedItems}</div>
+							<div class="text-sm text-text-secondary">Replaced</div>
 						</div>
-						<div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
-							<div class="text-2xl font-bold text-gray-600">{importResult.totalItems}</div>
-							<div class="text-sm text-gray-600">Total Items</div>
+						<div class="bg-surface-elevated border border-border rounded-lg p-4 text-center">
+							<div class="text-2xl font-bold text-text-primary">{importResult.totalItems}</div>
+							<div class="text-sm text-text-secondary">Total Items</div>
 						</div>
 					</div>
 				</InfoBox>
@@ -358,8 +358,8 @@
 					{#if importResult.errors.length > 0}
 						<div class="mt-4 space-y-2">
 							{#each importResult.errors as error}
-								<div class="bg-red-100 border border-red-300 rounded-lg p-3">
-									<p class="text-sm">{error}</p>
+								<div class="bg-danger/10 border border-danger/30 rounded-lg p-3">
+									<p class="text-sm text-text-primary">{error}</p>
 								</div>
 							{/each}
 						</div>
@@ -371,12 +371,12 @@
 		{#if isImporting}
 			<div class="mt-6">
 				<div class="flex items-center justify-between mb-2">
-					<span class="text-sm font-medium text-gray-700">Importing...</span>
-					<span class="text-sm font-medium text-gray-700">{importProgress}%</span>
+					<span class="text-sm font-medium text-text-secondary">Importing...</span>
+					<span class="text-sm font-medium text-text-primary">{importProgress}%</span>
 				</div>
-				<div class="w-full bg-gray-200 rounded-full h-2">
+				<div class="w-full bg-surface-elevated rounded-full h-2">
 					<div
-						class="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+						class="bg-accent h-2 rounded-full transition-all duration-300"
 						style="width: {importProgress}%"
 					></div>
 				</div>

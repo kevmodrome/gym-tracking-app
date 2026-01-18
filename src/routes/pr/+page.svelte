@@ -48,14 +48,14 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-100 p-3 sm:p-4 md:p-6 lg:p-8">
+<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
 	<div class="max-w-7xl mx-auto w-full">
 		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
 			<div class="flex items-center gap-4">
 				<Button variant="ghost" href="/">
 					← Back
 				</Button>
-				<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Personal Records</h1>
+				<h1 class="text-2xl sm:text-3xl font-display font-bold text-text-primary">Personal Records</h1>
 			</div>
 			<Button onclick={() => window.location.reload()}>
 				Refresh
@@ -65,9 +65,9 @@
 		{#if allPRs.length === 0}
 			<Card class="text-center" padding="lg">
 				{#snippet children()}
-					<div class="text-4xl sm:text-6xl mb-3 sm:mb-4">🏆</div>
-					<h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No Personal Records Yet</h2>
-					<p class="text-sm sm:text-base text-gray-600">
+					<div class="text-4xl sm:text-6xl mb-3 sm:mb-4 text-warning drop-shadow-[0_0_20px_rgba(255,149,0,0.5)]">🏆</div>
+					<h2 class="text-xl sm:text-2xl font-bold text-text-primary mb-2">No Personal Records Yet</h2>
+					<p class="text-sm sm:text-base text-text-secondary">
 						Start logging your workouts to track your personal records!
 					</p>
 				{/snippet}
@@ -77,21 +77,21 @@
 				{#each groupedPRs as group}
 					<Card>
 						{#snippet children()}
-							<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">{group.exerciseName}</h2>
+							<h2 class="text-lg sm:text-xl font-bold text-text-primary mb-3 sm:mb-4">{group.exerciseName}</h2>
 							<div class="space-y-2 sm:space-y-3">
 								{#each group.prs as pr}
 									<div
-										class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200"
+										class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-3 bg-gradient-to-r from-warning/10 to-warning/5 rounded-lg border border-warning/30"
 									>
 										<div class="flex items-center gap-2 sm:gap-3">
-											<div class="w-9 h-9 sm:w-10 sm:h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+											<div class="w-9 h-9 sm:w-10 sm:h-10 bg-warning text-bg rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-[0_0_15px_rgba(255,149,0,0.4)]">
 												🏆
 											</div>
 											<div>
-												<p class="font-semibold text-gray-900 text-sm sm:text-base">
+												<p class="font-semibold text-text-primary text-sm sm:text-base">
 													{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
 												</p>
-												<p class="text-xs sm:text-sm text-gray-500">
+												<p class="text-xs sm:text-sm text-text-muted">
 													{new Date(pr.achievedDate).toLocaleDateString()}
 												</p>
 											</div>
@@ -100,7 +100,7 @@
 											variant="ghost"
 											size="sm"
 											onclick={() => showHistory(pr)}
-											class="self-start sm:self-auto bg-blue-100 text-blue-800 hover:bg-blue-200"
+											class="self-start sm:self-auto bg-secondary/20 text-secondary hover:bg-secondary/30"
 										>
 											View History
 										</Button>
@@ -127,25 +127,25 @@
 				{#each prHistory as entry, i}
 					<div
 						class="flex items-center justify-between p-3 {i === 0
-							? 'bg-yellow-50 border-2 border-yellow-400'
-							: 'bg-gray-50'} rounded-lg"
+							? 'bg-warning/10 border-2 border-warning'
+							: 'bg-surface-elevated'} rounded-lg"
 					>
 						<div>
-							<p class="font-semibold text-gray-900 text-sm sm:text-base">
+							<p class="font-semibold text-text-primary text-sm sm:text-base">
 								{entry.weight} lbs @ {entry.reps} reps
 							</p>
-							<p class="text-xs sm:text-sm text-gray-500">
+							<p class="text-xs sm:text-sm text-text-muted">
 								{new Date(entry.achievedDate).toLocaleDateString()}
 							</p>
 						</div>
 						{#if i === 0}
-							<span class="text-xl sm:text-2xl">🏆</span>
+							<span class="text-xl sm:text-2xl drop-shadow-[0_0_10px_rgba(255,149,0,0.5)]">🏆</span>
 						{/if}
 					</div>
 				{/each}
 			</div>
 		{:else}
-			<p class="text-gray-500 text-center py-8 text-sm sm:text-base">No history available for this rep range</p>
+			<p class="text-text-muted text-center py-8 text-sm sm:text-base">No history available for this rep range</p>
 		{/if}
 	{/snippet}
 	{#snippet footer()}

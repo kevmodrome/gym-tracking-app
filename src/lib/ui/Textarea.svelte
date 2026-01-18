@@ -39,9 +39,9 @@
 
 <div class={className}>
 	{#if label}
-		<label for={textareaId} class="block text-sm font-medium text-gray-700 mb-2">
+		<label for={textareaId} class="block text-sm font-medium text-text-secondary mb-2">
 			{label}
-			{#if required}<span class="text-red-500">*</span>{/if}
+			{#if required}<span class="text-danger">*</span>{/if}
 		</label>
 	{/if}
 	<textarea
@@ -52,9 +52,9 @@
 		{required}
 		{disabled}
 		oninput={handleInput}
-		class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] {disabled ? 'bg-gray-100 cursor-not-allowed' : ''}"
+		class="w-full px-4 py-3 text-base bg-surface-elevated border border-border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent min-h-[44px] text-text-primary placeholder:text-text-muted {disabled ? 'bg-surface opacity-60 cursor-not-allowed' : 'hover:border-border-active'}"
 	></textarea>
 	{#if hint}
-		<p class="mt-1 text-sm text-gray-500">{hint}</p>
+		<p class="mt-1 text-sm text-text-muted">{hint}</p>
 	{/if}
 </div>

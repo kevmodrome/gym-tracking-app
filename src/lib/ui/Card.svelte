@@ -28,13 +28,13 @@
 		lg: 'p-6'
 	};
 
-	const baseClasses = 'bg-white rounded-lg shadow-md';
-	const hoverClasses = hoverable ? 'hover:shadow-lg transition-shadow' : '';
+	const baseClasses = 'bg-surface rounded-xl border border-border';
+	const hoverClasses = hoverable ? 'hover:border-border-active hover:bg-surface-elevated transition-all duration-200' : '';
 </script>
 
 <div class="{baseClasses} {hoverClasses} {className}">
 	{#if header}
-		<div class="border-b border-gray-200 {paddingClasses[padding]}">
+		<div class="border-b border-border {paddingClasses[padding]}">
 			{@render header()}
 		</div>
 		<div class={paddingClasses[padding]}>
@@ -46,7 +46,7 @@
 		</div>
 	{/if}
 	{#if footer}
-		<div class="border-t border-gray-200 {paddingClasses[padding]}">
+		<div class="border-t border-border {paddingClasses[padding]}">
 			{@render footer()}
 		</div>
 	{/if}

@@ -124,17 +124,17 @@
 	});
 </script>
 
-<div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-auto">
+<div class="bg-surface border border-border rounded-xl shadow-lg p-6 w-full max-w-md mx-auto">
 	<div class="text-center mb-6">
-		<h3 class="text-lg font-semibold text-gray-900 mb-2">Rest Timer</h3>
-		
+		<h3 class="text-lg font-semibold text-text-primary mb-2">Rest Timer</h3>
+
 		<div class="relative inline-block mb-4">
 			<svg class="w-36 h-36 transform -rotate-90">
 				<circle
 					cx="72"
 					cy="72"
 					r="54"
-					stroke="#e5e7eb"
+					stroke="#2a2b32"
 					stroke-width="8"
 					fill="none"
 				/>
@@ -142,21 +142,22 @@
 					cx="72"
 					cy="72"
 					r="54"
-					stroke="#3b82f6"
+					stroke="#c5ff00"
 					stroke-width="8"
 					fill="none"
 					stroke-linecap="round"
 					stroke-dasharray={circumference}
 					stroke-dashoffset={offset}
+					class="drop-shadow-[0_0_10px_rgba(197,255,0,0.5)]"
 				/>
 			</svg>
 			<div class="absolute inset-0 flex items-center justify-center">
-				<span class="text-4xl font-bold text-gray-900">{formattedTime}</span>
+				<span class="text-4xl font-display font-bold text-text-primary">{formattedTime}</span>
 			</div>
 		</div>
 
 		<div class="flex items-center justify-center gap-2 mb-4">
-			<label for="duration-input" class="text-sm text-gray-600">Duration (s):</label>
+			<label for="duration-input" class="text-sm text-text-secondary">Duration (s):</label>
 			<input
 				id="duration-input"
 				type="number"
@@ -165,7 +166,7 @@
 				bind:value={customDuration}
 				onchange={updateCustomDuration}
 				disabled={isRunning}
-				class="w-20 px-2 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+				class="w-20 px-2 py-1 bg-surface-elevated border border-border rounded text-center text-text-primary focus:ring-2 focus:ring-accent disabled:opacity-50"
 			/>
 		</div>
 	</div>
@@ -174,7 +175,7 @@
 		{#if !isRunning && !isPaused}
 			<button
 				onclick={startTimer}
-				class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+				class="flex-1 px-4 py-3 bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_20px_rgba(197,255,0,0.3)] transition-all font-medium flex items-center justify-center gap-2"
 				type="button"
 			>
 				<span class="text-xl">▶</span>
@@ -183,7 +184,7 @@
 		{:else if isRunning}
 			<button
 				onclick={pauseTimer}
-				class="flex-1 px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-medium flex items-center justify-center gap-2"
+				class="flex-1 px-4 py-3 bg-warning text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
 				type="button"
 			>
 				<span class="text-xl">⏸</span>
@@ -192,7 +193,7 @@
 		{:else}
 			<button
 				onclick={resumeTimer}
-				class="flex-1 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium flex items-center justify-center gap-2"
+				class="flex-1 px-4 py-3 bg-success text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
 				type="button"
 			>
 				<span class="text-xl">▶</span>
@@ -202,7 +203,7 @@
 
 		<button
 			onclick={skipTimer}
-			class="flex-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium flex items-center justify-center gap-2"
+			class="flex-1 px-4 py-3 bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors font-medium flex items-center justify-center gap-2"
 			type="button"
 		>
 			<span class="text-xl">⏭</span>
@@ -211,7 +212,7 @@
 
 		<button
 			onclick={resetTimer}
-			class="w-16 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
+			class="w-16 px-4 py-3 bg-danger text-white rounded-lg hover:opacity-90 transition-colors flex items-center justify-center"
 			type="button"
 			title="Reset"
 		>
