@@ -43,10 +43,9 @@
 	"dependencies": {
 		"@sveltejs/adapter-node": "^5.5.1",
 		"better-sqlite3": "^12.6.2",
-		"chart.js": "^4.5.1",
-		"chartjs-plugin-zoom": "^2.2.0",
 		"dexie": "^4.2.1",
 		"lucide-svelte": "^0.562.0",
+		"svelteplot": "^0.9.1",
 		"tailwindcss": "^4.1.18"
 	}
 }
