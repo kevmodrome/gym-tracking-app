@@ -1,67 +1,47 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { db, initializeExercises } from '$lib/db';
-	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
-	import { getPersonalRecordsForExercise, getRepRangeLabel } from '$lib/prUtils';
-	import type { PersonalRecord } from '$lib/types';
+	import type { ExerciseCategory, MuscleGroup, PersonalRecord } from '$lib/types';
+	import { getRepRangeLabel } from '$lib/prUtils';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import PlusIcon from '$lib/components/PlusIcon.svelte';
-		import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
+	import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
 
-	let exercises = $state<Exercise[]>([]);
-	let exercisePRs = $state<Map<string, PersonalRecord[]>>(new Map());
+	let { data } = $props();
+
 	let searchQuery = $state('');
 	let selectedCategory = $state<ExerciseCategory | ''>('');
 	let selectedMuscle = $state<MuscleGroup | ''>('');
-	
+
 	const categories: ExerciseCategory[] = ['compound', 'isolation', 'cardio', 'mobility'];
 	const muscles: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full-body'];
 
 	const categoryOptions = [
 		{ value: '', label: 'All Categories' },
-		...categories.map(c => ({ value: c, label: formatMuscle(c) }))
+		...categories.map((c) => ({ value: c, label: formatMuscle(c) }))
 	];
 
 	const muscleOptions = [
 		{ value: '', label: 'All Muscle Groups' },
-		...muscles.map(m => ({ value: m, label: formatMuscle(m) }))
+		...muscles.map((m) => ({ value: m, label: formatMuscle(m) }))
 	];
 
+	// Convert PRs object to Map for easier lookup
+	const exercisePRs = $derived(new Map<string, PersonalRecord[]>(Object.entries(data.exercisePRs)));
+
 	const filteredExercises = $derived.by(() => {
-		return exercises.filter((exercise) => {
+		return data.exercises.filter((exercise) => {
 			const matchesSearch =
 				searchQuery === '' ||
 				exercise.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-			const matchesCategory =
-				!selectedCategory || exercise.category === selectedCategory;
+			const matchesCategory = !selectedCategory || exercise.category === selectedCategory;
 
-			const matchesMuscle =
-				!selectedMuscle || exercise.primary_muscle === selectedMuscle;
+			const matchesMuscle = !selectedMuscle || exercise.primary_muscle === selectedMuscle;
 
 			return matchesSearch && matchesCategory && matchesMuscle;
 		});
 	});
 
-	onMount(async () => {
-		await initializeExercises();
-		exercises = await db.exercises.toArray();
-		await loadPersonalRecords();
-	});
-
-	async function loadPersonalRecords() {
-		const prMap = new Map<string, PersonalRecord[]>();
-		for (const exercise of exercises) {
-			const prs = await getPersonalRecordsForExercise(exercise.id);
-			if (prs.length > 0) {
-				prMap.set(exercise.id, prs);
-			}
-		}
-		exercisePRs = prMap;
-	}
-
-	
 	function clearFilters() {
 		searchQuery = '';
 		selectedCategory = '';
@@ -110,7 +90,7 @@
 				{#if searchQuery || selectedCategory || selectedMuscle}
 					<div class="mt-4 flex items-center justify-between">
 						<p class="text-sm text-text-secondary">
-							Showing {filteredExercises.length} of {exercises.length} exercises
+							Showing {filteredExercises.length} of {data.exercises.length} exercises
 						</p>
 						<button
 							onclick={clearFilters}

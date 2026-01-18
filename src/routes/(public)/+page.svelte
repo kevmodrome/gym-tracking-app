@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { db, liveQuery } from '$lib/db';
-	import type { Session, Exercise } from '$lib/types';
 	import {
 		filterSessionsByDateRange,
 		calculateDashboardMetrics,
@@ -13,22 +10,19 @@
 		calculateWeeklyComparison,
 		calculateMonthlyComparison
 	} from '$lib/dashboardMetrics';
-	import { Button, Card, MetricCard, ButtonGroup, TextInput, PageHeader } from '$lib/ui';
+	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
 
-	let sessions = $state<Session[]>([]);
-	let allExercises = $state<Exercise[]>([]);
+	let { data } = $props();
+
+	// Data from load function
+	const sessions = $derived(data.sessions);
+	const allExercises = $derived(data.allExercises);
+
+	// UI state
 	let dateFilter = $state<'week' | 'month' | 'year' | 'custom'>('month');
 	let customStartDate = $state('');
 	let customEndDate = $state('');
 	let selectedPeriod = $state<'week' | 'month'>('week');
-
-	onMount(async () => {
-		allExercises = await db.exercises.toArray();
-
-		liveQuery(() => db.sessions.orderBy('date').reverse().toArray()).subscribe((data) => {
-			sessions = data;
-		});
-	});
 
 	const filteredSessions = $derived.by(() => {
 		if (sessions.length === 0) return [];

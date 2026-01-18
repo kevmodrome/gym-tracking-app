@@ -1,17 +1,21 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { db, liveQuery } from '$lib/db';
+	import { db } from '$lib/db';
 	import type { Session } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
 	import SearchIcon from '$lib/components/SearchIcon.svelte';
 	import XIcon from '$lib/components/XIcon.svelte';
 	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
 	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox, SearchInput } from '$lib/ui';
+	import { invalidateSessions, invalidatePersonalRecords } from '$lib/invalidation';
 
-	// Sessions state
-	let sessions = $state<Session[]>([]);
-	let allWorkouts = $state<{ id: string; name: string }[]>([]);
+	let { data } = $props();
+
+	// Data from load function
+	const sessions = $derived(data.sessions);
+	const allWorkouts = $derived(data.allWorkouts);
+
+	// UI state
 	let searchQuery = $state('');
 	let selectedWorkout = $state<string>('');
 	let dateFilter = $state<'all' | 'week' | 'month' | 'year' | 'custom'>('all');
@@ -32,7 +36,7 @@
 
 	const workoutOptions = $derived([
 		{ value: '', label: 'All Workouts' },
-		...allWorkouts.map(w => ({ value: w.id, label: w.name }))
+		...allWorkouts.map((w) => ({ value: w.id, label: w.name }))
 	]);
 
 	const dateOptions = [
@@ -42,14 +46,6 @@
 		{ value: 'year', label: 'Last Year' },
 		{ value: 'custom', label: 'Custom Range' }
 	];
-
-	onMount(async () => {
-		allWorkouts = (await db.workouts.toArray()).map((w) => ({ id: w.id, name: w.name }));
-
-		liveQuery(() => db.sessions.orderBy('date').reverse().toArray()).subscribe((data) => {
-			sessions = data;
-		});
-	});
 
 	const filteredSessions = $derived.by(() => {
 		let filtered = sessions;
@@ -155,6 +151,8 @@
 			showUndoToast = true;
 
 			await calculatePersonalRecords();
+			await invalidateSessions();
+			await invalidatePersonalRecords();
 
 			if (undoTimeout) clearTimeout(undoTimeout);
 			undoTimeout = window.setTimeout(() => {
@@ -172,6 +170,8 @@
 		try {
 			await db.sessions.add(deletedSession);
 			await calculatePersonalRecords();
+			await invalidateSessions();
+			await invalidatePersonalRecords();
 
 			if (undoTimeout) clearTimeout(undoTimeout);
 			undoTimeout = null;
@@ -225,6 +225,8 @@
 				workoutName: updatedSession.workoutName,
 				notes: updatedSession.notes
 			});
+
+			await invalidateSessions();
 
 			showSessionDetail = updatedSession;
 			showEditModal = false;
