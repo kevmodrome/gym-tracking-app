@@ -37,7 +37,8 @@
 		md: 'pl-4 pr-10 py-3 text-base'
 	};
 
-	const selectId = id || `select-${Math.random().toString(36).slice(2, 9)}`;
+	const fallbackId = `select-${Math.random().toString(36).slice(2, 9)}`;
+	const selectId = $derived(id || fallbackId);
 
 	function handleChange(e: Event) {
 		const target = e.target as HTMLSelectElement;

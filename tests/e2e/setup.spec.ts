@@ -4,25 +4,37 @@ test.describe('E2E Test Setup', () => {
 	test('playwright is configured correctly', async ({ page }) => {
 		await page.goto('/');
 		expect(page).toBeTruthy();
+		// Verify we got a real page, not an error
+		await expect(page).not.toHaveTitle(/404|Not Found/i);
 	});
 
-	test('can navigate to home page', async ({ navigateToHome }) => {
+	test('can navigate to home page', async ({ navigateToHome, page }) => {
 		await navigateToHome();
+		// Verify home page content is visible
+		await expect(page.locator('body')).toBeVisible();
 	});
 
-	test('can navigate to dashboard', async ({ navigateToDashboard }) => {
-		await navigateToDashboard();
-	});
-
-	test('can navigate to workout', async ({ navigateToWorkout }) => {
+	test('can navigate to workout', async ({ navigateToWorkout, page }) => {
 		await navigateToWorkout();
+		// Verify workout page loaded
+		await expect(page.locator('body')).toBeVisible();
 	});
 
-	test('can navigate to history', async ({ navigateToHistory }) => {
-		await navigateToHistory();
+	test('can navigate to exercises', async ({ navigateToExercises, page }) => {
+		await navigateToExercises();
+		// Verify exercises page loaded
+		await expect(page.locator('body')).toBeVisible();
 	});
 
-	test('can navigate to progress', async ({ navigateToProgress }) => {
+	test('can navigate to progress', async ({ navigateToProgress, page }) => {
 		await navigateToProgress();
+		// Verify progress page loaded
+		await expect(page.locator('body')).toBeVisible();
+	});
+
+	test('can navigate to settings', async ({ navigateToSettings, page }) => {
+		await navigateToSettings();
+		// Verify settings page loaded
+		await expect(page.locator('body')).toBeVisible();
 	});
 });

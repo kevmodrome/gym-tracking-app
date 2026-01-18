@@ -33,7 +33,7 @@
 		info: 'info'
 	} as const;
 
-	const confirmButtonVariant = confirmVariant === 'danger' ? 'danger' : confirmVariant === 'warning' ? 'ghost' : 'primary';
+	const confirmButtonVariant = $derived(confirmVariant === 'danger' ? 'danger' : confirmVariant === 'warning' ? 'ghost' : 'primary');
 </script>
 
 <Modal {open} {title} size="sm" onclose={oncancel}>

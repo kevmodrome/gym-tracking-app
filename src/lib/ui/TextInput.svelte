@@ -39,7 +39,8 @@
 		onblur
 	}: TextInputProps = $props();
 
-	const inputId = id || `input-${Math.random().toString(36).slice(2, 9)}`;
+	const fallbackId = `input-${Math.random().toString(36).slice(2, 9)}`;
+	const inputId = $derived(id || fallbackId);
 
 	function handleInput(e: Event) {
 		const target = e.target as HTMLInputElement;
