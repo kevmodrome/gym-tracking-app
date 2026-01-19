@@ -1,5 +1,5 @@
 {
-	"name": "Gym Recording App",
+	"name": "GymTrack",
 	"short_name": "GymTrack",
 	"description": "Track your workouts, create custom exercises, and build workout routines",
 	"start_url": "/",

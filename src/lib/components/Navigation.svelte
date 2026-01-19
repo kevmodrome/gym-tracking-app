@@ -76,7 +76,7 @@
 	class="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border md:hidden nav-mobile"
 	transition:fly={{ y: 100, duration: 300 }}
 >
-	<div class="flex items-center justify-around h-16">
+	<div class="flex items-center justify-around h-20">
 		{#each navItems as item}
 			{@const active = isActive(item.path)}
 			<a
