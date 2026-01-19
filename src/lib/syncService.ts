@@ -367,6 +367,10 @@ export async function syncData(): Promise<SyncServiceResult> {
 			setSuppressHooks(false);
 		}
 
+		// Recalculate PRs from synced sessions to ensure consistency
+		const { calculatePersonalRecords } = await import('./prUtils');
+		await calculatePersonalRecords();
+
 		const syncTimestamp = result.data.syncTimestamp;
 		lastSyncTime.set(syncTimestamp);
 
