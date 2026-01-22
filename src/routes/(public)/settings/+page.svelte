@@ -16,6 +16,7 @@
 	} from '$lib/syncService';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, TextInput, Select, Toggle, Card, Modal, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
+	import { seedDemoData } from '$lib/db';
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
@@ -184,6 +185,16 @@
 
 	function handleImportModalClose() {
 		showImportModal = false;
+	}
+
+	async function handleLoadDemoData() {
+		try {
+			await seedDemoData();
+			toastStore.showSuccess('Demo data loaded! Check your workouts.');
+		} catch (e) {
+			console.error('Failed to load demo data:', e);
+			toastStore.showError('Failed to load demo data');
+		}
 	}
 
 	async function handleGenerateSyncKey() {
@@ -525,6 +536,14 @@
 							<li>• You can choose how to handle duplicate items during import</li>
 							<li>• Store backup files in a safe location for data security</li>
 						</ul>
+					</div>
+
+					<div class="pt-4 border-t border-border">
+						<h3 class="font-medium text-text-primary mb-2">Demo Data</h3>
+						<p class="text-sm text-text-secondary mb-3">Load sample workouts and sessions to test the app.</p>
+						<Button variant="secondary" onclick={handleLoadDemoData}>
+							Load Demo Data
+						</Button>
 					</div>
 				</div>
 			{/snippet}
