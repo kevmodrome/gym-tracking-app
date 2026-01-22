@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { dev } from '$app/environment';
 	import type { AppSettings, NotificationPreferences, AppPreferences } from '$lib/types';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
@@ -538,6 +539,7 @@
 						</ul>
 					</div>
 
+					{#if dev}
 					<div class="pt-4 border-t border-border">
 						<h3 class="font-medium text-text-primary mb-2">Demo Data</h3>
 						<p class="text-sm text-text-secondary mb-3">Load sample workouts and sessions to test the app.</p>
@@ -545,6 +547,7 @@
 							Load Demo Data
 						</Button>
 					</div>
+					{/if}
 				</div>
 			{/snippet}
 		</Card>
