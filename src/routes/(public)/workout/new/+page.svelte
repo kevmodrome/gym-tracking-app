@@ -317,6 +317,8 @@
 								</div>
 							{/if}
 						</div>
+					</div>
+				</div>
 
 						<!-- Notes -->
 						<div>
