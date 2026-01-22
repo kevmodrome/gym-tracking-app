@@ -49,6 +49,8 @@ html {
 	font-family: var(--font-body);
 	background-color: var(--color-bg);
 	color: var(--color-text-primary);
+	/* Prevent double-tap zoom while allowing normal touch interactions */
+	touch-action: manipulation;
 }
 
 html, body {

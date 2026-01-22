@@ -30,6 +30,135 @@ export class GymDB extends Dexie {
 export const db = new GymDB();
 export { liveQuery };
 
+export async function seedDemoData(): Promise<void> {
+	// Seed sample workouts
+	const workouts: Workout[] = [
+		{
+			id: 'demo-workout-1',
+			name: 'Push Day',
+			exercises: [
+				{ exerciseId: '1', exerciseName: 'Bench Press', targetSets: 4, targetReps: 8, targetWeight: 135 },
+				{ exerciseId: '2', exerciseName: 'Incline Dumbbell Press', targetSets: 3, targetReps: 10, targetWeight: 50 },
+				{ exerciseId: '10', exerciseName: 'Overhead Press', targetSets: 3, targetReps: 8, targetWeight: 95 },
+				{ exerciseId: '14', exerciseName: 'Tricep Pushdowns', targetSets: 3, targetReps: 12, targetWeight: 40 }
+			],
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
+		},
+		{
+			id: 'demo-workout-2',
+			name: 'Pull Day',
+			exercises: [
+				{ exerciseId: '6', exerciseName: 'Deadlift', targetSets: 4, targetReps: 5, targetWeight: 225 },
+				{ exerciseId: '8', exerciseName: 'Barbell Row', targetSets: 4, targetReps: 8, targetWeight: 135 },
+				{ exerciseId: '7', exerciseName: 'Pull-ups', targetSets: 3, targetReps: 8, targetWeight: 0 },
+				{ exerciseId: '13', exerciseName: 'Bicep Curls', targetSets: 3, targetReps: 12, targetWeight: 30 }
+			],
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
+		},
+		{
+			id: 'demo-workout-3',
+			name: 'Leg Day',
+			exercises: [
+				{ exerciseId: '5', exerciseName: 'Squat', targetSets: 4, targetReps: 6, targetWeight: 185 },
+				{ exerciseId: '24', exerciseName: 'Leg Press', targetSets: 3, targetReps: 10, targetWeight: 270 },
+				{ exerciseId: '25', exerciseName: 'Walking Lunges', targetSets: 3, targetReps: 12, targetWeight: 40 }
+			],
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
+		}
+	];
+
+	// Clear existing demo data
+	await db.workouts.where('id').startsWith('demo-').delete();
+	await db.sessions.where('id').startsWith('demo-').delete();
+
+	// Add workouts
+	await db.workouts.bulkAdd(workouts);
+
+	// Seed sample sessions (past completed workouts)
+	const sessions: Session[] = [
+		{
+			id: 'demo-session-1',
+			workoutId: 'demo-workout-1',
+			workoutName: 'Push Day',
+			exercises: [
+				{
+					exerciseId: '1',
+					exerciseName: 'Bench Press',
+					primaryMuscle: 'chest',
+					sets: [
+						{ reps: 8, weight: 135, completed: true },
+						{ reps: 8, weight: 135, completed: true },
+						{ reps: 7, weight: 135, completed: true },
+						{ reps: 6, weight: 135, completed: true }
+					]
+				},
+				{
+					exerciseId: '2',
+					exerciseName: 'Incline Dumbbell Press',
+					primaryMuscle: 'chest',
+					sets: [
+						{ reps: 10, weight: 50, completed: true },
+						{ reps: 10, weight: 50, completed: true },
+						{ reps: 8, weight: 50, completed: true }
+					]
+				},
+				{
+					exerciseId: '10',
+					exerciseName: 'Overhead Press',
+					primaryMuscle: 'shoulders',
+					sets: [
+						{ reps: 8, weight: 95, completed: true },
+						{ reps: 8, weight: 95, completed: true },
+						{ reps: 6, weight: 95, completed: true }
+					]
+				}
+			],
+			date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+			duration: 45,
+			createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+		},
+		{
+			id: 'demo-session-2',
+			workoutId: 'demo-workout-2',
+			workoutName: 'Pull Day',
+			exercises: [
+				{
+					exerciseId: '6',
+					exerciseName: 'Deadlift',
+					primaryMuscle: 'back',
+					sets: [
+						{ reps: 5, weight: 225, completed: true },
+						{ reps: 5, weight: 225, completed: true },
+						{ reps: 5, weight: 225, completed: true },
+						{ reps: 4, weight: 225, completed: true }
+					]
+				},
+				{
+					exerciseId: '8',
+					exerciseName: 'Barbell Row',
+					primaryMuscle: 'back',
+					sets: [
+						{ reps: 8, weight: 135, completed: true },
+						{ reps: 8, weight: 135, completed: true },
+						{ reps: 8, weight: 135, completed: true },
+						{ reps: 7, weight: 135, completed: true }
+					]
+				}
+			],
+			date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+			duration: 50,
+			createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+		}
+	];
+
+	await db.sessions.bulkAdd(sessions);
+
+	console.log('Demo data seeded successfully!');
+}
+
 export async function initializeExercises(): Promise<void> {
 	const count = await db.exercises.count();
 	if (count === 0) {
