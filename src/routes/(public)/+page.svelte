@@ -12,7 +12,7 @@
 		type VolumeScale
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
-	import { Plot, Line, Dot } from 'svelteplot';
+	import { Plot, Line, Dot, AxisX } from 'svelteplot';
 
 	let { data } = $props();
 
@@ -541,12 +541,13 @@
 					{#if volumeChartData.length > 0}
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
+								<AxisX tickFormat="%b %d" />
 								<Line data={volumeChartData} x="date" y="value" stroke="#c5ff00" strokeWidth={2} />
 								<Dot data={volumeChartData} x="date" y="value" fill="#c5ff00" r={5} />
 							</Plot>
 						</div>
 						<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-							{#each volumeTrends.slice(-4).reverse() as trend}
+							{#each volumeTrends.slice(-4) as trend}
 								<div class="text-xs sm:text-sm">
 									<p class="text-text-muted">{trend.date}</p>
 									<p class="font-semibold text-text-primary">{formatVolume(trend.volume)} lbs</p>
