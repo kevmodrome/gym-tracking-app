@@ -164,6 +164,14 @@
 		{ value: 'week', label: 'Week' },
 		{ value: 'month', label: 'Month' }
 	];
+
+	function formatChartDate(d: Date | unknown): string {
+		if (!(d instanceof Date)) return String(d);
+		if (volumeScale === 'month') {
+			return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+		}
+		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+	}
 </script>
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
@@ -541,12 +549,12 @@
 					{#if volumeChartData.length > 0}
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
-								<AxisX tickFormat="%b %d" />
+								<AxisX tickFormat={formatChartDate} />
 								<Line data={volumeChartData} x="date" y="value" stroke="#c5ff00" strokeWidth={2} />
 								<Dot data={volumeChartData} x="date" y="value" fill="#c5ff00" r={5} />
 							</Plot>
 						</div>
-						<div class="mt-8 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+						<div class="mt-16 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
 							{#each volumeTrends.slice(-4) as trend}
 								<div class="text-xs sm:text-sm">
 									<p class="text-text-muted">{trend.date}</p>

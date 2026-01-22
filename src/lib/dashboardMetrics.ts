@@ -229,7 +229,7 @@ function aggregateByMonth(sessions: Session[], startDate: Date, endDate: Date): 
 		const volume = monthSessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
 
 		trends.push({
-			date: monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+			date: monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
 			rawDate: new Date(monthStart),
 			volume,
 			sessions: monthSessions.length
