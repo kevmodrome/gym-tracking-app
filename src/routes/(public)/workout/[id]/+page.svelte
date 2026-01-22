@@ -169,159 +169,162 @@
 							/>
 						</div>
 
-						<!-- Exercises List -->
+						<!-- Exercises Section -->
 						<div>
 							<h3 class="block text-sm font-medium text-text-secondary mb-2">
 								Exercises ({workoutExercises.length})
 							</h3>
-							{#if workoutExercises.length > 0}
-								<div class="border border-border rounded-lg divide-y divide-border mb-4">
-									{#each workoutExercises as exercise, index (exercise.exerciseId)}
-										<div
-											class="p-4 flex items-center gap-3"
-											animate:flip={{ duration: 250 }}
-											transition:slide={{ duration: 200 }}
-										>
-											<div class="flex-shrink-0 flex flex-col gap-1">
-												<button
-													onclick={() => moveExerciseUp(index)}
-													disabled={index === 0}
-													type="button"
-													class="size-9 flex items-center justify-center bg-surface-elevated border border-border rounded-lg hover:bg-surface hover:border-text-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-												>
-													<ChevronUpIcon class="w-5 h-5 text-text-secondary" />
-												</button>
-												<button
-													onclick={() => moveExerciseDown(index)}
-													disabled={index === workoutExercises.length - 1}
-													type="button"
-													class="size-9 flex items-center justify-center bg-surface-elevated border border-border rounded-lg hover:bg-surface hover:border-text-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-												>
-													<ChevronDownIcon class="w-5 h-5 text-text-secondary" />
-												</button>
-											</div>
-											<div class="flex-1 min-w-0">
-												<div class="flex items-center justify-between mb-2">
-													<h4 class="font-medium text-text-primary">{exercise.exerciseName}</h4>
+							<div class="border border-border rounded-lg overflow-hidden">
+								<!-- Exercise List -->
+								{#if workoutExercises.length > 0}
+									<div class="divide-y divide-border">
+										{#each workoutExercises as exercise, index (exercise.exerciseId)}
+											<div
+												class="p-4 flex items-center gap-3 bg-surface"
+												animate:flip={{ duration: 250 }}
+												transition:slide={{ duration: 200 }}
+											>
+												<div class="flex-shrink-0 flex flex-col gap-1">
 													<button
-														onclick={() => removeExercise(index)}
+														onclick={() => moveExerciseUp(index)}
+														disabled={index === 0}
 														type="button"
-														class="flex-shrink-0 size-8 flex items-center justify-center bg-danger/10 border border-danger/20 rounded-full hover:bg-danger/20 hover:border-danger/40 transition-colors text-danger"
+														class="size-9 flex items-center justify-center bg-surface-elevated border border-border rounded-lg hover:bg-surface hover:border-text-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 													>
-														<XIcon class="w-4 h-4" />
+														<ChevronUpIcon class="w-5 h-5 text-text-secondary" />
+													</button>
+													<button
+														onclick={() => moveExerciseDown(index)}
+														disabled={index === workoutExercises.length - 1}
+														type="button"
+														class="size-9 flex items-center justify-center bg-surface-elevated border border-border rounded-lg hover:bg-surface hover:border-text-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+													>
+														<ChevronDownIcon class="w-5 h-5 text-text-secondary" />
 													</button>
 												</div>
-												<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-													<NumberSpinner
-														label="Sets"
-														value={exercise.targetSets}
-														min={1}
-														step={1}
-														size="sm"
-														onchange={(v) => updateExercise(index)('targetSets', v)}
-													/>
-													<NumberSpinner
-														label="Reps"
-														value={exercise.targetReps}
-														min={1}
-														step={1}
-														size="sm"
-														onchange={(v) => updateExercise(index)('targetReps', v)}
-													/>
-													<NumberSpinner
-														label="Weight (lbs)"
-														value={exercise.targetWeight}
-														min={0}
-														step={5}
-														size="sm"
-														onchange={(v) => updateExercise(index)('targetWeight', v)}
-													/>
+												<div class="flex-1 min-w-0">
+													<div class="flex items-center justify-between mb-2">
+														<h4 class="font-medium text-text-primary">{exercise.exerciseName}</h4>
+														<button
+															onclick={() => removeExercise(index)}
+															type="button"
+															class="flex-shrink-0 size-8 flex items-center justify-center bg-danger/10 border border-danger/20 rounded-full hover:bg-danger/20 hover:border-danger/40 transition-colors text-danger"
+														>
+															<XIcon class="w-4 h-4" />
+														</button>
+													</div>
+													<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+														<NumberSpinner
+															label="Sets"
+															value={exercise.targetSets}
+															min={1}
+															step={1}
+															size="sm"
+															onchange={(v) => updateExercise(index)('targetSets', v)}
+														/>
+														<NumberSpinner
+															label="Reps"
+															value={exercise.targetReps}
+															min={1}
+															step={1}
+															size="sm"
+															onchange={(v) => updateExercise(index)('targetReps', v)}
+														/>
+														<NumberSpinner
+															label="Weight (lbs)"
+															value={exercise.targetWeight}
+															min={0}
+															step={5}
+															size="sm"
+															onchange={(v) => updateExercise(index)('targetWeight', v)}
+														/>
+													</div>
 												</div>
 											</div>
-										</div>
-									{/each}
-								</div>
-							{:else}
-								<div class="border border-border rounded-lg p-4 mb-4 text-center text-text-muted">
-									No exercises added yet
-								</div>
-							{/if}
-						</div>
+										{/each}
+									</div>
+								{:else}
+									<div class="p-4 text-center text-text-muted bg-surface">
+										No exercises added yet
+									</div>
+								{/if}
 
-						<!-- Add Exercise -->
-						<div>
-							<label for="exercise-search" class="block text-sm font-medium text-text-secondary mb-2">
-								Add Exercise
-							</label>
-							<div class="relative mb-3">
-								<SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-								<input
-									id="exercise-search"
-									type="text"
-									bind:value={exerciseSearch}
-									placeholder="Search exercises to add..."
-									class="w-full pl-12 pr-4 py-3 text-base bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted min-h-[44px]"
-								/>
-							</div>
-
-							{#if availableForSelection.length > 0}
-								<div
-									class="border border-border rounded-lg max-h-48 overflow-y-auto mb-4"
-									transition:slide={{ duration: 150 }}
-								>
-									{#each availableForSelection as exercise (exercise.id)}
-										<button
-											onclick={() => (selectedExercise = exercise)}
-											type="button"
-											class="w-full px-4 py-3 text-left hover:bg-surface-elevated border-b border-border last:border-b-0 transition-colors"
-										>
-											<span class="text-text-primary">{exercise.name}</span>
-											<span class="ml-2 text-sm text-text-secondary">({exercise.equipment})</span>
-										</button>
-									{/each}
-								</div>
-							{:else if exerciseSearch}
-								<p class="text-sm text-text-muted mb-4">No exercises found or all exercises already added.</p>
-							{/if}
-
-							{#if selectedExercise}
-								<div
-									class="bg-surface-elevated border border-border rounded-lg p-4 mb-4"
-									transition:slide={{ duration: 200 }}
-								>
-									<h3 class="font-semibold text-text-primary mb-4">Configure {selectedExercise.name}</h3>
-									<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-										<NumberSpinner
-											label="Sets"
-											bind:value={newTargetSets}
-											min={1}
-											step={1}
-											size="sm"
-										/>
-										<NumberSpinner
-											label="Reps"
-											bind:value={newTargetReps}
-											min={1}
-											step={1}
-											size="sm"
-										/>
-										<NumberSpinner
-											label="Weight (lbs)"
-											bind:value={newTargetWeight}
-											min={0}
-											step={5}
-											size="sm"
+								<!-- Add Exercise - Connected below the list -->
+								<div class="border-t border-border bg-surface-elevated p-4">
+									<label for="exercise-search" class="block text-xs font-medium text-text-muted uppercase tracking-wide mb-2">
+										Add Exercise
+									</label>
+									<div class="relative">
+										<SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+										<input
+											id="exercise-search"
+											type="text"
+											bind:value={exerciseSearch}
+											placeholder="Search exercises to add..."
+											class="w-full pl-12 pr-4 py-3 text-base bg-surface border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary placeholder:text-text-muted min-h-[44px]"
 										/>
 									</div>
-									<button
-										onclick={addExercise}
-										type="button"
-										class="w-full px-4 py-3 text-base bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_20px_rgba(197,255,0,0.3)] transition-all min-h-[44px] font-medium"
-									>
-										Add Exercise
-									</button>
+
+									{#if availableForSelection.length > 0}
+										<div
+											class="border border-border rounded-lg max-h-48 overflow-y-auto mt-3"
+											transition:slide={{ duration: 150 }}
+										>
+											{#each availableForSelection as exercise (exercise.id)}
+												<button
+													onclick={() => (selectedExercise = exercise)}
+													type="button"
+													class="w-full px-4 py-3 text-left hover:bg-surface border-b border-border last:border-b-0 transition-colors"
+												>
+													<span class="text-text-primary">{exercise.name}</span>
+													<span class="ml-2 text-sm text-text-secondary">({exercise.equipment})</span>
+												</button>
+											{/each}
+										</div>
+									{:else if exerciseSearch}
+										<p class="text-sm text-text-muted mt-3">No exercises found or all exercises already added.</p>
+									{/if}
+
+									{#if selectedExercise}
+										<div
+											class="bg-surface border border-accent/30 rounded-lg p-4 mt-3"
+											transition:slide={{ duration: 200 }}
+										>
+											<h3 class="font-semibold text-text-primary mb-4">Configure {selectedExercise.name}</h3>
+											<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+												<NumberSpinner
+													label="Sets"
+													bind:value={newTargetSets}
+													min={1}
+													step={1}
+													size="sm"
+												/>
+												<NumberSpinner
+													label="Reps"
+													bind:value={newTargetReps}
+													min={1}
+													step={1}
+													size="sm"
+												/>
+												<NumberSpinner
+													label="Weight (lbs)"
+													bind:value={newTargetWeight}
+													min={0}
+													step={5}
+													size="sm"
+												/>
+											</div>
+											<button
+												onclick={addExercise}
+												type="button"
+												class="w-full px-4 py-3 text-base bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_20px_rgba(197,255,0,0.3)] transition-all min-h-[44px] font-medium"
+											>
+												Add Exercise
+											</button>
+										</div>
+									{/if}
 								</div>
-							{/if}
+							</div>
 						</div>
 
 						<!-- Notes -->
