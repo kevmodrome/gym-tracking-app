@@ -83,65 +83,121 @@ export function calculateVolumeTrends(
 	customStartDate?: Date,
 	customEndDate?: Date
 ): VolumeTrend[] {
-	const trends: VolumeTrend[] = [];
+	return calculateVolumeTrendsByScale(sessions, 'week', dateFilter, customStartDate, customEndDate);
+}
+
+export type VolumeScale = 'day' | 'week' | 'month';
+
+export function calculateVolumeTrendsByScale(
+	sessions: Session[],
+	scale: VolumeScale,
+	dateFilter: 'week' | 'month' | 'year' | 'custom',
+	customStartDate?: Date,
+	customEndDate?: Date
+): VolumeTrend[] {
 	const now = new Date();
-	
+
 	let startDate: Date;
-	let weeks: number;
+	let endDate: Date = dateFilter === 'custom' && customEndDate ? customEndDate : now;
 
 	switch (dateFilter) {
 		case 'week':
 			startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-			weeks = 7;
 			break;
 		case 'month':
 			startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-			weeks = 4;
 			break;
 		case 'year':
 			startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-			weeks = 12;
 			break;
 		case 'custom':
 			startDate = customStartDate || new Date(0);
-			weeks = 12;
 			break;
 		default:
 			startDate = new Date(0);
-			weeks = 4;
 	}
 
-	let endDate = dateFilter === 'custom' && customEndDate ? customEndDate : now;
-	
-	for (let i = weeks - 1; i >= 0; i--) {
-		const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (i + 1) * 7);
-		weekStart.setHours(0, 0, 0, 0);
-		const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7);
-		weekEnd.setHours(23, 59, 59, 999);
+	startDate.setHours(0, 0, 0, 0);
+	endDate.setHours(23, 59, 59, 999);
 
-		if (dateFilter === 'custom' && customStartDate && weekEnd < customStartDate) {
-			continue;
-		}
+	const filteredSessions = sessions.filter((session) => {
+		const sessionDate = new Date(session.date);
+		return sessionDate >= startDate && sessionDate <= endDate;
+	});
+
+	switch (scale) {
+		case 'day':
+			return aggregateByDay(filteredSessions, startDate, endDate);
+		case 'week':
+			return aggregateByWeek(filteredSessions, startDate, endDate);
+		case 'month':
+			return aggregateByMonth(filteredSessions, startDate, endDate);
+	}
+}
+
+function calculateSessionVolume(session: Session): number {
+	return session.exercises.reduce((exerciseTotal, exercise) => {
+		return (
+			exerciseTotal +
+			exercise.sets.reduce(
+				(setTotal, set) => setTotal + (set.completed ? set.reps * set.weight : 0),
+				0
+			)
+		);
+	}, 0);
+}
+
+function aggregateByDay(sessions: Session[], startDate: Date, endDate: Date): VolumeTrend[] {
+	const trends: VolumeTrend[] = [];
+	const current = new Date(startDate);
+
+	while (current <= endDate) {
+		const dayStart = new Date(current);
+		dayStart.setHours(0, 0, 0, 0);
+		const dayEnd = new Date(current);
+		dayEnd.setHours(23, 59, 59, 999);
+
+		const daySessions = sessions.filter((session) => {
+			const sessionDate = new Date(session.date);
+			return sessionDate >= dayStart && sessionDate <= dayEnd;
+		});
+
+		const volume = daySessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
+
+		trends.push({
+			date: dayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+			rawDate: new Date(dayStart),
+			volume,
+			sessions: daySessions.length
+		});
+
+		current.setDate(current.getDate() + 1);
+	}
+
+	return trends;
+}
+
+function aggregateByWeek(sessions: Session[], startDate: Date, endDate: Date): VolumeTrend[] {
+	const trends: VolumeTrend[] = [];
+	const current = new Date(startDate);
+
+	// Align to start of week (Sunday)
+	const dayOfWeek = current.getDay();
+	current.setDate(current.getDate() - dayOfWeek);
+	current.setHours(0, 0, 0, 0);
+
+	while (current <= endDate) {
+		const weekStart = new Date(current);
+		const weekEnd = new Date(current);
+		weekEnd.setDate(weekEnd.getDate() + 6);
+		weekEnd.setHours(23, 59, 59, 999);
 
 		const weekSessions = sessions.filter((session) => {
 			const sessionDate = new Date(session.date);
 			return sessionDate >= weekStart && sessionDate <= weekEnd;
 		});
 
-		const volume = weekSessions.reduce((total, session) => {
-			return (
-				total +
-				session.exercises.reduce((exerciseTotal, exercise) => {
-					return (
-						exerciseTotal +
-						exercise.sets.reduce(
-							(setTotal, set) => setTotal + (set.completed ? set.reps * set.weight : 0),
-							0
-						)
-					);
-				}, 0)
-			);
-		}, 0);
+		const volume = weekSessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
 
 		trends.push({
 			date: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -149,6 +205,37 @@ export function calculateVolumeTrends(
 			volume,
 			sessions: weekSessions.length
 		});
+
+		current.setDate(current.getDate() + 7);
+	}
+
+	return trends;
+}
+
+function aggregateByMonth(sessions: Session[], startDate: Date, endDate: Date): VolumeTrend[] {
+	const trends: VolumeTrend[] = [];
+	const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
+	while (current <= endDate) {
+		const monthStart = new Date(current);
+		const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+		monthEnd.setHours(23, 59, 59, 999);
+
+		const monthSessions = sessions.filter((session) => {
+			const sessionDate = new Date(session.date);
+			return sessionDate >= monthStart && sessionDate <= monthEnd;
+		});
+
+		const volume = monthSessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
+
+		trends.push({
+			date: monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+			rawDate: new Date(monthStart),
+			volume,
+			sessions: monthSessions.length
+		});
+
+		current.setMonth(current.getMonth() + 1);
 	}
 
 	return trends;
