@@ -546,7 +546,7 @@
 								<Dot data={volumeChartData} x="date" y="value" fill="#c5ff00" r={5} />
 							</Plot>
 						</div>
-						<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+						<div class="mt-8 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
 							{#each volumeTrends.slice(-4) as trend}
 								<div class="text-xs sm:text-sm">
 									<p class="text-text-muted">{trend.date}</p>
