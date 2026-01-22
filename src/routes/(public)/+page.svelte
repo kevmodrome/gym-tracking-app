@@ -11,6 +11,7 @@
 		calculateMonthlyComparison
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
+	import { Plot, Line, Dot } from 'svelteplot';
 
 	let { data } = $props();
 
@@ -78,6 +79,12 @@
 		const startDate = customStartDate ? new Date(customStartDate) : undefined;
 		const endDate = customEndDate ? new Date(customEndDate) : undefined;
 		return calculateVolumeTrends(filteredSessions, dateFilter, startDate, endDate);
+	});
+
+	const volumeChartData = $derived.by(() => {
+		return volumeTrends
+			.filter((t) => t.volume > 0)
+			.map((t) => ({ date: t.rawDate, value: t.volume }));
 	});
 
 	const weeklyComparison = $derived.by(() => calculateWeeklyComparison(sessions));
@@ -515,41 +522,12 @@
 			<Card>
 				{#snippet children()}
 					<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Volume Trends</h2>
-					{#if volumeTrends.some((t) => t.volume > 0)}
+					{#if volumeChartData.length > 0}
 						<div class="h-48 sm:h-64">
-							<svg viewBox="0 0 800 200" class="w-full h-full">
-								{#each volumeTrends as trend, i}
-									{#if trend.volume > 0}
-										<line
-											x1={i * (800 / volumeTrends.length)}
-											y1={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
-											x2={(i + 1) * (800 / volumeTrends.length)}
-											y2={200 -
-												(volumeTrends[i + 1]?.volume || trend.volume) /
-													Math.max(...volumeTrends.map((t) => t.volume)) * 180}
-											stroke="#c5ff00"
-											stroke-width="2"
-										/>
-										<circle
-											cx={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
-											cy={200 - (trend.volume / Math.max(...volumeTrends.map((t) => t.volume))) * 180}
-											r="4"
-											fill="#c5ff00"
-										/>
-									{/if}
-								{/each}
-								{#each volumeTrends as trend, i}
-									<text
-										x={i * (800 / volumeTrends.length) + 800 / volumeTrends.length / 2}
-										y={195}
-										text-anchor="middle"
-										class="text-xs"
-										fill="#8b8d97"
-									>
-										{i % 2 === 0 ? trend.date : ''}
-									</text>
-								{/each}
-							</svg>
+							<Plot height={256} marginLeft={50} marginBottom={40} grid>
+								<Line data={volumeChartData} x="date" y="value" stroke="#c5ff00" strokeWidth={2} />
+								<Dot data={volumeChartData} x="date" y="value" fill="#c5ff00" r={5} />
+							</Plot>
 						</div>
 						<div class="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
 							{#each volumeTrends.slice(-4).reverse() as trend}

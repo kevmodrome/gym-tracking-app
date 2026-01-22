@@ -10,6 +10,7 @@ export interface DashboardMetrics {
 
 export interface VolumeTrend {
 	date: string;
+	rawDate: Date;
 	volume: number;
 	sessions: number;
 }
@@ -144,6 +145,7 @@ export function calculateVolumeTrends(
 
 		trends.push({
 			date: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+			rawDate: new Date(weekStart),
 			volume,
 			sessions: weekSessions.length
 		});
