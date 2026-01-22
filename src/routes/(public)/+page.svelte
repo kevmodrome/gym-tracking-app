@@ -2,13 +2,14 @@
 	import {
 		filterSessionsByDateRange,
 		calculateDashboardMetrics,
-		calculateVolumeTrends,
+		calculateVolumeTrendsByScale,
 		calculateMuscleBreakdown,
 		calculateDailyWorkouts,
 		calculateDailyMetrics,
 		getLastWorkoutDate,
 		calculateWeeklyComparison,
-		calculateMonthlyComparison
+		calculateMonthlyComparison,
+		type VolumeScale
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
 	import { Plot, Line, Dot } from 'svelteplot';
@@ -24,6 +25,7 @@
 	let customStartDate = $state('');
 	let customEndDate = $state('');
 	let selectedPeriod = $state<'week' | 'month'>('week');
+	let volumeScale = $state<VolumeScale>('week');
 
 	const filteredSessions = $derived.by(() => {
 		if (sessions.length === 0) return [];
@@ -78,7 +80,7 @@
 	const volumeTrends = $derived.by(() => {
 		const startDate = customStartDate ? new Date(customStartDate) : undefined;
 		const endDate = customEndDate ? new Date(customEndDate) : undefined;
-		return calculateVolumeTrends(filteredSessions, dateFilter, startDate, endDate);
+		return calculateVolumeTrendsByScale(filteredSessions, volumeScale, dateFilter, startDate, endDate);
 	});
 
 	const volumeChartData = $derived.by(() => {
@@ -150,6 +152,12 @@
 		{ value: 'month', label: 'Month' },
 		{ value: 'year', label: 'Year' },
 		{ value: 'custom', label: 'Custom' }
+	];
+
+	const volumeScaleOptions = [
+		{ value: 'day', label: 'Day' },
+		{ value: 'week', label: 'Week' },
+		{ value: 'month', label: 'Month' }
 	];
 
 	const periodOptions = [
@@ -521,7 +529,15 @@
 
 			<Card>
 				{#snippet children()}
-					<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary mb-3 sm:mb-4">Volume Trends</h2>
+					<div class="flex items-center justify-between mb-3 sm:mb-4">
+						<h2 class="text-lg sm:text-xl font-bold font-display text-text-primary">Volume Trends</h2>
+						<ButtonGroup
+							options={volumeScaleOptions}
+							bind:value={volumeScale}
+							size="sm"
+							onchange={(v) => volumeScale = v as VolumeScale}
+						/>
+					</div>
 					{#if volumeChartData.length > 0}
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
