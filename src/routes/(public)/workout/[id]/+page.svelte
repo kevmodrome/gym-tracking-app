@@ -141,17 +141,18 @@
 	<title>Edit {workout?.name ?? 'Workout'} - Gym Recording App</title>
 </svelte:head>
 
-<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
-	<div class="max-w-4xl mx-auto w-full">
-		{#if workout}
-			<!-- Header -->
-			<div class="flex items-center justify-between mb-4 sm:mb-6">
-				<Button variant="ghost" href="/workout">← Back</Button>
-				<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary">Edit Workout</h1>
-				<div class="w-20"></div>
-			</div>
+<div class="min-h-screen bg-bg flex flex-col">
+	<div class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-52 md:pb-8">
+		<div class="max-w-4xl mx-auto w-full">
+			{#if workout}
+				<!-- Header -->
+				<div class="flex items-center justify-between mb-4 sm:mb-6">
+					<Button variant="ghost" href="/workout">← Back</Button>
+					<h1 class="text-xl sm:text-2xl font-bold font-display text-text-primary">Edit Workout</h1>
+					<div class="w-20"></div>
+				</div>
 
-			<Card class="mb-4">
+				<Card class="mb-4">
 				{#snippet children()}
 					<div class="space-y-6">
 						<!-- Workout Name -->
@@ -336,38 +337,68 @@
 				{/snippet}
 			</Card>
 
-			<!-- Action Buttons -->
-			<div class="flex flex-col sm:flex-row gap-3">
-				<Button variant="ghost" onclick={cancelEdit} class="sm:flex-1">
-					Cancel
-				</Button>
-				<Button
-					variant="danger"
-					onclick={() => showDeleteConfirm = true}
-					class="sm:flex-1"
-				>
-					Delete Workout
-				</Button>
+			<!-- Desktop Action Buttons (inline) -->
+				<div class="hidden md:flex flex-row gap-3">
+					<Button variant="ghost" onclick={cancelEdit} class="flex-1">
+						Cancel
+					</Button>
+					<Button
+						variant="danger"
+						onclick={() => showDeleteConfirm = true}
+						class="flex-1"
+					>
+						Delete Workout
+					</Button>
+					<Button
+						variant="primary"
+						onclick={saveWorkout}
+						disabled={!isFormValid || saving}
+						class="flex-1"
+					>
+						{saving ? 'Saving...' : 'Save Changes'}
+					</Button>
+				</div>
+			{/if}
+		</div>
+	</div>
+
+	<!-- Fixed Bottom Action Bar - Mobile -->
+	{#if workout}
+		<div class="fixed bottom-20 left-0 right-0 bg-surface border-t border-border p-4 md:hidden z-40">
+			<div class="max-w-4xl mx-auto space-y-3">
 				<Button
 					variant="primary"
+					fullWidth
+					size="lg"
 					onclick={saveWorkout}
 					disabled={!isFormValid || saving}
-					class="sm:flex-1"
 				>
 					{saving ? 'Saving...' : 'Save Changes'}
 				</Button>
+				<div class="grid grid-cols-2 gap-3">
+					<Button variant="ghost" fullWidth onclick={cancelEdit}>
+						Cancel
+					</Button>
+					<Button
+						variant="danger"
+						fullWidth
+						onclick={() => showDeleteConfirm = true}
+					>
+						Delete
+					</Button>
+				</div>
 			</div>
-		{/if}
+		</div>
+	{/if}
 
-		<!-- Delete Confirmation -->
-		<ConfirmDialog
-			open={showDeleteConfirm}
-			title="Delete Workout"
-			message="Are you sure you want to delete this workout? This action cannot be undone."
-			confirmText="Delete Workout"
-			confirmVariant="danger"
-			onconfirm={deleteWorkout}
-			oncancel={() => showDeleteConfirm = false}
-		/>
-	</div>
+	<!-- Delete Confirmation -->
+	<ConfirmDialog
+		open={showDeleteConfirm}
+		title="Delete Workout"
+		message="Are you sure you want to delete this workout? This action cannot be undone."
+		confirmText="Delete Workout"
+		confirmVariant="danger"
+		onconfirm={deleteWorkout}
+		oncancel={() => showDeleteConfirm = false}
+	/>
 </div>
