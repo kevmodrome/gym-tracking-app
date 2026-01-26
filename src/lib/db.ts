@@ -24,6 +24,22 @@ export class GymDB extends Dexie {
 		this.version(4).stores({
 			syncQueue: 'id, targetType, targetId, timestamp, status'
 		});
+		// v5: Remove workout dependency from sessions, add favorited to exercises
+		this.version(5)
+			.stores({
+				exercises: 'id, name, category, primary_muscle, is_custom, favorited',
+				sessions: 'id, date, createdAt' // removed workoutId index
+			})
+			.upgrade((tx) => {
+				// Migrate existing sessions to remove workout references
+				return tx
+					.table('sessions')
+					.toCollection()
+					.modify((session) => {
+						delete session.workoutId;
+						delete session.workoutName;
+					});
+			});
 	}
 }
 
@@ -77,12 +93,10 @@ export async function seedDemoData(): Promise<void> {
 	// Add workouts
 	await db.workouts.bulkAdd(workouts);
 
-	// Seed sample sessions (past completed workouts)
+	// Seed sample sessions (past completed sessions)
 	const sessions: Session[] = [
 		{
 			id: 'demo-session-1',
-			workoutId: 'demo-workout-1',
-			workoutName: 'Push Day',
 			exercises: [
 				{
 					exerciseId: '1',
@@ -122,8 +136,6 @@ export async function seedDemoData(): Promise<void> {
 		},
 		{
 			id: 'demo-session-2',
-			workoutId: 'demo-workout-2',
-			workoutName: 'Pull Day',
 			exercises: [
 				{
 					exerciseId: '6',

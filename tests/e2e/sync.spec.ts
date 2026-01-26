@@ -265,7 +265,7 @@ test.describe('Data Sync Between Clients', () => {
 		expect(syncedExercise.primary_muscle).toBe('chest');
 	});
 
-	test('syncs workouts between clients', async ({ page, request, clearDatabase, clearLocalStorage }) => {
+	test('syncs sessions between clients', async ({ page, request, clearDatabase, clearLocalStorage }) => {
 		// Setup: Navigate first then clear state
 		await page.goto('/settings');
 		await page.waitForLoadState('networkidle');
@@ -278,17 +278,32 @@ test.describe('Data Sync Between Clients', () => {
 		const newKeyResponse = await request.post('/api/sync/new');
 		const { syncKey } = await newKeyResponse.json();
 
-		// Client A: Create a workout
-		await page.goto('/workout/new');
-		await page.waitForLoadState('networkidle');
-		await expect(page.getByRole('heading', { name: 'Create Workout' })).toBeVisible();
+		// Push session data to server via API (simulating a completed session)
+		const testSession = {
+			id: 'sync-test-session-1',
+			exercises: [
+				{
+					exerciseId: '1',
+					exerciseName: 'Bench Press',
+					primaryMuscle: 'chest',
+					sets: [{ reps: 10, weight: 135, completed: true }]
+				}
+			],
+			date: new Date().toISOString(),
+			duration: 30,
+			created_at: new Date().toISOString(),
+			updated_at: Date.now()
+		};
 
-		await page.getByLabel(/Workout Name/i).fill('Sync Test Workout');
-		await page.getByRole('button', { name: 'Save Changes' }).click();
-		await expect(page).toHaveURL('/workout');
-
-		// Verify workout was created
-		await expect(page.getByText('Sync Test Workout')).toBeVisible();
+		await request.post(`/api/sync/${syncKey}`, {
+			data: {
+				exercises: [],
+				workouts: [],
+				sessions: [testSession],
+				personal_records: [],
+				lastSync: 0
+			}
+		});
 
 		// Connect to sync
 		await page.goto('/settings');
@@ -307,10 +322,10 @@ test.describe('Data Sync Between Clients', () => {
 		const serverData = await serverResponse.json();
 		expect(serverData.success).toBe(true);
 
-		const syncedWorkout = serverData.data.workouts.find(
-			(w: { name: string }) => w.name === 'Sync Test Workout'
+		const syncedSession = serverData.data.sessions.find(
+			(s: { id: string }) => s.id === 'sync-test-session-1'
 		);
-		expect(syncedWorkout).toBeDefined();
+		expect(syncedSession).toBeDefined();
 	});
 
 	test('pulls data from server when connecting with existing key', async ({

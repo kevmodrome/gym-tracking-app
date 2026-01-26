@@ -13,11 +13,27 @@
 
 	// Data from load function
 	const sessions = $derived(data.sessions);
-	const allWorkouts = $derived(data.allWorkouts);
+
+	// Helper to get muscle groups from a session
+	function getSessionMuscleGroups(session: Session): string[] {
+		const muscles = new Set<string>();
+		for (const exercise of session.exercises) {
+			if (exercise.primaryMuscle) {
+				muscles.add(exercise.primaryMuscle);
+			}
+		}
+		return Array.from(muscles);
+	}
+
+	// Helper to get a session title from muscle groups
+	function getSessionTitle(session: Session): string {
+		const muscles = getSessionMuscleGroups(session);
+		if (muscles.length === 0) return 'Session';
+		return muscles.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ');
+	}
 
 	// UI state
 	let searchQuery = $state('');
-	let selectedWorkout = $state<string>('');
 	let dateFilter = $state<'all' | 'week' | 'month' | 'year' | 'custom'>('all');
 	let customStartDate = $state('');
 	let customEndDate = $state('');
@@ -34,11 +50,6 @@
 	let originalSession = $state<Session | null>(null);
 	let saveError = $state<string | null>(null);
 
-	const workoutOptions = $derived([
-		{ value: '', label: 'All Workouts' },
-		...allWorkouts.map((w) => ({ value: w.id, label: w.name }))
-	]);
-
 	const dateOptions = [
 		{ value: 'all', label: 'All Time' },
 		{ value: 'week', label: 'Last 7 Days' },
@@ -50,16 +61,20 @@
 	const filteredSessions = $derived.by(() => {
 		let filtered = sessions;
 
-		// Filter by search query (workout name)
+		// Filter by search query (exercise names or muscle groups)
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase().trim();
-			filtered = filtered.filter((session) =>
-				session.workoutName.toLowerCase().includes(query)
-			);
-		}
-
-		if (selectedWorkout) {
-			filtered = filtered.filter((session) => session.workoutId === selectedWorkout);
+			filtered = filtered.filter((session) => {
+				// Search in exercise names
+				const matchesExercise = session.exercises.some(e =>
+					e.exerciseName.toLowerCase().includes(query)
+				);
+				// Search in muscle groups
+				const matchesMuscle = getSessionMuscleGroups(session).some(m =>
+					m.toLowerCase().includes(query)
+				);
+				return matchesExercise || matchesMuscle;
+			});
 		}
 
 		const now = new Date();
@@ -129,7 +144,6 @@
 
 	function clearFilters() {
 		searchQuery = '';
-		selectedWorkout = '';
 		dateFilter = 'all';
 		customStartDate = '';
 		customEndDate = '';
@@ -193,7 +207,7 @@
 		const date = new Date(showSessionDetail.date);
 		editForm = {
 			date: date.toISOString().split('T')[0],
-			name: showSessionDetail.workoutName,
+			name: '', // No longer used
 			notes: showSessionDetail.notes || ''
 		};
 		showEditModal = true;
@@ -216,13 +230,11 @@
 			const updatedSession: Session = {
 				...showSessionDetail,
 				date: new Date(editForm.date).toISOString(),
-				workoutName: editForm.name.trim() || showSessionDetail.workoutName,
 				notes: editForm.notes.trim() || undefined
 			};
 
 			await db.sessions.update(showSessionDetail.id, {
 				date: updatedSession.date,
-				workoutName: updatedSession.workoutName,
 				notes: updatedSession.notes
 			});
 
@@ -245,13 +257,7 @@
 			<SearchInput
 				label="Search"
 				bind:value={searchQuery}
-				placeholder="Search workouts..."
-			/>
-
-			<Select
-				label="Workout Type"
-				bind:value={selectedWorkout}
-				options={workoutOptions}
+				placeholder="Search exercises or muscle groups..."
 			/>
 
 			<Select
@@ -324,7 +330,7 @@
 					>
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
-								<h3 class="text-xl font-semibold text-text-primary mb-2">{session.workoutName}</h3>
+								<h3 class="text-xl font-semibold text-text-primary mb-2">{getSessionTitle(session)}</h3>
 								<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
 									<div class="flex items-center gap-2">
 										<span class="text-text-muted">📅</span>
@@ -367,7 +373,7 @@
 <!-- Session Detail Modal -->
 <Modal
 	open={showSessionDetail !== null}
-	title={showSessionDetail?.workoutName || ''}
+	title={showSessionDetail ? getSessionTitle(showSessionDetail) : ''}
 	size="xl"
 	onclose={() => (showSessionDetail = null)}
 >
@@ -467,9 +473,9 @@
 <!-- Delete Confirmation -->
 <ConfirmDialog
 	open={showDeleteConfirm}
-	title="Delete Workout"
-	message={'This will permanently delete "' + (showSessionDetail?.workoutName || '') + '" from ' + formatDate(showSessionDetail?.date || '') + '. This action cannot be undone.'}
-	confirmText="Delete Workout"
+	title="Delete Session"
+	message={'This will permanently delete the session from ' + formatDate(showSessionDetail?.date || '') + '. This action cannot be undone.'}
+	confirmText="Delete Session"
 	confirmVariant="danger"
 	onconfirm={confirmDelete}
 	oncancel={closeDeleteConfirm}
@@ -478,7 +484,7 @@
 <!-- Edit Modal -->
 <Modal
 	open={showEditModal}
-	title="Edit Workout"
+	title="Edit Session"
 	size="sm"
 	onclose={closeEditModal}
 >
@@ -495,16 +501,10 @@
 				/>
 			</div>
 
-			<TextInput
-				label="Workout Name"
-				bind:value={editForm.name}
-				placeholder="Workout name"
-			/>
-
 			<Textarea
 				label="Notes"
 				bind:value={editForm.notes}
-				placeholder="Add notes about your workout..."
+				placeholder="Add notes about your session..."
 				rows={3}
 			/>
 
@@ -532,9 +532,9 @@
 		transition:fly={{ x: 100, duration: 200 }}
 	>
 		<div class="flex-1">
-			<p class="font-medium text-text-primary mb-1">Workout deleted</p>
+			<p class="font-medium text-text-primary mb-1">Session deleted</p>
 			<p class="text-sm text-text-secondary mb-2">
-				"{deletedSession?.workoutName}" has been removed from your history.
+				The session has been removed from your history.
 			</p>
 			<Button variant="primary" size="sm" onclick={undoDelete}>
 				Undo

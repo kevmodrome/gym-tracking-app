@@ -10,6 +10,7 @@ export interface Exercise {
 	secondary_muscles: string[];
 	equipment: string;
 	is_custom: boolean;
+	favorited?: boolean;
 }
 
 export interface ExerciseFilters {
@@ -54,8 +55,6 @@ export interface SessionExercise {
 
 export interface Session {
 	id: string;
-	workoutId: string;
-	workoutName: string;
 	exercises: SessionExercise[];
 	date: string;
 	duration: number;

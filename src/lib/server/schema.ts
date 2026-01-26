@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS exercises (
   secondary_muscles TEXT,
   equipment TEXT,
   is_custom INTEGER DEFAULT 1,
+  favorited INTEGER DEFAULT 0,
   updated_at INTEGER NOT NULL,
   deleted_at INTEGER
 );
@@ -26,8 +27,8 @@ CREATE TABLE IF NOT EXISTS workouts (
 -- sessions table
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
-  workout_id TEXT NOT NULL,
-  workout_name TEXT NOT NULL,
+  workout_id TEXT,
+  workout_name TEXT,
   exercises TEXT NOT NULL,
   date TEXT NOT NULL,
   duration INTEGER NOT NULL,

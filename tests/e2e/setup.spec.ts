@@ -14,9 +14,9 @@ test.describe('E2E Test Setup', () => {
 		await expect(page.locator('body')).toBeVisible();
 	});
 
-	test('can navigate to workout', async ({ navigateToWorkout, page }) => {
-		await navigateToWorkout();
-		// Verify workout page loaded
+	test('can navigate to new session', async ({ navigateToNewSession, page }) => {
+		await navigateToNewSession();
+		// Verify session page loaded (should redirect to session/[id])
 		await expect(page.locator('body')).toBeVisible();
 	});
 

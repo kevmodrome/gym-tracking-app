@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import type { Session } from '../types';
 import {
 	calculateTotalVolume,
-	calculateUniqueWorkouts,
 	calculateAverageDuration,
 	calculateDashboardMetrics,
 	filterSessionsByDateRange,
@@ -19,8 +18,6 @@ describe('calculateTotalVolume', () => {
 		const sessions: Session[] = [
 			{
 				id: '1',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [
 					{
 						exerciseId: 'e1',
@@ -46,8 +43,6 @@ describe('calculateTotalVolume', () => {
 		const sessions: Session[] = [
 			{
 				id: '1',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [
 					{
 						exerciseId: 'e1',
@@ -78,8 +73,6 @@ describe('calculateTotalVolume', () => {
 		const sessions: Session[] = [
 			{
 				id: '1',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [
 					{
 						exerciseId: 'e1',
@@ -102,55 +95,11 @@ describe('calculateTotalVolume', () => {
 	});
 });
 
-describe('calculateUniqueWorkouts', () => {
-	it('should count unique workout IDs', () => {
-		const sessions: Session[] = [
-			{
-				id: '1',
-				workoutId: 'w1',
-				workoutName: 'Workout A',
-				exercises: [],
-				date: '2024-01-01',
-				duration: 60,
-				createdAt: '2024-01-01'
-			},
-			{
-				id: '2',
-				workoutId: 'w1',
-				workoutName: 'Workout A',
-				exercises: [],
-				date: '2024-01-02',
-				duration: 60,
-				createdAt: '2024-01-02'
-			},
-			{
-				id: '3',
-				workoutId: 'w2',
-				workoutName: 'Workout B',
-				exercises: [],
-				date: '2024-01-03',
-				duration: 45,
-				createdAt: '2024-01-03'
-			}
-		];
-
-		const unique = calculateUniqueWorkouts(sessions);
-		expect(unique).toBe(2);
-	});
-
-	it('should return 0 for empty sessions', () => {
-		const unique = calculateUniqueWorkouts([]);
-		expect(unique).toBe(0);
-	});
-});
-
 describe('calculateAverageDuration', () => {
 	it('should calculate average duration', () => {
 		const sessions: Session[] = [
 			{
 				id: '1',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [],
 				date: '2024-01-01',
 				duration: 60,
@@ -158,8 +107,6 @@ describe('calculateAverageDuration', () => {
 			},
 			{
 				id: '2',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [],
 				date: '2024-01-02',
 				duration: 90,
@@ -182,8 +129,6 @@ describe('calculateDashboardMetrics', () => {
 		const sessions: Session[] = [
 			{
 				id: '1',
-				workoutId: 'w1',
-				workoutName: 'Workout A',
 				exercises: [
 					{
 						exerciseId: 'e1',
@@ -201,16 +146,12 @@ describe('calculateDashboardMetrics', () => {
 			},
 			{
 				id: '2',
-				workoutId: 'w1',
-				workoutName: 'Workout A',
 				exercises: [
 					{
 						exerciseId: 'e1',
 						exerciseName: 'Bench',
 						primaryMuscle: 'chest',
-						sets: [
-							{ reps: 10, weight: 105, completed: true }
-						]
+						sets: [{ reps: 10, weight: 105, completed: true }]
 					}
 				],
 				date: '2024-01-02',
@@ -223,7 +164,6 @@ describe('calculateDashboardMetrics', () => {
 		expect(metrics.totalSessions).toBe(2);
 		expect(metrics.totalTrainingTime).toBe(105);
 		expect(metrics.totalVolume).toBe(10 * 100 + 8 * 120 + 10 * 105);
-		expect(metrics.uniqueWorkouts).toBe(1);
 		expect(metrics.averageDuration).toBe(52.5);
 	});
 });
@@ -233,8 +173,6 @@ describe('filterSessionsByDateRange', () => {
 		const sessions: Session[] = [
 			{
 				id: '1',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [],
 				date: '2024-01-05T10:00:00Z',
 				duration: 60,
@@ -242,8 +180,6 @@ describe('filterSessionsByDateRange', () => {
 			},
 			{
 				id: '2',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [],
 				date: '2024-01-10T10:00:00Z',
 				duration: 60,
@@ -251,8 +187,6 @@ describe('filterSessionsByDateRange', () => {
 			},
 			{
 				id: '3',
-				workoutId: 'w1',
-				workoutName: 'Test',
 				exercises: [],
 				date: '2024-01-15T10:00:00Z',
 				duration: 60,
@@ -273,8 +207,6 @@ describe('isSessionEmpty', () => {
 	it('should return true for session with no exercises', () => {
 		const session: Session = {
 			id: '1',
-			workoutId: 'w1',
-			workoutName: 'Test',
 			exercises: [],
 			date: '2024-01-01',
 			duration: 0,
@@ -287,8 +219,6 @@ describe('isSessionEmpty', () => {
 	it('should return true for session with no completed sets', () => {
 		const session: Session = {
 			id: '1',
-			workoutId: 'w1',
-			workoutName: 'Test',
 			exercises: [
 				{
 					exerciseId: 'e1',
@@ -311,8 +241,6 @@ describe('isSessionEmpty', () => {
 	it('should return false for session with completed sets', () => {
 		const session: Session = {
 			id: '1',
-			workoutId: 'w1',
-			workoutName: 'Test',
 			exercises: [
 				{
 					exerciseId: 'e1',
@@ -333,452 +261,342 @@ describe('isSessionEmpty', () => {
 	});
 });
 
-	describe('getCompletedSessions', () => {
-		it('should filter out empty sessions', () => {
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [],
-					date: '2024-01-01',
-					duration: 0,
-					createdAt: '2024-01-01'
-				},
-				{
-					id: '2',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-02',
-					duration: 60,
-					createdAt: '2024-01-02'
-				}
-			];
+describe('getCompletedSessions', () => {
+	it('should filter out empty sessions', () => {
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [],
+				date: '2024-01-01',
+				duration: 0,
+				createdAt: '2024-01-01'
+			},
+			{
+				id: '2',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-02',
+				duration: 60,
+				createdAt: '2024-01-02'
+			}
+		];
 
-			const completed = getCompletedSessions(sessions);
-			expect(completed).toHaveLength(1);
-			expect(completed[0].id).toBe('2');
-		});
+		const completed = getCompletedSessions(sessions);
+		expect(completed).toHaveLength(1);
+		expect(completed[0].id).toBe('2');
+	});
+});
+
+describe('calculateWeeklyAggregate', () => {
+	it('should calculate weekly volume correctly', () => {
+		const now = new Date('2024-01-15');
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			},
+			{
+				id: '2',
+				exercises: [
+					{
+						exerciseId: 'e2',
+						exerciseName: 'Squat',
+						primaryMuscle: 'legs',
+						sets: [{ reps: 5, weight: 200, completed: true }]
+					}
+				],
+				date: '2024-01-16',
+				duration: 60,
+				createdAt: '2024-01-16'
+			}
+		];
+
+		const aggregate = calculateWeeklyAggregate(sessions, now);
+		expect(aggregate.volume).toBe(1000 + 1000);
+		expect(aggregate.sessionCount).toBe(2);
 	});
 
-	describe('calculateWeeklyAggregate', () => {
-		it('should calculate weekly volume correctly', () => {
-			const now = new Date('2024-01-15');
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				},
-				{
-					id: '2',
-					workoutId: 'w2',
-					workoutName: 'Test2',
-					exercises: [
-						{
-							exerciseId: 'e2',
-							exerciseName: 'Squat',
-							primaryMuscle: 'legs',
-							sets: [
-								{ reps: 5, weight: 200, completed: true }
-							]
-						}
-					],
-					date: '2024-01-16',
-					duration: 60,
-					createdAt: '2024-01-16'
-				}
-			];
+	it('should only include sessions within the current week', () => {
+		const now = new Date('2024-01-15');
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			},
+			{
+				id: '2',
+				exercises: [
+					{
+						exerciseId: 'e2',
+						exerciseName: 'Squat',
+						primaryMuscle: 'legs',
+						sets: [{ reps: 5, weight: 200, completed: true }]
+					}
+				],
+				date: '2024-01-01',
+				duration: 60,
+				createdAt: '2024-01-01'
+			}
+		];
 
-			const aggregate = calculateWeeklyAggregate(sessions, now);
-			expect(aggregate.volume).toBe(1000 + 1000);
-			expect(aggregate.workoutCount).toBe(2);
-			expect(aggregate.sessionCount).toBe(2);
-		});
+		const aggregate = calculateWeeklyAggregate(sessions, now);
+		expect(aggregate.volume).toBe(1000);
+		expect(aggregate.sessionCount).toBe(1);
+	});
+});
 
-		it('should only include sessions within the current week', () => {
-			const now = new Date('2024-01-15');
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				},
-				{
-					id: '2',
-					workoutId: 'w2',
-					workoutName: 'Test2',
-					exercises: [
-						{
-							exerciseId: 'e2',
-							exerciseName: 'Squat',
-							primaryMuscle: 'legs',
-							sets: [
-								{ reps: 5, weight: 200, completed: true }
-							]
-						}
-					],
-					date: '2024-01-01',
-					duration: 60,
-					createdAt: '2024-01-01'
-				}
-			];
+describe('calculateMonthlyAggregate', () => {
+	it('should calculate monthly volume correctly', () => {
+		const now = new Date('2024-01-15');
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			},
+			{
+				id: '2',
+				exercises: [
+					{
+						exerciseId: 'e2',
+						exerciseName: 'Squat',
+						primaryMuscle: 'legs',
+						sets: [{ reps: 5, weight: 200, completed: true }]
+					}
+				],
+				date: '2024-01-20',
+				duration: 60,
+				createdAt: '2024-01-20'
+			}
+		];
 
-			const aggregate = calculateWeeklyAggregate(sessions, now);
-			expect(aggregate.volume).toBe(1000);
-			expect(aggregate.sessionCount).toBe(1);
-		});
-
-		it('should count unique workouts correctly', () => {
-			const now = new Date('2024-01-15');
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				},
-				{
-					id: '2',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-16',
-					duration: 60,
-					createdAt: '2024-01-16'
-				}
-			];
-
-			const aggregate = calculateWeeklyAggregate(sessions, now);
-			expect(aggregate.workoutCount).toBe(1);
-			expect(aggregate.sessionCount).toBe(2);
-		});
+		const aggregate = calculateMonthlyAggregate(sessions, now);
+		expect(aggregate.volume).toBe(2000);
+		expect(aggregate.sessionCount).toBe(2);
 	});
 
-	describe('calculateMonthlyAggregate', () => {
-		it('should calculate monthly volume correctly', () => {
-			const now = new Date('2024-01-15');
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				},
-				{
-					id: '2',
-					workoutId: 'w2',
-					workoutName: 'Test2',
-					exercises: [
-						{
-							exerciseId: 'e2',
-							exerciseName: 'Squat',
-							primaryMuscle: 'legs',
-							sets: [
-								{ reps: 5, weight: 200, completed: true }
-							]
-						}
-					],
-					date: '2024-01-20',
-					duration: 60,
-					createdAt: '2024-01-20'
-				}
-			];
+	it('should only include sessions within the current month', () => {
+		const now = new Date('2024-01-15');
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			},
+			{
+				id: '2',
+				exercises: [
+					{
+						exerciseId: 'e2',
+						exerciseName: 'Squat',
+						primaryMuscle: 'legs',
+						sets: [{ reps: 5, weight: 200, completed: true }]
+					}
+				],
+				date: '2023-12-31',
+				duration: 60,
+				createdAt: '2023-12-31'
+			}
+		];
 
-			const aggregate = calculateMonthlyAggregate(sessions, now);
-			expect(aggregate.volume).toBe(2000);
-			expect(aggregate.workoutCount).toBe(2);
-			expect(aggregate.sessionCount).toBe(2);
-		});
+		const aggregate = calculateMonthlyAggregate(sessions, now);
+		expect(aggregate.volume).toBe(1000);
+		expect(aggregate.sessionCount).toBe(1);
+	});
+});
 
-		it('should only include sessions within the current month', () => {
-			const now = new Date('2024-01-15');
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				},
-				{
-					id: '2',
-					workoutId: 'w2',
-					workoutName: 'Test2',
-					exercises: [
-						{
-							exerciseId: 'e2',
-							exerciseName: 'Squat',
-							primaryMuscle: 'legs',
-							sets: [
-								{ reps: 5, weight: 200, completed: true }
-							]
-						}
-					],
-					date: '2023-12-31',
-					duration: 60,
-					createdAt: '2023-12-31'
-				}
-			];
+describe('calculateWeeklyComparison', () => {
+	it('should compare current week with previous week', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2024-01-15'));
 
-			const aggregate = calculateMonthlyAggregate(sessions, now);
-			expect(aggregate.volume).toBe(1000);
-			expect(aggregate.sessionCount).toBe(1);
-		});
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			},
+			{
+				id: '2',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 80, completed: true }]
+					}
+				],
+				date: '2024-01-08',
+				duration: 60,
+				createdAt: '2024-01-08'
+			}
+		];
+
+		const comparison = calculateWeeklyComparison(sessions);
+		expect(comparison.current.volume).toBe(1000);
+		expect(comparison.previous.volume).toBe(800);
+		expect(comparison.volumeChange).toBe(200);
+		expect(comparison.volumeChangePercent).toBe(25);
+
+		vi.useRealTimers();
 	});
 
-	describe('calculateWeeklyComparison', () => {
-		it('should compare current week with previous week', () => {
-			vi.useFakeTimers();
-			vi.setSystemTime(new Date('2024-01-15'));
+	it('should handle empty previous week', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2024-01-15'));
 
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				},
-				{
-					id: '2',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 80, completed: true }
-							]
-						}
-					],
-					date: '2024-01-08',
-					duration: 60,
-					createdAt: '2024-01-08'
-				}
-			];
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			}
+		];
 
-			const comparison = calculateWeeklyComparison(sessions);
-			expect(comparison.current.volume).toBe(1000);
-			expect(comparison.previous.volume).toBe(800);
-			expect(comparison.volumeChange).toBe(200);
-			expect(comparison.volumeChangePercent).toBe(25);
+		const comparison = calculateWeeklyComparison(sessions);
+		expect(comparison.current.volume).toBe(1000);
+		expect(comparison.previous.volume).toBe(0);
+		expect(comparison.volumeChange).toBe(1000);
+		expect(comparison.volumeChangePercent).toBe(0);
 
-			vi.useRealTimers();
-		});
+		vi.useRealTimers();
+	});
+});
 
-		it('should handle empty previous week', () => {
-			vi.useFakeTimers();
-			vi.setSystemTime(new Date('2024-01-15'));
+describe('calculateMonthlyComparison', () => {
+	it('should compare current month with previous month', () => {
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			},
+			{
+				id: '2',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 80, completed: true }]
+					}
+				],
+				date: '2023-12-15',
+				duration: 60,
+				createdAt: '2023-12-15'
+			}
+		];
 
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				}
-			];
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2024-01-15'));
 
-			const comparison = calculateWeeklyComparison(sessions);
-			expect(comparison.current.volume).toBe(1000);
-			expect(comparison.previous.volume).toBe(0);
-			expect(comparison.volumeChange).toBe(1000);
-			expect(comparison.volumeChangePercent).toBe(0);
+		const comparison = calculateMonthlyComparison(sessions);
+		expect(comparison.current.volume).toBe(1000);
+		expect(comparison.previous.volume).toBe(800);
+		expect(comparison.volumeChange).toBe(200);
+		expect(comparison.volumeChangePercent).toBe(25);
 
-			vi.useRealTimers();
-		});
+		vi.useRealTimers();
 	});
 
-	describe('calculateMonthlyComparison', () => {
-		it('should compare current month with previous month', () => {
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				},
-				{
-					id: '2',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 80, completed: true }
-							]
-						}
-					],
-					date: '2023-12-15',
-					duration: 60,
-					createdAt: '2023-12-15'
-				}
-			];
+	it('should handle empty previous month', () => {
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: '2024-01-15',
+				duration: 60,
+				createdAt: '2024-01-15'
+			}
+		];
 
-			vi.useFakeTimers();
-			vi.setSystemTime(new Date('2024-01-15'));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2024-01-15'));
 
-			const comparison = calculateMonthlyComparison(sessions);
-			expect(comparison.current.volume).toBe(1000);
-			expect(comparison.previous.volume).toBe(800);
-			expect(comparison.volumeChange).toBe(200);
-			expect(comparison.volumeChangePercent).toBe(25);
+		const comparison = calculateMonthlyComparison(sessions);
+		expect(comparison.current.volume).toBe(1000);
+		expect(comparison.previous.volume).toBe(0);
+		expect(comparison.volumeChange).toBe(1000);
+		expect(comparison.volumeChangePercent).toBe(0);
 
-			vi.useRealTimers();
-		});
-
-		it('should handle empty previous month', () => {
-			const sessions: Session[] = [
-				{
-					id: '1',
-					workoutId: 'w1',
-					workoutName: 'Test',
-					exercises: [
-						{
-							exerciseId: 'e1',
-							exerciseName: 'Bench',
-							primaryMuscle: 'chest',
-							sets: [
-								{ reps: 10, weight: 100, completed: true }
-							]
-						}
-					],
-					date: '2024-01-15',
-					duration: 60,
-					createdAt: '2024-01-15'
-				}
-			];
-
-			vi.useFakeTimers();
-			vi.setSystemTime(new Date('2024-01-15'));
-
-			const comparison = calculateMonthlyComparison(sessions);
-			expect(comparison.current.volume).toBe(1000);
-			expect(comparison.previous.volume).toBe(0);
-			expect(comparison.volumeChange).toBe(1000);
-			expect(comparison.volumeChangePercent).toBe(0);
-
-			vi.useRealTimers();
-		});
+		vi.useRealTimers();
 	});
+});

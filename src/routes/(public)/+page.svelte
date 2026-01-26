@@ -60,7 +60,6 @@
 	const totalSessions = $derived(metrics.totalSessions);
 	const totalTrainingTime = $derived(metrics.totalTrainingTime);
 	const totalVolume = $derived(metrics.totalVolume);
-	const uniqueWorkouts = $derived(metrics.uniqueWorkouts);
 	const averageDuration = $derived(metrics.averageDuration);
 
 	const workoutCalendar = $derived.by(() => {
@@ -179,7 +178,7 @@
 		{#if sessions.length === 0}
 			<PageHeader title="Dashboard">
 				{#snippet actions()}
-					<Button variant="primary" href="/workout">
+					<Button variant="primary" href="/session/new">
 						Start
 					</Button>
 				{/snippet}
@@ -190,9 +189,9 @@
 						<span class="text-4xl sm:text-5xl">🏋️</span>
 					</div>
 					<h2 class="text-xl sm:text-2xl font-bold font-display text-text-primary mb-2">Welcome to Your Gym Dashboard!</h2>
-					<p class="text-text-secondary mb-4">Start tracking your workouts to see your daily metrics, volume trends, and progress over time.</p>
-					<Button href="/workout">
-						Start Your First Workout
+					<p class="text-text-secondary mb-4">Start tracking your sessions to see your daily metrics, volume trends, and progress over time.</p>
+					<Button href="/session/new">
+						Start Your First Session
 					</Button>
 				{/snippet}
 			</Card>
@@ -204,10 +203,10 @@
 					<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Exercises</div>
 					<div class="text-xs text-text-muted">Browse & add</div>
 				</a>
-				<a href="/workout" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
+				<a href="/session/new" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
 					<div class="text-2xl mb-2">▶️</div>
-					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Workout</div>
-					<div class="text-xs text-text-muted">Start session</div>
+					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Session</div>
+					<div class="text-xs text-text-muted">Start now</div>
 				</a>
 				<a href="/progress" class="bg-surface border border-border rounded-xl p-4 hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 group">
 					<div class="text-2xl mb-2">📈</div>
@@ -223,8 +222,8 @@
 		{:else}
 			<PageHeader title="Dashboard">
 				{#snippet actions()}
-					<Button variant="primary" href="/workout">
-						▶ Start Workout
+					<Button variant="primary" href="/session/new">
+						▶ Start Session
 					</Button>
 				{/snippet}
 			</PageHeader>
@@ -244,10 +243,10 @@
 					<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Exercises</div>
 					<div class="text-xs text-text-muted">Browse & add</div>
 				</a>
-				<a href="/workout" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
+				<a href="/session/new" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
 					<div class="text-2xl mb-2">▶️</div>
-					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Workout</div>
-					<div class="text-xs text-text-muted">Start session</div>
+					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Session</div>
+					<div class="text-xs text-text-muted">Start now</div>
 				</a>
 				<a href="/progress" class="bg-surface border border-border rounded-xl p-4 hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 group">
 					<div class="text-2xl mb-2">📈</div>
@@ -346,20 +345,20 @@
 
 								<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
 									<div class="flex items-center justify-between mb-2">
-										<span class="text-xs sm:text-sm text-text-secondary">Workouts</span>
+										<span class="text-xs sm:text-sm text-text-secondary">Sessions</span>
 										<span class="text-[10px] sm:text-xs text-text-muted">vs. previous week</span>
 									</div>
-									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{weeklyComparison.current.workoutCount}</p>
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{weeklyComparison.current.sessionCount}</p>
 									<div class="flex items-center gap-1 mt-1">
-										{#if weeklyComparison.workoutCountChange > 0}
+										{#if weeklyComparison.sessionCountChange > 0}
 											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
 											<span class="text-accent text-xs sm:text-sm font-medium">
-												+{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent > 0 ? '+' : ''}{weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+												+{weeklyComparison.sessionCountChange} ({weeklyComparison.sessionCountChangePercent > 0 ? '+' : ''}{weeklyComparison.sessionCountChangePercent.toFixed(1)}%)
 											</span>
-										{:else if weeklyComparison.workoutCountChange < 0}
+										{:else if weeklyComparison.sessionCountChange < 0}
 											<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
 											<span class="text-danger text-xs sm:text-sm font-medium">
-												{weeklyComparison.workoutCountChange} ({weeklyComparison.workoutCountChangePercent.toFixed(1)}%)
+												{weeklyComparison.sessionCountChange} ({weeklyComparison.sessionCountChangePercent.toFixed(1)}%)
 											</span>
 										{:else}
 											<span class="text-text-muted text-xs sm:text-sm">0 (0%)</span>
@@ -369,7 +368,7 @@
 							</div>
 
 							<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
-								<span class="text-xs text-text-muted">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.workoutCount} workouts</span>
+								<span class="text-xs text-text-muted">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.sessionCount} sessions</span>
 							</div>
 						</div>
 					{:else}
@@ -400,20 +399,20 @@
 
 								<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
 									<div class="flex items-center justify-between mb-2">
-										<span class="text-xs sm:text-sm text-text-secondary">Workouts</span>
+										<span class="text-xs sm:text-sm text-text-secondary">Sessions</span>
 										<span class="text-[10px] sm:text-xs text-text-muted">vs. previous month</span>
 									</div>
-									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{monthlyComparison.current.workoutCount}</p>
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{monthlyComparison.current.sessionCount}</p>
 									<div class="flex items-center gap-1 mt-1">
-										{#if monthlyComparison.workoutCountChange > 0}
+										{#if monthlyComparison.sessionCountChange > 0}
 											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
 											<span class="text-accent text-xs sm:text-sm font-medium">
-												+{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent > 0 ? '+' : ''}{monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+												+{monthlyComparison.sessionCountChange} ({monthlyComparison.sessionCountChangePercent > 0 ? '+' : ''}{monthlyComparison.sessionCountChangePercent.toFixed(1)}%)
 											</span>
-										{:else if monthlyComparison.workoutCountChange < 0}
+										{:else if monthlyComparison.sessionCountChange < 0}
 											<span class="text-danger text-xs sm:text-sm font-medium">↓</span>
 											<span class="text-danger text-xs sm:text-sm font-medium">
-												{monthlyComparison.workoutCountChange} ({monthlyComparison.workoutCountChangePercent.toFixed(1)}%)
+												{monthlyComparison.sessionCountChange} ({monthlyComparison.sessionCountChangePercent.toFixed(1)}%)
 											</span>
 										{:else}
 											<span class="text-text-muted text-xs sm:text-sm">0 (0%)</span>
@@ -423,7 +422,7 @@
 							</div>
 
 							<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
-								<span class="text-xs text-text-muted">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.workoutCount} workouts</span>
+								<span class="text-xs text-text-muted">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.sessionCount} sessions</span>
 							</div>
 						</div>
 					{/if}
@@ -438,7 +437,7 @@
 							<div class="space-y-2 max-h-64 overflow-y-auto">
 								<div class="grid grid-cols-3 gap-2 text-xs font-semibold text-text-secondary border-b border-border pb-2">
 									<span>Date</span>
-									<span class="text-center">Workouts</span>
+									<span class="text-center">Sessions</span>
 									<span class="text-right">Volume</span>
 								</div>
 								{#each [...dailyMetrics].reverse() as metric}
@@ -448,7 +447,7 @@
 											: 'bg-surface-elevated'} rounded"
 									>
 										<span class="truncate text-text-primary">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-										<span class="text-center {metric.workoutCount === 0 ? 'text-text-muted' : 'font-semibold text-text-primary'}">{metric.workoutCount}</span>
+										<span class="text-center {metric.sessionCount === 0 ? 'text-text-muted' : 'font-semibold text-text-primary'}">{metric.sessionCount}</span>
 										<span class="text-right {metric.volume === 0 ? 'text-text-muted' : 'font-semibold text-accent'}">
 											{formatVolume(metric.volume)} lbs
 										</span>
@@ -457,11 +456,11 @@
 							</div>
 							{#if lastWorkoutDate}
 								<div class="mt-3 text-xs text-text-muted">
-									Last workout: {lastWorkoutDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+									Last session: {lastWorkoutDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
 								</div>
 							{/if}
 						{:else}
-							<p class="text-text-muted text-center py-4 text-sm">No workout data available</p>
+							<p class="text-text-muted text-center py-4 text-sm">No session data available</p>
 						{/if}
 					{/snippet}
 				</Card>

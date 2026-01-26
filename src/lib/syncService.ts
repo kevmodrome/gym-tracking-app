@@ -217,8 +217,8 @@ function transformToServer(
 		sessions: [
 			...sessions.map((s) => ({
 				id: s.id,
-				workout_id: s.workoutId,
-				workout_name: s.workoutName,
+				workout_id: null,
+				workout_name: null,
 				exercises: s.exercises,
 				date: s.date,
 				duration: s.duration,

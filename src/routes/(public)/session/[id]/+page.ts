@@ -1,26 +1,24 @@
 import type { PageLoad } from './$types';
 import { db } from '$lib/db';
 import { DEPS } from '$lib/invalidation';
-import { redirect } from '@sveltejs/kit';
 
 export const prerender = false;
 
 export const load: PageLoad = async ({ params, depends }) => {
-	depends(DEPS.workouts);
 	depends(DEPS.exercises);
+	depends(DEPS.sessions);
 
-	const workoutId = params.id;
+	const sessionId = params.id;
 
-	const workout = await db.workouts.get(workoutId);
-	if (!workout) {
-		redirect(307, '/workout');
-	}
-
+	// Load all exercises for the exercise picker
 	const exercises = await db.exercises.toArray();
 
+	// Check if there's an existing completed session with this ID (for viewing)
+	const existingSession = await db.sessions.get(sessionId);
+
 	return {
-		workout,
+		sessionId,
 		exercises,
-		workoutId
+		existingSession
 	};
 }
