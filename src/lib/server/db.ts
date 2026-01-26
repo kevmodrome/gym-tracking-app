@@ -19,12 +19,16 @@ function columnExists(db: Database.Database, table: string, column: string): boo
 	return columns.some((col) => col.name === column);
 }
 
-// Migrate database schema to add deleted_at column if missing
+// Migrate database schema to add missing columns
 function migrateDatabase(db: Database.Database): void {
 	for (const table of TABLES) {
 		if (!columnExists(db, table, 'deleted_at')) {
 			db.exec(`ALTER TABLE ${table} ADD COLUMN deleted_at INTEGER`);
 		}
+	}
+	// Add favorited column to exercises if missing
+	if (!columnExists(db, 'exercises', 'favorited')) {
+		db.exec(`ALTER TABLE exercises ADD COLUMN favorited INTEGER DEFAULT 0`);
 	}
 }
 

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
-	import type { Session, SessionExercise, ExerciseSet } from '$lib/types';
+	import type { Session, SessionExercise, ExerciseSet, Exercise } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
 	import WorkoutProgressBar from '$lib/components/WorkoutProgressBar.svelte';
 	import SetPage from '$lib/components/SetPage.svelte';
@@ -11,16 +11,16 @@
 	import CompletionPage from '$lib/components/CompletionPage.svelte';
 	import SessionOverflowMenu from '$lib/components/SessionOverflowMenu.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import { ArrowLeft, Undo } from 'lucide-svelte';
+	import { ArrowLeft, Undo, Plus, Search, Star } from 'lucide-svelte';
 	import { Button, Modal, ConfirmDialog, Textarea, NumberSpinner, TextInput } from '$lib/ui';
-	import { invalidateSessions, invalidatePersonalRecords } from '$lib/invalidation';
+	import { invalidateSessions, invalidatePersonalRecords, invalidateExercises } from '$lib/invalidation';
 
 	let { data } = $props();
 
 	// Data from load function
-	const workout = $derived(data.workout);
+	const sessionId = $derived(data.sessionId);
 	const exercises = $derived(data.exercises);
-	const workoutId = $derived(data.workoutId);
+	const existingSession = $derived(data.existingSession);
 
 	// Session state
 	let sessionExercises = $state<SessionExercise[]>([]);
@@ -33,8 +33,13 @@
 	let loading = $state(true);
 	let defaultRestDuration = $state(90);
 
-	// View state: 'set' | 'timer' | 'complete'
-	let currentView = $state<'set' | 'timer' | 'complete'>('set');
+	// View state: 'set' | 'timer' | 'complete' | 'picker'
+	let currentView = $state<'set' | 'timer' | 'complete' | 'picker'>('picker');
+
+	// Exercise picker state
+	let showExercisePicker = $state(false);
+	let exerciseSearchQuery = $state('');
+	let selectedMuscleFilter = $state<string>('all');
 
 	// Last completed set info (for timer display)
 	let lastCompletedSet = $state<{ reps: number; weight: number; setNumber: number; exerciseName: string } | null>(null);
@@ -103,11 +108,6 @@
 	});
 
 	onMount(() => {
-		if (!workout) {
-			goto('/workout');
-			return;
-		}
-
 		// Load settings
 		const saved = localStorage.getItem('gym-app-settings');
 		if (saved) {
@@ -119,30 +119,14 @@
 			}
 		}
 
-		// Load or initialize session
+		// Load session progress from localStorage
 		loadSessionProgress();
 
-		if (sessionExercises.length === 0 || sessionExercises.every((ex) => ex.sets.length === 0)) {
-			sessionExercises = workout.exercises.map((routine) => {
-				const exercise = exercises.find((e) => e.id === routine.exerciseId);
-				const sets: ExerciseSet[] = [];
-				for (let i = 0; i < routine.targetSets; i++) {
-					sets.push({
-						reps: routine.targetReps,
-						weight: routine.targetWeight,
-						completed: false,
-						notes: ''
-					});
-				}
-
-				return {
-					exerciseId: routine.exerciseId,
-					exerciseName: routine.exerciseName,
-					primaryMuscle: exercise?.primary_muscle || '',
-					sets,
-					notes: routine.notes
-				};
-			});
+		// If no exercises yet, show the picker to start adding
+		if (sessionExercises.length === 0) {
+			currentView = 'picker';
+		} else {
+			currentView = 'set';
 		}
 
 		if (sessionStartTime === 0) {
@@ -169,22 +153,21 @@
 
 	// Session persistence
 	function saveSessionProgress() {
-		if (!workout) return;
 		localStorage.setItem(
-			`gym-app-session-${workout.id}`,
+			`gym-app-session-${sessionId}`,
 			JSON.stringify({
 				sessionExercises,
 				currentExerciseIndex,
 				currentSetIndex,
 				sessionStartTime,
-				sessionDuration
+				sessionDuration,
+				sessionNotes
 			})
 		);
 	}
 
 	function loadSessionProgress() {
-		if (!workout) return;
-		const saved = localStorage.getItem(`gym-app-session-${workout.id}`);
+		const saved = localStorage.getItem(`gym-app-session-${sessionId}`);
 		if (saved) {
 			try {
 				const data = JSON.parse(saved);
@@ -195,6 +178,7 @@
 				}));
 				currentExerciseIndex = data.currentExerciseIndex || 0;
 				currentSetIndex = data.currentSetIndex || 0;
+				sessionNotes = data.sessionNotes || '';
 				if (data.sessionStartTime) {
 					sessionStartTime = data.sessionStartTime;
 					startDurationTracking();
@@ -315,12 +299,8 @@
 
 	// Session completion
 	async function completeSession() {
-		if (!workout) return;
-
 		const session: Session = {
-			id: Date.now().toString(),
-			workoutId: workout.id,
-			workoutName: workout.name,
+			id: sessionId,
 			exercises: sessionExercises,
 			date: new Date().toISOString(),
 			duration: sessionDuration,
@@ -333,9 +313,94 @@
 		await invalidateSessions();
 		await invalidatePersonalRecords();
 
-		localStorage.removeItem(`gym-app-session-${workout.id}`);
+		localStorage.removeItem(`gym-app-session-${sessionId}`);
 
 		goto('/');
+	}
+
+	// Exercise picker functions
+	const filteredExercises = $derived.by(() => {
+		let filtered = exercises;
+
+		// Filter by search query
+		if (exerciseSearchQuery.trim()) {
+			const query = exerciseSearchQuery.toLowerCase().trim();
+			filtered = filtered.filter((ex) =>
+				ex.name.toLowerCase().includes(query) ||
+				ex.primary_muscle.toLowerCase().includes(query)
+			);
+		}
+
+		// Filter by muscle group
+		if (selectedMuscleFilter !== 'all') {
+			filtered = filtered.filter((ex) => ex.primary_muscle === selectedMuscleFilter);
+		}
+
+		// Sort: favorites first, then alphabetically
+		return [...filtered].sort((a, b) => {
+			if (a.favorited && !b.favorited) return -1;
+			if (!a.favorited && b.favorited) return 1;
+			return a.name.localeCompare(b.name);
+		});
+	});
+
+	const muscleGroups = $derived.by(() => {
+		const groups = new Set<string>();
+		for (const ex of exercises) {
+			groups.add(ex.primary_muscle);
+		}
+		return Array.from(groups).sort();
+	});
+
+	function addExerciseToSession(exercise: Exercise) {
+		const defaultSets = 3;
+		const defaultReps = 10;
+		const defaultWeight = 0;
+
+		const newSessionExercise: SessionExercise = {
+			exerciseId: exercise.id,
+			exerciseName: exercise.name,
+			primaryMuscle: exercise.primary_muscle,
+			sets: Array.from({ length: defaultSets }, () => ({
+				reps: defaultReps,
+				weight: defaultWeight,
+				completed: false,
+				notes: ''
+			}))
+		};
+
+		sessionExercises = [...sessionExercises, newSessionExercise];
+		saveSessionProgress();
+
+		// If this is the first exercise, switch to set view
+		if (sessionExercises.length === 1) {
+			currentExerciseIndex = 0;
+			currentSetIndex = 0;
+			currentView = 'set';
+		}
+
+		toastStore.showSuccess(`Added ${exercise.name}`);
+	}
+
+	async function toggleFavorite(exercise: Exercise) {
+		const newValue = !exercise.favorited;
+		await db.exercises.update(exercise.id, { favorited: newValue });
+		await invalidateExercises();
+		toastStore.showSuccess(newValue ? 'Added to favorites' : 'Removed from favorites');
+	}
+
+	function openExercisePicker() {
+		exerciseSearchQuery = '';
+		selectedMuscleFilter = 'all';
+		showExercisePicker = true;
+	}
+
+	function closeExercisePicker() {
+		showExercisePicker = false;
+		// If we have exercises, go back to set view
+		if (sessionExercises.length > 0) {
+			currentView = 'set';
+		}
 	}
 
 	// Overflow menu actions
@@ -476,34 +541,121 @@
 </script>
 
 <svelte:head>
-	<title>{workout?.name ?? 'Session'} - Gym Recording App</title>
+	<title>Session - Gym Recording App</title>
 </svelte:head>
 
 <div class="min-h-screen bg-bg flex flex-col">
 	{#if loading}
 		<div class="flex items-center justify-center min-h-screen">
-			<div class="text-text-muted">Loading workout...</div>
+			<div class="text-text-muted">Loading session...</div>
 		</div>
-	{:else if !workout}
-		<div class="flex items-center justify-center min-h-screen">
-			<div class="text-center p-4">
-				<p class="text-text-secondary mb-4">Workout not found</p>
-				<Button variant="primary" href="/workout">Back to Workouts</Button>
+	{:else if currentView === 'picker' || sessionExercises.length === 0}
+		<!-- Exercise Picker View (Full Screen) -->
+		<div class="flex-1 flex flex-col">
+			<!-- Picker Header -->
+			<div class="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
+				<button
+					onclick={() => {
+						if (sessionExercises.length > 0) {
+							currentView = 'set';
+						} else {
+							goto('/');
+						}
+					}}
+					class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors min-h-[44px] min-w-[44px]"
+					type="button"
+				>
+					<ArrowLeft class="w-5 h-5" />
+					<span class="hidden sm:inline">{sessionExercises.length > 0 ? 'Back' : 'Cancel'}</span>
+				</button>
+
+				<h1 class="text-lg font-semibold text-text-primary">Add Exercises</h1>
+
+				{#if sessionExercises.length > 0}
+					<button
+						onclick={() => (currentView = 'set')}
+						class="text-accent font-medium min-h-[44px] px-3"
+						type="button"
+					>
+						Done ({sessionExercises.length})
+					</button>
+				{:else}
+					<div class="w-[44px]"></div>
+				{/if}
 			</div>
-		</div>
-	{:else if sessionExercises.length === 0}
-		<div class="flex items-center justify-center min-h-screen">
-			<div class="text-center p-4">
-				<h2 class="text-xl font-bold text-text-primary mb-2">No Exercises</h2>
-				<p class="text-text-secondary mb-4">This workout doesn't have any exercises yet.</p>
-				<div class="flex flex-col sm:flex-row gap-3 justify-center">
-					<Button variant="secondary" href="/workout/{workout.id}">
-						Edit Workout
-					</Button>
-					<Button variant="ghost" href="/workout">
-						Choose Different Workout
-					</Button>
+
+			<!-- Search and Filter -->
+			<div class="px-4 py-3 bg-surface border-b border-border space-y-3">
+				<div class="relative">
+					<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+					<input
+						type="text"
+						placeholder="Search exercises..."
+						bind:value={exerciseSearchQuery}
+						class="w-full pl-10 pr-4 py-2.5 bg-bg border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
+					/>
 				</div>
+
+				<div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+					<button
+						onclick={() => (selectedMuscleFilter = 'all')}
+						class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedMuscleFilter === 'all' ? 'bg-accent text-bg' : 'bg-surface-elevated text-text-secondary hover:text-text-primary'}"
+						type="button"
+					>
+						All
+					</button>
+					{#each muscleGroups as muscle}
+						<button
+							onclick={() => (selectedMuscleFilter = muscle)}
+							class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors capitalize {selectedMuscleFilter === muscle ? 'bg-accent text-bg' : 'bg-surface-elevated text-text-secondary hover:text-text-primary'}"
+							type="button"
+						>
+							{muscle}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Exercise List -->
+			<div class="flex-1 overflow-y-auto">
+				{#if filteredExercises.length === 0}
+					<div class="flex items-center justify-center h-full p-8">
+						<p class="text-text-muted text-center">No exercises found</p>
+					</div>
+				{:else}
+					<div class="divide-y divide-border">
+						{#each filteredExercises as exercise (exercise.id)}
+							<div class="flex items-center gap-3 px-4 py-3 bg-surface hover:bg-surface-elevated transition-colors">
+								<button
+									onclick={() => toggleFavorite(exercise)}
+									class="p-2 -m-2 text-text-muted hover:text-warning transition-colors"
+									type="button"
+									aria-label={exercise.favorited ? 'Remove from favorites' : 'Add to favorites'}
+								>
+									<Star class="w-5 h-5 {exercise.favorited ? 'fill-warning text-warning' : ''}" />
+								</button>
+
+								<button
+									onclick={() => addExerciseToSession(exercise)}
+									class="flex-1 text-left"
+									type="button"
+								>
+									<p class="font-medium text-text-primary">{exercise.name}</p>
+									<p class="text-sm text-text-muted capitalize">{exercise.primary_muscle} · {exercise.category}</p>
+								</button>
+
+								<button
+									onclick={() => addExerciseToSession(exercise)}
+									class="p-2 text-accent hover:bg-accent/10 rounded-lg transition-colors"
+									type="button"
+									aria-label="Add exercise"
+								>
+									<Plus class="w-5 h-5" />
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		</div>
 	{:else if currentView === 'complete'}
@@ -528,8 +680,16 @@
 				<span class="hidden sm:inline">Back</span>
 			</button>
 
-			<div class="text-sm text-accent font-medium">
-				⏱️ {sessionDuration}m
+			<div class="flex items-center gap-3">
+				<button
+					onclick={() => (currentView = 'picker')}
+					class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent/10 rounded-lg transition-colors"
+					type="button"
+				>
+					<Plus class="w-4 h-4" />
+					<span class="hidden sm:inline">Add</span>
+				</button>
+				<span class="text-sm text-accent font-medium">⏱️ {sessionDuration}m</span>
 			</div>
 
 			<SessionOverflowMenu
@@ -587,11 +747,10 @@
 	<!-- Exit Confirm Dialog -->
 	<ConfirmDialog
 		open={showExitConfirm}
-		title="Exit Workout?"
-		message="Your progress will be saved. You can continue this workout later."
+		title="Exit Session?"
+		message="Your progress will be saved. You can continue this session later."
 		confirmText="Exit"
-		confirmVariant="secondary"
-		onconfirm={() => goto('/workout')}
+		onconfirm={() => goto('/')}
 		oncancel={() => (showExitConfirm = false)}
 	/>
 

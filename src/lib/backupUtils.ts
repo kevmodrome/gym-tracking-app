@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import type { Exercise, Workout, Session, PersonalRecord } from './types';
 import { db } from './db';
 
@@ -169,7 +170,7 @@ export async function detectDuplicates(backup: BackupData): Promise<{
 
 	for (const session of backup.sessions) {
 		if (existingSessionIds.has(session.id)) {
-			duplicates.sessions.push(`${session.workoutName} (ID: ${session.id})`);
+			duplicates.sessions.push(`Session from ${new Date(session.date).toLocaleDateString()} (ID: ${session.id})`);
 		}
 	}
 
@@ -301,11 +302,11 @@ async function importExercises(
 	}
 
 	if (toAdd.length > 0) {
-		await db.exercises.bulkAdd(toAdd);
+		await db.exercises.bulkAdd(Dexie.deepClone(toAdd));
 	}
 
 	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.exercises.bulkPut(toUpdate);
+		await db.exercises.bulkPut(Dexie.deepClone(toUpdate));
 	}
 }
 
@@ -340,16 +341,22 @@ async function importWorkouts(
 	}
 
 	if (toAdd.length > 0) {
-		await db.workouts.bulkAdd(toAdd);
+		await db.workouts.bulkAdd(Dexie.deepClone(toAdd));
 	}
 
 	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.workouts.bulkPut(toUpdate);
+		await db.workouts.bulkPut(Dexie.deepClone(toUpdate));
 	}
 }
 
+// Strip legacy workout fields from old-style backup data
+function sanitizeSession(session: Session & { workoutId?: string; workoutName?: string }): Session {
+	const { workoutId, workoutName, ...cleanSession } = session;
+	return cleanSession;
+}
+
 async function importSessions(
-	sessions: Session[],
+	sessions: (Session & { workoutId?: string; workoutName?: string })[],
 	existingIds: Set<string>,
 	resolution: 'replace' | 'skip' | 'merge',
 	result: ImportResult,
@@ -358,11 +365,14 @@ async function importSessions(
 	const toAdd: Session[] = [];
 	const toUpdate: Session[] = [];
 
-	for (const session of sessions) {
+	for (const rawSession of sessions) {
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 
+		// Strip legacy workout fields from old backups
+		const session = sanitizeSession(rawSession);
+
 		if (existingIds.has(session.id)) {
-			result.duplicates.sessions.push(session.workoutName);
+			result.duplicates.sessions.push(`Session from ${new Date(session.date).toLocaleDateString()}`);
 			if (resolution === 'skip') {
 				result.skippedItems++;
 			} else if (resolution === 'replace') {
@@ -379,11 +389,11 @@ async function importSessions(
 	}
 
 	if (toAdd.length > 0) {
-		await db.sessions.bulkAdd(toAdd);
+		await db.sessions.bulkAdd(Dexie.deepClone(toAdd));
 	}
 
 	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.sessions.bulkPut(toUpdate);
+		await db.sessions.bulkPut(Dexie.deepClone(toUpdate));
 	}
 }
 
@@ -423,10 +433,10 @@ async function importPersonalRecords(
 	}
 
 	if (toAdd.length > 0) {
-		await db.personalRecords.bulkAdd(toAdd);
+		await db.personalRecords.bulkAdd(Dexie.deepClone(toAdd));
 	}
 
 	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.personalRecords.bulkPut(toUpdate);
+		await db.personalRecords.bulkPut(Dexie.deepClone(toUpdate));
 	}
 }

@@ -2,7 +2,7 @@ import { test as base, expect } from '@playwright/test';
 
 type PageFixture = {
 	navigateToHome: () => Promise<void>;
-	navigateToWorkout: () => Promise<void>;
+	navigateToNewSession: () => Promise<void>;
 	navigateToExercises: () => Promise<void>;
 	navigateToProgress: () => Promise<void>;
 	navigateToSettings: () => Promise<void>;
@@ -19,9 +19,9 @@ export const test = base.extend<PageFixture>({
 			await expect(page).not.toHaveTitle(/404|Not Found/i);
 		});
 	},
-	navigateToWorkout: async ({ page }, use) => {
+	navigateToNewSession: async ({ page }, use) => {
 		await use(async () => {
-			await page.goto('/workout');
+			await page.goto('/session/new');
 			await page.waitForLoadState('networkidle');
 			await expect(page).not.toHaveTitle(/404|Not Found/i);
 		});

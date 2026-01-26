@@ -59,8 +59,6 @@ describe('Progress Page - E2E Verification', () => {
 		mockSessions = [
 			{
 				id: 'session-1',
-				workoutId: 'workout-1',
-				workoutName: 'Chest Day',
 				exercises: [
 					{
 						exerciseId: 'exercise-1',
@@ -91,8 +89,6 @@ describe('Progress Page - E2E Verification', () => {
 			},
 			{
 				id: 'session-4',
-				workoutId: 'workout-4',
-				workoutName: 'Leg Day',
 				exercises: [
 					{
 						exerciseId: 'exercise-2',
@@ -123,8 +119,6 @@ describe('Progress Page - E2E Verification', () => {
 			},
 			{
 				id: 'session-2',
-				workoutId: 'workout-2',
-				workoutName: 'Chest Day',
 				exercises: [
 					{
 						exerciseId: 'exercise-1',
@@ -155,8 +149,6 @@ describe('Progress Page - E2E Verification', () => {
 			},
 			{
 				id: 'session-3',
-				workoutId: 'workout-3',
-				workoutName: 'Chest Day',
 				exercises: [
 					{
 						exerciseId: 'exercise-1',
@@ -246,8 +238,6 @@ describe('Progress Page - E2E Verification', () => {
 			const sessionsWithMissingExercise: Session[] = [
 				{
 					id: 'session-1',
-					workoutId: 'workout-1',
-					workoutName: 'Test Workout',
 					exercises: [
 						{
 							exerciseId: 'exercise-1',
@@ -387,8 +377,6 @@ describe('Progress Page - E2E Verification', () => {
 		it('should calculate weight metric correctly', () => {
 		 const session: Session = {
 				id: 'session-1',
-				workoutId: 'workout-1',
-				workoutName: 'Test',
 				exercises: [
 					{
 						exerciseId: 'exercise-1',
@@ -414,8 +402,6 @@ describe('Progress Page - E2E Verification', () => {
 		it('should calculate volume metric correctly', () => {
 			const session: Session = {
 				id: 'session-1',
-				workoutId: 'workout-1',
-				workoutName: 'Test',
 				exercises: [
 					{
 						exerciseId: 'exercise-1',
@@ -444,8 +430,6 @@ describe('Progress Page - E2E Verification', () => {
 		it('should calculate reps metric correctly', () => {
 			const session: Session = {
 				id: 'session-1',
-				workoutId: 'workout-1',
-				workoutName: 'Test',
 				exercises: [
 					{
 						exerciseId: 'exercise-1',
@@ -471,8 +455,6 @@ describe('Progress Page - E2E Verification', () => {
 		it('should filter incomplete sets from volume calculation', () => {
 			const session: Session = {
 				id: 'session-1',
-				workoutId: 'workout-1',
-				workoutName: 'Test',
 				exercises: [
 					{
 						exerciseId: 'exercise-1',

@@ -4,7 +4,6 @@ export interface DashboardMetrics {
 	totalSessions: number;
 	totalTrainingTime: number;
 	totalVolume: number;
-	uniqueWorkouts: number;
 	averageDuration: number;
 }
 
@@ -28,13 +27,12 @@ export interface DailyWorkoutEntry {
 
 export interface DailyMetrics {
 	date: string;
-	workoutCount: number;
+	sessionCount: number;
 	volume: number;
 }
 
 export interface PeriodAggregate {
 	volume: number;
-	workoutCount: number;
 	sessionCount: number;
 	startDate: Date;
 	endDate: Date;
@@ -45,8 +43,8 @@ export interface AggregateComparison {
 	previous: PeriodAggregate;
 	volumeChange: number;
 	volumeChangePercent: number;
-	workoutCountChange: number;
-	workoutCountChangePercent: number;
+	sessionCountChange: number;
+	sessionCountChangePercent: number;
 }
 
 export function calculateTotalVolume(sessions: Session[]): number {
@@ -64,11 +62,6 @@ export function calculateTotalVolume(sessions: Session[]): number {
 			}, 0)
 		);
 	}, 0);
-}
-
-export function calculateUniqueWorkouts(sessions: Session[]): number {
-	const uniqueWorkoutIds = new Set(sessions.map((session) => session.workoutId));
-	return uniqueWorkoutIds.size;
 }
 
 export function calculateAverageDuration(sessions: Session[]): number {
@@ -291,19 +284,19 @@ export function calculateDailyMetrics(
 	sessions: Session[],
 	days: number = 30
 ): DailyMetrics[] {
-	const metrics: Record<string, { workoutCount: number; volume: number }> = {};
+	const metrics: Record<string, { sessionCount: number; volume: number }> = {};
 	const now = new Date();
-	
+
 	for (let i = days - 1; i >= 0; i--) {
 		const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
 		const dateStr = date.toISOString().split('T')[0];
-		metrics[dateStr] = { workoutCount: 0, volume: 0 };
+		metrics[dateStr] = { sessionCount: 0, volume: 0 };
 	}
 
 	sessions.forEach((session) => {
 		const sessionDate = new Date(session.date).toISOString().split('T')[0];
 		if (sessionDate in metrics) {
-			metrics[sessionDate].workoutCount++;
+			metrics[sessionDate].sessionCount++;
 			metrics[sessionDate].volume += session.exercises.reduce((exerciseTotal, exercise) => {
 				return (
 					exerciseTotal +
@@ -317,7 +310,7 @@ export function calculateDailyMetrics(
 	});
 
 	return Object.entries(metrics)
-		.map(([date, { workoutCount, volume }]) => ({ date, workoutCount, volume }))
+		.map(([date, { sessionCount, volume }]) => ({ date, sessionCount, volume }))
 		.sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -337,7 +330,6 @@ export function calculateDashboardMetrics(sessions: Session[]): DashboardMetrics
 		totalSessions: sessions.length,
 		totalTrainingTime: sessions.reduce((acc, session) => acc + session.duration, 0),
 		totalVolume: calculateTotalVolume(sessions),
-		uniqueWorkouts: calculateUniqueWorkouts(sessions),
 		averageDuration: calculateAverageDuration(sessions)
 	};
 }
@@ -412,11 +404,9 @@ export function calculateWeeklyAggregate(
 	});
 
 	const volume = calculateTotalVolume(weekSessions);
-	const uniqueWorkoutIds = new Set(weekSessions.map((session) => session.workoutId));
 
 	return {
 		volume,
-		workoutCount: uniqueWorkoutIds.size,
 		sessionCount: weekSessions.length,
 		startDate: weekStart,
 		endDate: weekEnd
@@ -436,11 +426,9 @@ export function calculateMonthlyAggregate(
 	});
 
 	const volume = calculateTotalVolume(monthSessions);
-	const uniqueWorkoutIds = new Set(monthSessions.map((session) => session.workoutId));
 
 	return {
 		volume,
-		workoutCount: uniqueWorkoutIds.size,
 		sessionCount: monthSessions.length,
 		startDate: monthStart,
 		endDate: monthEnd
@@ -461,17 +449,17 @@ export function calculateWeeklyComparison(
 	const volumeChange = current.volume - previous.volume;
 	const volumeChangePercent =
 		previous.volume > 0 ? (volumeChange / previous.volume) * 100 : 0;
-	const workoutCountChange = current.workoutCount - previous.workoutCount;
-	const workoutCountChangePercent =
-		previous.workoutCount > 0 ? (workoutCountChange / previous.workoutCount) * 100 : 0;
+	const sessionCountChange = current.sessionCount - previous.sessionCount;
+	const sessionCountChangePercent =
+		previous.sessionCount > 0 ? (sessionCountChange / previous.sessionCount) * 100 : 0;
 
 	return {
 		current,
 		previous,
 		volumeChange,
 		volumeChangePercent,
-		workoutCountChange,
-		workoutCountChangePercent
+		sessionCountChange,
+		sessionCountChangePercent
 	};
 }
 
@@ -489,16 +477,16 @@ export function calculateMonthlyComparison(
 	const volumeChange = current.volume - previous.volume;
 	const volumeChangePercent =
 		previous.volume > 0 ? (volumeChange / previous.volume) * 100 : 0;
-	const workoutCountChange = current.workoutCount - previous.workoutCount;
-	const workoutCountChangePercent =
-		previous.workoutCount > 0 ? (workoutCountChange / previous.workoutCount) * 100 : 0;
+	const sessionCountChange = current.sessionCount - previous.sessionCount;
+	const sessionCountChangePercent =
+		previous.sessionCount > 0 ? (sessionCountChange / previous.sessionCount) * 100 : 0;
 
 	return {
 		current,
 		previous,
 		volumeChange,
 		volumeChangePercent,
-		workoutCountChange,
-		workoutCountChangePercent
+		sessionCountChange,
+		sessionCountChangePercent
 	};
 }

@@ -302,8 +302,8 @@
 								{#if exerciseData}
 									<div class="p-3 bg-surface-elevated rounded-lg border border-border">
 										<div class="flex items-center justify-between mb-2">
-											<p class="font-medium text-text-primary">{session.workoutName}</p>
-											<p class="text-xs text-text-muted">{formatDate(session.date)}</p>
+											<p class="font-medium text-text-primary">{formatDate(session.date)}</p>
+											<p class="text-xs text-text-muted">{session.duration} min</p>
 										</div>
 										<div class="flex flex-wrap gap-2">
 											{#each exerciseData.sets as set, idx}
