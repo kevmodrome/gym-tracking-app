@@ -9,6 +9,7 @@
 		getLastWorkoutDate,
 		calculateWeeklyComparison,
 		calculateMonthlyComparison,
+		calculateLinearRegression,
 		type VolumeScale
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
@@ -86,6 +87,11 @@
 		return volumeTrends
 			.filter((t) => t.volume > 0)
 			.map((t) => ({ date: t.rawDate, value: t.volume }));
+	});
+
+	const volumeTrendLine = $derived.by(() => {
+		if (volumeChartData.length < 2) return null;
+		return calculateLinearRegression(volumeChartData);
 	});
 
 	const weeklyComparison = $derived.by(() => calculateWeeklyComparison(sessions));
@@ -549,6 +555,9 @@
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
 								<AxisX tickFormat={formatChartDate} />
+								{#if volumeTrendLine}
+									<Line data={volumeTrendLine} x="date" y="value" stroke="#7c5cff" strokeWidth={2} strokeDasharray="5,5" />
+								{/if}
 								<Line data={volumeChartData} x="date" y="value" stroke="#c5ff00" strokeWidth={2} />
 								<Dot data={volumeChartData} x="date" y="value" fill="#c5ff00" r={5} />
 							</Plot>
