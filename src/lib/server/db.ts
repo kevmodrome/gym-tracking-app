@@ -30,6 +30,42 @@ function migrateDatabase(db: Database.Database): void {
 	if (!columnExists(db, 'exercises', 'favorited')) {
 		db.exec(`ALTER TABLE exercises ADD COLUMN favorited INTEGER DEFAULT 0`);
 	}
+
+	// Migrate sessions table to make workout_id and workout_name nullable
+	// (SQLite doesn't support ALTER COLUMN, so we need to recreate the table)
+	const sessionColumns = db.prepare(`PRAGMA table_info(sessions)`).all() as Array<{
+		name: string;
+		notnull: number;
+	}>;
+	const workoutIdCol = sessionColumns.find((c) => c.name === 'workout_id');
+
+	// If workout_id exists and is NOT NULL, we need to migrate
+	if (workoutIdCol && workoutIdCol.notnull === 1) {
+		db.exec(`
+			-- Create new table with nullable columns
+			CREATE TABLE sessions_new (
+				id TEXT PRIMARY KEY,
+				workout_id TEXT,
+				workout_name TEXT,
+				exercises TEXT NOT NULL,
+				date TEXT NOT NULL,
+				duration INTEGER NOT NULL,
+				notes TEXT,
+				created_at TEXT NOT NULL,
+				updated_at INTEGER NOT NULL,
+				deleted_at INTEGER
+			);
+
+			-- Copy data from old table
+			INSERT INTO sessions_new SELECT * FROM sessions;
+
+			-- Drop old table
+			DROP TABLE sessions;
+
+			-- Rename new table
+			ALTER TABLE sessions_new RENAME TO sessions;
+		`);
+	}
 }
 
 export function getDatabase(syncKey: string): Database.Database {
