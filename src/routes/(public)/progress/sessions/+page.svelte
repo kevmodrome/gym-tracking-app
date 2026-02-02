@@ -612,11 +612,11 @@
 				Save Changes
 			</Button>
 		{:else}
-			<Button variant="primary" onclick={enterEditMode}>
-				Edit Session
-			</Button>
 			<Button variant="secondary" onclick={() => { showSessionDetail = null; }}>
 				Close
+			</Button>
+			<Button variant="primary" onclick={enterEditMode}>
+				Edit Session
 			</Button>
 		{/if}
 	{/snippet}
