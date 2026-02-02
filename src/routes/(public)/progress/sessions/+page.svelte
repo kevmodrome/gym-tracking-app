@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
+	import Dexie from 'dexie';
 	import { db } from '$lib/db';
 	import type { Session } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
@@ -249,11 +250,11 @@
 				date: new Date(editingSessionDate).toISOString()
 			};
 
-			await db.sessions.update(showSessionDetail.id, {
+			await db.sessions.update(showSessionDetail.id, Dexie.deepClone({
 				exercises: updatedSession.exercises,
 				notes: updatedSession.notes,
 				date: updatedSession.date
-			});
+			}));
 
 			await calculatePersonalRecords();
 			await invalidateSessions();
