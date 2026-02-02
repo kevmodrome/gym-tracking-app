@@ -103,7 +103,7 @@
 				{@render children()}
 			</div>
 			{#if footer}
-				<div class="border-t border-border bg-surface-elevated/50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 flex-shrink-0 {fullScreenMobile ? 'p-3 sm:p-6' : 'p-6'}">
+				<div class="border-t border-border bg-surface-elevated/50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 flex-shrink-0 {fullScreenMobile ? 'p-3 pb-20 sm:p-6 sm:pb-6' : 'p-6'}">
 					{@render footer()}
 				</div>
 			{/if}
