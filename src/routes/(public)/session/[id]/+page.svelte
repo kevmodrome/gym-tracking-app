@@ -21,6 +21,7 @@
 	const sessionId = $derived(data.sessionId);
 	const exercises = $derived(data.exercises);
 	const existingSession = $derived(data.existingSession);
+	const sourceSession = $derived(data.sourceSession);
 
 	// Session state
 	let sessionExercises = $state<SessionExercise[]>([]);
@@ -119,8 +120,22 @@
 			}
 		}
 
-		// Load session progress from localStorage
-		loadSessionProgress();
+		// Initialize from source session if copying from an old session
+		if (sourceSession && sessionExercises.length === 0) {
+			sessionExercises = sourceSession.exercises.map((exercise) => ({
+				exerciseId: exercise.exerciseId,
+				exerciseName: exercise.exerciseName,
+				primaryMuscle: exercise.primaryMuscle,
+				sets: exercise.sets.map((set) => ({
+					reps: set.reps,
+					weight: set.weight,
+					completed: false
+				}))
+			}));
+		} else {
+			// Load session progress from localStorage
+			loadSessionProgress();
+		}
 
 		// If no exercises yet, show the picker to start adding
 		if (sessionExercises.length === 0) {

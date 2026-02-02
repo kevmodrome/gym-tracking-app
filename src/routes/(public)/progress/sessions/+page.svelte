@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
+	import { goto } from '$app/navigation';
 	import { db } from '$lib/db';
 	import type { Session } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
@@ -249,6 +250,21 @@
 			saveError = error instanceof Error ? error.message : 'Failed to save changes';
 		}
 	}
+
+	function rerunSession(session: Session) {
+		const newSessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+		goto(`/session/${newSessionId}?from=${session.id}`);
+	}
+
+	function openDeleteConfirmForSession(session: Session) {
+		showSessionDetail = session;
+		showDeleteConfirm = true;
+	}
+
+	function openEditModalForSession(session: Session) {
+		showSessionDetail = session;
+		openEditModal();
+	}
 </script>
 
 <Card class="mb-6">
@@ -356,6 +372,17 @@
 							</div>
 						</div>
 					</button>
+					<div class="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+						<Button variant="success" size="sm" onclick={() => rerunSession(session)}>
+							Re-run
+						</Button>
+						<Button variant="primary" size="sm" onclick={() => openEditModalForSession(session)}>
+							Edit
+						</Button>
+						<Button variant="danger" size="sm" onclick={() => openDeleteConfirmForSession(session)}>
+							Delete
+						</Button>
+					</div>
 				{/snippet}
 			</Card>
 		{/each}
@@ -381,17 +408,9 @@
 		{#if showSessionDetail}
 			<div class="flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-4">
 				<p class="text-sm text-text-secondary">{formatDate(showSessionDetail.date)}</p>
-				<div class="flex items-center gap-2 sm:gap-4">
-					<div class="text-right">
-						<p class="text-xs sm:text-sm text-text-muted">Duration</p>
-						<p class="text-base sm:text-lg font-semibold text-text-primary">{formatDuration(showSessionDetail.duration)}</p>
-					</div>
-					<Button variant="primary" size="sm" onclick={openEditModal}>
-						Edit
-					</Button>
-					<Button variant="danger" size="sm" onclick={() => (showDeleteConfirm = true)}>
-						Delete
-					</Button>
+				<div class="text-right">
+					<p class="text-xs sm:text-sm text-text-muted">Duration</p>
+					<p class="text-base sm:text-lg font-semibold text-text-primary">{formatDuration(showSessionDetail.duration)}</p>
 				</div>
 			</div>
 
