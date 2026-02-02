@@ -457,35 +457,41 @@
 							<div class="p-3 sm:p-4 space-y-3">
 								{#each exercise.sets as set, setIndex}
 									<div class="p-3 border border-border rounded-lg {set.completed ? 'bg-success/5' : 'bg-surface-elevated'}">
-										<div class="flex items-center gap-3 mb-2">
+										<!-- Set header with completion toggle -->
+										<div class="flex items-center justify-between mb-3">
 											<button
 												type="button"
 												onclick={() => toggleSetCompleted(exerciseIndex, setIndex)}
-												class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors {set.completed ? 'bg-success text-bg' : 'bg-surface text-text-muted border border-border'}"
+												class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors {set.completed ? 'bg-success text-bg' : 'bg-surface text-text-muted border border-border'}"
 											>
-												{set.completed ? '✓' : setIndex + 1}
+												{#if set.completed}
+													<span>✓</span>
+													<span>Set {setIndex + 1}</span>
+												{:else}
+													<span class="w-5 h-5 rounded-full border border-current"></span>
+													<span>Set {setIndex + 1}</span>
+												{/if}
 											</button>
-											<div class="flex items-center gap-4 flex-1">
-												<div class="flex items-center gap-2">
-													<span class="text-xs text-text-muted">Reps</span>
-													<NumberSpinner
-														value={set.reps}
-														min={0}
-														max={999}
-														onchange={(v) => updateSetValue(exerciseIndex, setIndex, 'reps', v)}
-													/>
-												</div>
-												<div class="flex items-center gap-2">
-													<span class="text-xs text-text-muted">Weight</span>
-													<NumberSpinner
-														value={set.weight}
-														min={0}
-														max={9999}
-														step={5}
-														onchange={(v) => updateSetValue(exerciseIndex, setIndex, 'weight', v)}
-													/>
-												</div>
-											</div>
+										</div>
+										<!-- Reps and Weight in 2-column grid -->
+										<div class="grid grid-cols-2 gap-3 mb-3">
+											<NumberSpinner
+												label="Reps"
+												size="sm"
+												value={set.reps}
+												min={0}
+												max={999}
+												onchange={(v) => updateSetValue(exerciseIndex, setIndex, 'reps', v)}
+											/>
+											<NumberSpinner
+												label="Weight (lbs)"
+												size="sm"
+												value={set.weight}
+												min={0}
+												max={9999}
+												step={5}
+												onchange={(v) => updateSetValue(exerciseIndex, setIndex, 'weight', v)}
+											/>
 										</div>
 										<TextInput
 											placeholder="Add note for this set..."
