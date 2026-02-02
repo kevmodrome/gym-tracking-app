@@ -27,10 +27,16 @@
 		return Array.from(muscles);
 	}
 
-	// Helper to get a session title from muscle groups
-	function getSessionTitle(session: Session): string {
+	// Helper to get exercise names from a session
+	function getSessionExerciseNames(session: Session): string {
+		if (session.exercises.length === 0) return 'Session';
+		return session.exercises.map(e => e.exerciseName).join(', ');
+	}
+
+	// Helper to format muscle groups for display
+	function getFormattedMuscleGroups(session: Session): string {
 		const muscles = getSessionMuscleGroups(session);
-		if (muscles.length === 0) return 'Session';
+		if (muscles.length === 0) return '';
 		return muscles.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ');
 	}
 
@@ -358,7 +364,10 @@
 					>
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
-								<h3 class="text-xl font-semibold text-text-primary mb-2">{getSessionTitle(session)}</h3>
+								<h3 class="text-lg font-semibold text-text-primary mb-1">{getSessionExerciseNames(session)}</h3>
+								{#if getFormattedMuscleGroups(session)}
+									<p class="text-sm text-text-muted mb-2">({getFormattedMuscleGroups(session)})</p>
+								{/if}
 								<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
 									<div class="flex items-center gap-2">
 										<span class="text-text-muted">📅</span>
@@ -409,7 +418,7 @@
 <!-- Session Detail Modal -->
 <Modal
 	open={showSessionDetail !== null}
-	title={showSessionDetail ? getSessionTitle(showSessionDetail) : ''}
+	title={showSessionDetail ? getSessionExerciseNames(showSessionDetail) : ''}
 	size="xl"
 	fullScreenMobile
 	onclose={() => { showSessionDetail = null; cancelEditMode(); }}

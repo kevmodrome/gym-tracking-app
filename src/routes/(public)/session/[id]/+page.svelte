@@ -11,7 +11,7 @@
 	import CompletionPage from '$lib/components/CompletionPage.svelte';
 	import SessionOverflowMenu from '$lib/components/SessionOverflowMenu.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import { ArrowLeft, Undo, Plus, Search, Star } from 'lucide-svelte';
+	import { ArrowLeft, Undo, Plus, Search, Star, Check } from 'lucide-svelte';
 	import { Button, Modal, ConfirmDialog, Textarea, NumberSpinner, TextInput } from '$lib/ui';
 	import { invalidateSessions, invalidatePersonalRecords, invalidateExercises } from '$lib/invalidation';
 
@@ -41,6 +41,7 @@
 	let showExercisePicker = $state(false);
 	let exerciseSearchQuery = $state('');
 	let selectedMuscleFilter = $state<string>('all');
+	let selectedExerciseIds = $state<Set<string>>(new Set());
 
 	// Last completed set info (for timer display)
 	let lastCompletedSet = $state<{ reps: number; weight: number; setNumber: number; exerciseName: string } | null>(null);
@@ -92,6 +93,8 @@
 	const isFirstSet = $derived.by(() => {
 		return currentExerciseIndex === 0 && currentSetIndex === 0;
 	});
+
+	const selectedCount = $derived(selectedExerciseIds.size);
 
 	// Next set info for timer
 	const nextSetInfo = $derived.by(() => {
@@ -367,34 +370,70 @@
 		return Array.from(groups).sort();
 	});
 
-	function addExerciseToSession(exercise: Exercise) {
+	function toggleExerciseSelection(exercise: Exercise) {
+		const newSet = new Set(selectedExerciseIds);
+		if (newSet.has(exercise.id)) {
+			newSet.delete(exercise.id);
+		} else {
+			newSet.add(exercise.id);
+		}
+		selectedExerciseIds = newSet;
+	}
+
+	async function getLastWeightForExercise(exerciseId: string): Promise<number> {
+		// Get all sessions sorted by date descending (most recent first)
+		const sessions = await db.sessions.orderBy('date').reverse().toArray();
+
+		for (const session of sessions) {
+			const exerciseData = session.exercises.find((e) => e.exerciseId === exerciseId);
+			if (exerciseData && exerciseData.sets.length > 0) {
+				// Return the weight from the first set of the most recent session
+				return exerciseData.sets[0].weight;
+			}
+		}
+
+		return 0; // Fallback to 0 if no history found
+	}
+
+	async function addSelectedExercisesToSession() {
+		if (selectedExerciseIds.size === 0) {
+			toastStore.showWarning('Select at least one exercise');
+			return;
+		}
+
 		const defaultSets = 3;
 		const defaultReps = 10;
-		const defaultWeight = 0;
 
-		const newSessionExercise: SessionExercise = {
+		const selectedExercises = filteredExercises.filter((ex) => selectedExerciseIds.has(ex.id));
+
+		// Fetch last weights for all selected exercises in parallel
+		const lastWeights = await Promise.all(
+			selectedExercises.map((ex) => getLastWeightForExercise(ex.id))
+		);
+
+		const newSessionExercises: SessionExercise[] = selectedExercises.map((exercise, index) => ({
 			exerciseId: exercise.id,
 			exerciseName: exercise.name,
 			primaryMuscle: exercise.primary_muscle,
 			sets: Array.from({ length: defaultSets }, () => ({
 				reps: defaultReps,
-				weight: defaultWeight,
+				weight: lastWeights[index],
 				completed: false,
 				notes: ''
 			}))
-		};
+		}));
 
-		sessionExercises = [...sessionExercises, newSessionExercise];
+		sessionExercises = [...sessionExercises, ...newSessionExercises];
 		saveSessionProgress();
 
-		// If this is the first exercise, switch to set view
-		if (sessionExercises.length === 1) {
-			currentExerciseIndex = 0;
-			currentSetIndex = 0;
-			currentView = 'set';
-		}
+		selectedExerciseIds = new Set();
+		currentExerciseIndex = sessionExercises.length - newSessionExercises.length;
+		currentSetIndex = 0;
+		currentView = 'set';
 
-		toastStore.showSuccess(`Added ${exercise.name}`);
+		toastStore.showSuccess(
+			`Added ${selectedExercises.length} exercise${selectedExercises.length > 1 ? 's' : ''}`
+		);
 	}
 
 	async function toggleFavorite(exercise: Exercise) {
@@ -571,6 +610,7 @@
 			<div class="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
 				<button
 					onclick={() => {
+						selectedExerciseIds = new Set();
 						if (sessionExercises.length > 0) {
 							currentView = 'set';
 						} else {
@@ -586,13 +626,19 @@
 
 				<h1 class="text-lg font-semibold text-text-primary">Add Exercises</h1>
 
-				{#if sessionExercises.length > 0}
+				{#if selectedCount > 0 || sessionExercises.length > 0}
 					<button
-						onclick={() => (currentView = 'set')}
+						onclick={() => {
+							if (selectedCount > 0) {
+								addSelectedExercisesToSession();
+							} else {
+								currentView = 'set';
+							}
+						}}
 						class="text-accent font-medium min-h-[44px] px-3"
 						type="button"
 					>
-						Done ({sessionExercises.length})
+						Done{#if selectedCount > 0} ({selectedCount}){/if}
 					</button>
 				{:else}
 					<div class="w-[44px]"></div>
@@ -640,7 +686,13 @@
 				{:else}
 					<div class="divide-y divide-border">
 						{#each filteredExercises as exercise (exercise.id)}
-							<div class="flex items-center gap-3 px-4 py-3 bg-surface hover:bg-surface-elevated transition-colors">
+							{@const isSelected = selectedExerciseIds.has(exercise.id)}
+							{@const isAlreadyAdded = sessionExercises.some((se) => se.exerciseId === exercise.id)}
+							<div
+								class="flex items-center gap-3 px-4 py-3 transition-colors
+									{isSelected ? 'bg-accent/10' : 'bg-surface hover:bg-surface-elevated'}
+									{isAlreadyAdded ? 'opacity-50' : ''}"
+							>
 								<button
 									onclick={() => toggleFavorite(exercise)}
 									class="p-2 -m-2 text-text-muted hover:text-warning transition-colors"
@@ -651,21 +703,33 @@
 								</button>
 
 								<button
-									onclick={() => addExerciseToSession(exercise)}
+									onclick={() => !isAlreadyAdded && toggleExerciseSelection(exercise)}
 									class="flex-1 text-left"
 									type="button"
+									disabled={isAlreadyAdded}
 								>
 									<p class="font-medium text-text-primary">{exercise.name}</p>
-									<p class="text-sm text-text-muted capitalize">{exercise.primary_muscle} · {exercise.category}</p>
+									<p class="text-sm text-text-muted capitalize">
+										{exercise.primary_muscle} · {exercise.category}
+										{#if isAlreadyAdded}
+											<span class="text-success">· Added</span>
+										{/if}
+									</p>
 								</button>
 
 								<button
-									onclick={() => addExerciseToSession(exercise)}
-									class="p-2 text-accent hover:bg-accent/10 rounded-lg transition-colors"
+									onclick={() => !isAlreadyAdded && toggleExerciseSelection(exercise)}
+									class="w-7 h-7 rounded-full flex items-center justify-center transition-all
+										{isAlreadyAdded
+											? 'bg-success/20 text-success'
+											: isSelected
+												? 'bg-accent text-bg'
+												: 'border-2 border-text-muted/30 text-transparent hover:border-accent/50'}"
 									type="button"
-									aria-label="Add exercise"
+									disabled={isAlreadyAdded}
+									aria-label={isSelected ? 'Deselect' : 'Select'}
 								>
-									<Plus class="w-5 h-5" />
+									<Check class="w-4 h-4" />
 								</button>
 							</div>
 						{/each}
