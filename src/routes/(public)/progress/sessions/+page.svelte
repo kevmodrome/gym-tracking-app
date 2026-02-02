@@ -411,6 +411,7 @@
 	open={showSessionDetail !== null}
 	title={showSessionDetail ? getSessionTitle(showSessionDetail) : ''}
 	size="xl"
+	fullScreenMobile
 	onclose={() => { showSessionDetail = null; cancelEditMode(); }}
 >
 	{#snippet children()}
