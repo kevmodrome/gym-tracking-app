@@ -77,12 +77,12 @@
 			aria-modal="true"
 			aria-labelledby="modal-title"
 			tabindex="-1"
-			class="bg-surface rounded-xl border border-border shadow-2xl {sizeClasses[size]} w-full max-h-[90vh] overflow-y-auto"
+			class="bg-surface rounded-xl border border-border shadow-2xl {sizeClasses[size]} w-full max-h-[90vh] flex flex-col"
 			onclick={handleContainerClick}
 			onkeydown={handleContainerKeydown}
 			transition:scale={{ duration: 150, start: 0.95, easing: cubicOut }}
 		>
-			<div class="p-6 border-b border-border">
+			<div class="p-6 border-b border-border flex-shrink-0">
 				<div class="flex items-center justify-between">
 					<h2 id="modal-title" class="text-2xl font-bold font-display text-text-primary">{title}</h2>
 					{#if showCloseButton}
@@ -97,11 +97,11 @@
 					{/if}
 				</div>
 			</div>
-			<div class="p-6">
+			<div class="p-6 overflow-y-auto flex-1">
 				{@render children()}
 			</div>
 			{#if footer}
-				<div class="p-6 border-t border-border bg-surface-elevated/50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3">
+				<div class="p-6 border-t border-border bg-surface-elevated/50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 flex-shrink-0">
 					{@render footer()}
 				</div>
 			{/if}
