@@ -4,7 +4,7 @@ import { DEPS } from '$lib/invalidation';
 
 export const prerender = false;
 
-export const load: PageLoad = async ({ params, depends }) => {
+export const load: PageLoad = async ({ params, depends, url }) => {
 	depends(DEPS.exercises);
 	depends(DEPS.sessions);
 
@@ -16,9 +16,14 @@ export const load: PageLoad = async ({ params, depends }) => {
 	// Check if there's an existing completed session with this ID (for viewing)
 	const existingSession = await db.sessions.get(sessionId);
 
+	// Check if we're copying from another session
+	const fromSessionId = url.searchParams.get('from');
+	const sourceSession = fromSessionId ? await db.sessions.get(fromSessionId) : null;
+
 	return {
 		sessionId,
 		exercises,
-		existingSession
+		existingSession,
+		sourceSession
 	};
 }
