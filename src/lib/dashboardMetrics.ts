@@ -1,5 +1,12 @@
 import type { Session } from './types';
 
+function toLocalDateString(date: Date): string {
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, '0');
+	const d = String(date.getDate()).padStart(2, '0');
+	return `${y}-${m}-${d}`;
+}
+
 export interface DashboardMetrics {
 	totalSessions: number;
 	totalTrainingTime: number;
@@ -264,12 +271,12 @@ export function calculateDailyWorkouts(
 	
 	for (let i = days - 1; i >= 0; i--) {
 		const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-		const dateStr = date.toISOString().split('T')[0];
+		const dateStr = toLocalDateString(date);
 		calendar[dateStr] = 0;
 	}
 
 	sessions.forEach((session) => {
-		const sessionDate = new Date(session.date).toISOString().split('T')[0];
+		const sessionDate = toLocalDateString(new Date(session.date));
 		if (sessionDate in calendar) {
 			calendar[sessionDate]++;
 		}
@@ -289,12 +296,12 @@ export function calculateDailyMetrics(
 
 	for (let i = days - 1; i >= 0; i--) {
 		const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-		const dateStr = date.toISOString().split('T')[0];
+		const dateStr = toLocalDateString(date);
 		metrics[dateStr] = { sessionCount: 0, volume: 0 };
 	}
 
 	sessions.forEach((session) => {
-		const sessionDate = new Date(session.date).toISOString().split('T')[0];
+		const sessionDate = toLocalDateString(new Date(session.date));
 		if (sessionDate in metrics) {
 			metrics[sessionDate].sessionCount++;
 			metrics[sessionDate].volume += session.exercises.reduce((exerciseTotal, exercise) => {

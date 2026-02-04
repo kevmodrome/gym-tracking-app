@@ -4,6 +4,7 @@ import {
 	calculateTotalVolume,
 	calculateAverageDuration,
 	calculateDashboardMetrics,
+	calculateDailyMetrics,
 	filterSessionsByDateRange,
 	isSessionEmpty,
 	getCompletedSessions,
@@ -598,5 +599,52 @@ describe('calculateMonthlyComparison', () => {
 		expect(comparison.volumeChangePercent).toBe(0);
 
 		vi.useRealTimers();
+	});
+});
+
+describe('calculateDailyMetrics', () => {
+	it('should include today as the last entry', () => {
+		const now = new Date();
+		const y = now.getFullYear();
+		const m = String(now.getMonth() + 1).padStart(2, '0');
+		const d = String(now.getDate()).padStart(2, '0');
+		const todayStr = `${y}-${m}-${d}`;
+
+		const result = calculateDailyMetrics([], 30);
+		const lastEntry = result[result.length - 1];
+
+		expect(lastEntry.date).toBe(todayStr);
+	});
+
+	it('should match sessions to their local date', () => {
+		const now = new Date();
+		const y = now.getFullYear();
+		const m = String(now.getMonth() + 1).padStart(2, '0');
+		const d = String(now.getDate()).padStart(2, '0');
+		const todayStr = `${y}-${m}-${d}`;
+
+		const sessions: Session[] = [
+			{
+				id: '1',
+				exercises: [
+					{
+						exerciseId: 'e1',
+						exerciseName: 'Bench',
+						primaryMuscle: 'chest',
+						sets: [{ reps: 10, weight: 100, completed: true }]
+					}
+				],
+				date: now.toISOString(),
+				duration: 60,
+				createdAt: now.toISOString()
+			}
+		];
+
+		const result = calculateDailyMetrics(sessions, 30);
+		const todayEntry = result.find((entry) => entry.date === todayStr);
+
+		expect(todayEntry).toBeDefined();
+		expect(todayEntry!.sessionCount).toBe(1);
+		expect(todayEntry!.volume).toBe(1000);
 	});
 });

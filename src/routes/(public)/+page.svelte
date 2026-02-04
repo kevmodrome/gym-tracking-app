@@ -127,8 +127,10 @@
 
 	function isLastWorkoutDate(dateStr: string): boolean {
 		if (!lastWorkoutDate) return false;
-		const lastDateStr = lastWorkoutDate.toISOString().split('T')[0];
-		return dateStr === lastDateStr;
+		const y = lastWorkoutDate.getFullYear();
+		const m = String(lastWorkoutDate.getMonth() + 1).padStart(2, '0');
+		const d = String(lastWorkoutDate.getDate()).padStart(2, '0');
+		return dateStr === `${y}-${m}-${d}`;
 	}
 
 	const pieChartData = $derived.by(() => {
