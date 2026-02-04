@@ -84,9 +84,7 @@
 	});
 
 	const volumeChartData = $derived.by(() => {
-		return volumeTrends
-			.filter((t) => t.volume > 0)
-			.map((t) => ({ date: t.rawDate, value: t.volume }));
+		return volumeTrends.map((t) => ({ date: t.rawDate, value: t.volume }));
 	});
 
 	const volumeTrendLine = $derived.by(() => {
