@@ -98,6 +98,14 @@ export interface AppPreferences {
 	decimalPlaces: number;
 }
 
+export interface UserPreferences {
+	id: string;
+	weightUnit: WeightUnit;
+	distanceUnit: DistanceUnit;
+	decimalPlaces: number;
+	updatedAt: string;
+}
+
 export interface NotificationPreferences {
 	workoutReminders: boolean;
 	prAchievements: boolean;

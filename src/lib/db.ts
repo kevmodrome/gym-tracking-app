@@ -1,6 +1,6 @@
 import Dexie, { liveQuery } from 'dexie';
 import type { Table } from 'dexie';
-import type { Exercise, Workout, Session, PersonalRecord, SyncQueueItem } from './types';
+import type { Exercise, Workout, Session, PersonalRecord, SyncQueueItem, UserPreferences } from './types';
 
 export class GymDB extends Dexie {
 	exercises!: Table<Exercise>;
@@ -8,6 +8,7 @@ export class GymDB extends Dexie {
 	sessions!: Table<Session>;
 	personalRecords!: Table<PersonalRecord>;
 	syncQueue!: Table<SyncQueueItem>;
+	preferences!: Table<UserPreferences>;
 
 	constructor() {
 		super('gym-recording-app-db');
@@ -40,6 +41,10 @@ export class GymDB extends Dexie {
 						delete session.workoutName;
 					});
 			});
+		// v6: Add preferences table
+		this.version(6).stores({
+			preferences: 'id'
+		});
 	}
 }
 

@@ -2,6 +2,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import type { PersonalRecord } from '$lib/types';
 	import { getRepRangeLabel } from '$lib/prUtils';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	interface Props {
 		newPRs: PersonalRecord[];
@@ -26,7 +27,7 @@
 						<h3 class="font-display font-bold text-text-primary mb-1">New Personal Record!</h3>
 						<p class="text-sm text-text-secondary font-semibold">{pr.exerciseName}</p>
 						<p class="text-lg font-display font-bold text-warning">
-							{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+							{getRepRangeLabel(pr.reps)}: {pr.weight} {preferencesStore.weightLabel}
 						</p>
 						<p class="text-xs text-text-muted mt-1">
 							{new Date(pr.achievedDate).toLocaleDateString()}

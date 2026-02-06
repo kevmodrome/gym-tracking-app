@@ -4,6 +4,7 @@
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Button, Card, Modal, Select } from '$lib/ui';
 	import { ArrowLeft } from 'lucide-svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
 
@@ -77,9 +78,9 @@
 	function getMetricLabel(): string {
 		switch (selectedMetric) {
 			case 'weight':
-				return 'Weight (lbs)';
+				return 'Weight (' + preferencesStore.weightLabel + ')';
 			case 'volume':
-				return 'Volume (lbs)';
+				return 'Volume (' + preferencesStore.weightLabel + ')';
 			case 'reps':
 				return 'Max Reps';
 		}
@@ -88,9 +89,9 @@
 	function getMetricUnit(): string {
 		switch (selectedMetric) {
 			case 'weight':
-				return ' lbs';
+				return ' ' + preferencesStore.weightLabel;
 			case 'volume':
-				return ' lbs';
+				return ' ' + preferencesStore.weightLabel;
 			case 'reps':
 				return ' reps';
 		}
@@ -117,6 +118,12 @@
 	function formatMuscle(muscle: string): string {
 		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
 	}
+
+	const metricOptions = $derived([
+		{ value: 'weight', label: `Weight (${preferencesStore.weightLabel})` },
+		{ value: 'volume', label: `Volume (${preferencesStore.weightLabel} × reps)` },
+		{ value: 'reps', label: 'Max Reps' }
+	]);
 </script>
 
 <svelte:head>
@@ -207,7 +214,7 @@
 									</div>
 									<div class="flex-1 min-w-0">
 										<p class="font-semibold text-text-primary text-sm">
-											{getRepRangeLabel(pr.reps)}: {pr.weight} lbs
+											{getRepRangeLabel(pr.reps)}: {pr.weight} {preferencesStore.weightLabel}
 										</p>
 										<p class="text-xs text-text-muted">
 											{formatDate(pr.achievedDate)}
@@ -229,11 +236,7 @@
 							<Select
 								bind:value={selectedMetric}
 								size="sm"
-								options={[
-									{ value: 'weight', label: 'Weight (lbs)' },
-									{ value: 'volume', label: 'Volume (lbs × reps)' },
-									{ value: 'reps', label: 'Max Reps' }
-								]}
+								options={metricOptions}
 							/>
 						</div>
 					</div>
@@ -312,7 +315,7 @@
 														? 'bg-success/20 text-success'
 														: 'bg-surface text-text-muted'}"
 												>
-													{set.reps} × {set.weight}lbs
+													{set.reps} × {set.weight}{preferencesStore.weightLabel}
 												</span>
 											{/each}
 										</div>
@@ -352,7 +355,7 @@
 					>
 						<div>
 							<p class="font-semibold text-text-primary">
-								{entry.weight} lbs @ {entry.reps} reps
+								{entry.weight} {preferencesStore.weightLabel} @ {entry.reps} reps
 							</p>
 							<p class="text-xs text-text-muted">
 								{formatDate(entry.achievedDate)}

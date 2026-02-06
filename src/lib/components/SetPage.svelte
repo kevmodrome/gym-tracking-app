@@ -2,6 +2,7 @@
 	import type { SessionExercise, ExerciseSet } from '$lib/types';
 	import { NumberSpinner, Button } from '$lib/ui';
 	import { Timer } from 'lucide-svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	interface SetPageProps {
 		exercise: SessionExercise;
@@ -53,7 +54,7 @@
 						onchange={onSetChange}
 					/>
 					<NumberSpinner
-						label="Weight (lbs)"
+						label="Weight ({preferencesStore.weightLabel})"
 						bind:value={currentSet.weight}
 						min={0}
 						step={5}

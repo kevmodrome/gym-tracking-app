@@ -14,6 +14,7 @@
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
 	import { Plot, Line, Dot, AxisX } from 'svelteplot';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
 
@@ -104,11 +105,11 @@
 		return `${mins}m`;
 	}
 
-	function formatVolume(lbs: number): string {
-		if (lbs >= 1000) {
-			return (lbs / 1000).toFixed(1) + 'k';
+	function formatVolume(value: number): string {
+		if (value >= 1000) {
+			return (value / 1000).toFixed(1) + 'k';
 		}
-		return lbs.toString();
+		return value.toString();
 	}
 
 	function formatDateRange(start: Date, end: Date): string {
@@ -302,7 +303,7 @@
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
 				<MetricCard label="Sessions" value={totalSessions} icon="📊" iconBgColor="bg-secondary/20" />
 				<MetricCard label="Time" value={formatTime(totalTrainingTime)} icon="⏱️" iconBgColor="bg-success/20" />
-				<MetricCard label="Volume" value="{formatVolume(totalVolume)} lbs" icon="🏋️" iconBgColor="bg-accent/20" />
+				<MetricCard label="Volume" value="{formatVolume(totalVolume)} {preferencesStore.weightLabel}" icon="🏋️" iconBgColor="bg-accent/20" />
 				<MetricCard
 					label="Avg Duration"
 					value={totalSessions > 0 ? formatTime(totalTrainingTime / totalSessions) : '0m'}
@@ -331,7 +332,7 @@
 										<span class="text-xs sm:text-sm text-text-secondary">Volume</span>
 										<span class="text-[10px] sm:text-xs text-text-muted">{formatDateRange(weeklyComparison.current.startDate, weeklyComparison.current.endDate)}</span>
 									</div>
-									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(weeklyComparison.current.volume)} lbs</p>
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(weeklyComparison.current.volume)} {preferencesStore.weightLabel}</p>
 									<div class="flex items-center gap-1 mt-1">
 										{#if weeklyComparison.volumeChange > 0}
 											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
@@ -374,7 +375,7 @@
 							</div>
 
 							<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
-								<span class="text-xs text-text-muted">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} lbs, {weeklyComparison.previous.sessionCount} sessions</span>
+								<span class="text-xs text-text-muted">Previous week: {formatDateRange(weeklyComparison.previous.startDate, weeklyComparison.previous.endDate)} - {formatVolume(weeklyComparison.previous.volume)} {preferencesStore.weightLabel}, {weeklyComparison.previous.sessionCount} sessions</span>
 							</div>
 						</div>
 					{:else}
@@ -385,7 +386,7 @@
 										<span class="text-xs sm:text-sm text-text-secondary">Volume</span>
 										<span class="text-[10px] sm:text-xs text-text-muted">{formatDateRange(monthlyComparison.current.startDate, monthlyComparison.current.endDate)}</span>
 									</div>
-									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(monthlyComparison.current.volume)} lbs</p>
+									<p class="text-lg sm:text-2xl font-bold font-display text-text-primary">{formatVolume(monthlyComparison.current.volume)} {preferencesStore.weightLabel}</p>
 									<div class="flex items-center gap-1 mt-1">
 										{#if monthlyComparison.volumeChange > 0}
 											<span class="text-accent text-xs sm:text-sm font-medium">↑</span>
@@ -428,7 +429,7 @@
 							</div>
 
 							<div class="bg-surface-elevated rounded-lg p-2 sm:p-3">
-								<span class="text-xs text-text-muted">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} lbs, {monthlyComparison.previous.sessionCount} sessions</span>
+								<span class="text-xs text-text-muted">Previous month: {formatDateRange(monthlyComparison.previous.startDate, monthlyComparison.previous.endDate)} - {formatVolume(monthlyComparison.previous.volume)} {preferencesStore.weightLabel}, {monthlyComparison.previous.sessionCount} sessions</span>
 							</div>
 						</div>
 					{/if}
@@ -455,7 +456,7 @@
 										<span class="truncate text-text-primary">{new Date(metric.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
 										<span class="text-center {metric.sessionCount === 0 ? 'text-text-muted' : 'font-semibold text-text-primary'}">{metric.sessionCount}</span>
 										<span class="text-right {metric.volume === 0 ? 'text-text-muted' : 'font-semibold text-accent'}">
-											{formatVolume(metric.volume)} lbs
+											{formatVolume(metric.volume)} {preferencesStore.weightLabel}
 										</span>
 									</div>
 								{/each}
@@ -566,7 +567,7 @@
 							{#each volumeTrends.slice(-4) as trend}
 								<div class="text-xs sm:text-sm">
 									<p class="text-text-muted">{trend.date}</p>
-									<p class="font-semibold text-text-primary">{formatVolume(trend.volume)} lbs</p>
+									<p class="font-semibold text-text-primary">{formatVolume(trend.volume)} {preferencesStore.weightLabel}</p>
 									<p class="text-[10px] sm:text-xs text-text-muted">{trend.sessions} session{trend.sessions !== 1 ? 's' : ''}</p>
 								</div>
 							{/each}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { SessionExercise } from '$lib/types';
 	import { Button, Textarea, InfoBox } from '$lib/ui';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	interface CompletionPageProps {
 		sessionDuration: number;
@@ -62,7 +63,7 @@
 					</div>
 					<div>
 						<p class="text-text-muted text-xs uppercase tracking-wide">Volume</p>
-						<p class="text-text-primary font-semibold text-lg">{calculateSessionVolume().toLocaleString()} lbs</p>
+						<p class="text-text-primary font-semibold text-lg">{calculateSessionVolume().toLocaleString()} {preferencesStore.weightLabel}</p>
 					</div>
 				</div>
 			</InfoBox>
