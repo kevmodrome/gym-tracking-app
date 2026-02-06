@@ -26,6 +26,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		const workouts = db.prepare('SELECT * FROM workouts').all();
 		const sessions = db.prepare('SELECT * FROM sessions').all();
 		const personal_records = db.prepare('SELECT * FROM personal_records').all();
+		const preferences = db.prepare('SELECT * FROM preferences').all();
 
 		return json({
 			success: true,
@@ -34,6 +35,7 @@ export const GET: RequestHandler = async ({ params }) => {
 				workouts,
 				sessions,
 				personal_records,
+				preferences,
 				syncTimestamp: lastSync
 			}
 		});

@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
-	import type { AppSettings, NotificationPreferences, AppPreferences } from '$lib/types';
+	import type { AppSettings, NotificationPreferences } from '$lib/types';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
 	import { syncManager, formatLastSyncTime } from '$lib/syncUtils';
 	import { formatSyncMessage } from '$lib/syncUtils';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import {
 		syncKey,
 		isSyncing as isSyncingStore,
@@ -23,13 +24,6 @@
 		defaultRestDuration: 90,
 		soundEnabled: true,
 		vibrationEnabled: true
-	});
-
-	let appPreferences = $state<AppPreferences>({
-		theme: 'system',
-		weightUnit: 'kg',
-		distanceUnit: 'km',
-		decimalPlaces: 1
 	});
 
 	let notificationPreferences = $state<NotificationPreferences>({
@@ -61,7 +55,7 @@
 	// Auto-save settings when they change (with debounce)
 	$effect(() => {
 		// Read all settings to create dependencies
-		const _ = JSON.stringify(settings) + JSON.stringify(appPreferences) + JSON.stringify(notificationPreferences);
+		const _ = JSON.stringify(settings) + JSON.stringify(notificationPreferences);
 
 		// Don't save on initial load
 		if (!hasLoaded) return;
@@ -71,7 +65,6 @@
 		saveTimeout = setTimeout(() => {
 			localStorage.setItem('gym-app-settings', JSON.stringify(settings));
 			localStorage.setItem('gym-app-notification-prefs', JSON.stringify(notificationPreferences));
-			localStorage.setItem('gym-app-preferences', JSON.stringify(appPreferences));
 		}, 300);
 	});
 
@@ -97,7 +90,6 @@
 	onMount(() => {
 		loadSettings();
 		loadNotificationPreferences();
-		loadAppPreferences();
 		// Mark as loaded after initial load to enable auto-save
 		hasLoaded = true;
 	});
@@ -125,19 +117,6 @@
 			}
 		}
 	}
-
-	function loadAppPreferences() {
-		const saved = localStorage.getItem('gym-app-preferences');
-		if (saved) {
-			try {
-				const parsed = JSON.parse(saved);
-				appPreferences = { ...appPreferences, ...parsed };
-			} catch (e) {
-				console.error('Failed to parse app preferences:', e);
-			}
-		}
-	}
-
 
 	async function handleSync() {
 		isSyncing = true;
@@ -266,12 +245,6 @@
 			}
 		}
 	}
-
-	const themeOptions = [
-		{ value: 'light', label: 'Light' },
-		{ value: 'dark', label: 'Dark' },
-		{ value: 'system', label: 'System Default' }
-	];
 
 	const weightUnitOptions = [
 		{ value: 'kg', label: 'Kilograms (kg)' },
@@ -426,40 +399,33 @@
 
 				<div class="space-y-4">
 					<Select
-						bind:value={appPreferences.theme}
-						options={themeOptions}
-						label="App Theme"
-						id="theme"
-						hint="Choose your preferred color scheme"
+						bind:value={preferencesStore.weightUnit}
+						options={weightUnitOptions}
+						label="Weight Unit"
+						id="weight-unit"
+						hint="Unit for displaying weight values"
+						onchange={() => preferencesStore.update({ weightUnit: preferencesStore.weightUnit })}
 					/>
 
 					<div class="border-t border-border pt-4">
 						<Select
-							bind:value={appPreferences.weightUnit}
-							options={weightUnitOptions}
-							label="Weight Unit"
-							id="weight-unit"
-								hint="Unit for displaying weight values"
-						/>
-					</div>
-
-					<div class="border-t border-border pt-4">
-						<Select
-							bind:value={appPreferences.distanceUnit}
+							bind:value={preferencesStore.distanceUnit}
 							options={distanceUnitOptions}
 							label="Distance Unit"
 							id="distance-unit"
-								hint="Unit for displaying distance values"
+							hint="Unit for displaying distance values"
+							onchange={() => preferencesStore.update({ distanceUnit: preferencesStore.distanceUnit })}
 						/>
 					</div>
 
 					<div class="border-t border-border pt-4">
 						<Select
-							bind:value={appPreferences.decimalPlaces}
+							bind:value={preferencesStore.decimalPlaces}
 							options={decimalPlacesOptions}
 							label="Decimal Places"
 							id="decimal-places"
-								hint="Precision for displaying numeric values"
+							hint="Precision for displaying numeric values"
+							onchange={() => preferencesStore.update({ decimalPlaces: preferencesStore.decimalPlaces })}
 						/>
 					</div>
 				</div>

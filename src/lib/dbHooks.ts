@@ -12,7 +12,8 @@ const tableNameMap: Record<string, TableName> = {
 	exercises: 'exercises',
 	workouts: 'workouts',
 	sessions: 'sessions',
-	personalRecords: 'personalRecords'
+	personalRecords: 'personalRecords',
+	preferences: 'preferences'
 };
 
 export function setSuppressHooks(value: boolean): void {
@@ -33,7 +34,7 @@ async function triggerSync(): Promise<void> {
 export function initializeDbHooks(): void {
 	if (hooksInitialized) return;
 
-	const tables = [db.exercises, db.workouts, db.sessions, db.personalRecords] as const;
+	const tables = [db.exercises, db.workouts, db.sessions, db.personalRecords, db.preferences] as const;
 
 	for (const table of tables) {
 		table.hook('creating', function (primKey, obj, trans) {

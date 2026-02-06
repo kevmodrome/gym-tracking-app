@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
 
-export type TableName = 'exercises' | 'workouts' | 'sessions' | 'personalRecords';
+export type TableName = 'exercises' | 'workouts' | 'sessions' | 'personalRecords' | 'preferences';
 
 export interface PendingDeletion {
 	table: TableName;

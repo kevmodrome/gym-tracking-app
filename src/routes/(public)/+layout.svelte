@@ -6,6 +6,7 @@
 	import { initializeDbHooks } from '$lib/dbHooks';
 	import { syncManager } from '$lib/syncUtils';
 	import { isSyncEnabled } from '$lib/syncService';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import SwipeHandler from '$lib/components/SwipeHandler.svelte';
@@ -16,6 +17,9 @@
 	let { children } = $props();
 
 	onMount(() => {
+		// Load user preferences from IDB
+		preferencesStore.load();
+
 		// Initialize Dexie hooks for auto-sync on data changes
 		initializeDbHooks();
 

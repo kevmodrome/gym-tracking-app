@@ -26,6 +26,21 @@ function migrateDatabase(db: Database.Database): void {
 			db.exec(`ALTER TABLE ${table} ADD COLUMN deleted_at INTEGER`);
 		}
 	}
+	// Add preferences table if missing
+	const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='preferences'").all();
+	if (tables.length === 0) {
+		db.exec(`
+			CREATE TABLE IF NOT EXISTS preferences (
+				id TEXT PRIMARY KEY,
+				weight_unit TEXT NOT NULL DEFAULT 'kg',
+				distance_unit TEXT NOT NULL DEFAULT 'km',
+				decimal_places INTEGER NOT NULL DEFAULT 1,
+				updated_at INTEGER NOT NULL,
+				deleted_at INTEGER
+			)
+		`);
+	}
+
 	// Add favorited column to exercises if missing
 	if (!columnExists(db, 'exercises', 'favorited')) {
 		db.exec(`ALTER TABLE exercises ADD COLUMN favorited INTEGER DEFAULT 0`);

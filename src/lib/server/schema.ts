@@ -51,6 +51,16 @@ CREATE TABLE IF NOT EXISTS personal_records (
   deleted_at INTEGER
 );
 
+-- preferences table
+CREATE TABLE IF NOT EXISTS preferences (
+  id TEXT PRIMARY KEY,
+  weight_unit TEXT NOT NULL DEFAULT 'kg',
+  distance_unit TEXT NOT NULL DEFAULT 'km',
+  decimal_places INTEGER NOT NULL DEFAULT 1,
+  updated_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+
 -- sync metadata
 CREATE TABLE IF NOT EXISTS sync_meta (
   key TEXT PRIMARY KEY,
@@ -58,5 +68,5 @@ CREATE TABLE IF NOT EXISTS sync_meta (
 );
 `;
 
-export const TABLES = ['exercises', 'workouts', 'sessions', 'personal_records'] as const;
+export const TABLES = ['exercises', 'workouts', 'sessions', 'personal_records', 'preferences'] as const;
 export type TableName = (typeof TABLES)[number];

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/ui';
 	import { ArrowLeft } from 'lucide-svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	interface TimerPageProps {
 		duration: number;
@@ -168,7 +169,7 @@
 					</div>
 					{#if lastCompletedReps !== undefined && lastCompletedWeight !== undefined}
 						<p class="text-sm text-text-secondary">
-							{lastCompletedReps} reps @ {lastCompletedWeight} lbs
+							{lastCompletedReps} reps @ {lastCompletedWeight} {preferencesStore.weightLabel}
 						</p>
 					{/if}
 				</div>

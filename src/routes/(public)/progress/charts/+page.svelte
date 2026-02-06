@@ -4,6 +4,7 @@
 	import type { Exercise, Session } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Select } from '$lib/ui';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let exercises = $state<Exercise[]>([]);
 	let sessions = $state<Session[]>([]);
@@ -94,9 +95,9 @@
 	function getMetricLabel(): string {
 		switch (selectedMetric) {
 			case 'weight':
-				return 'Weight (lbs)';
+				return 'Weight (' + preferencesStore.weightLabel + ')';
 			case 'volume':
-				return 'Volume (lbs)';
+				return 'Volume (' + preferencesStore.weightLabel + ')';
 			case 'reps':
 				return 'Max Reps';
 		}
@@ -105,9 +106,9 @@
 	function getMetricUnit(): string {
 		switch (selectedMetric) {
 			case 'weight':
-				return ' lbs';
+				return ' ' + preferencesStore.weightLabel;
 			case 'volume':
-				return ' lbs';
+				return ' ' + preferencesStore.weightLabel;
 			case 'reps':
 				return ' reps';
 		}
@@ -124,11 +125,11 @@
 		}))
 	);
 
-	const metricOptions = [
-		{ value: 'weight', label: 'Weight (lbs)' },
-		{ value: 'volume', label: 'Volume (lbs × reps)' },
+	const metricOptions = $derived([
+		{ value: 'weight', label: `Weight (${preferencesStore.weightLabel})` },
+		{ value: 'volume', label: `Volume (${preferencesStore.weightLabel} × reps)` },
 		{ value: 'reps', label: 'Max Reps' }
-	];
+	]);
 
 	function formatMuscle(muscle: string): string {
 		return muscle.charAt(0).toUpperCase() + muscle.slice(1);

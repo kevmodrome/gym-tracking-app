@@ -1,6 +1,6 @@
 import { db } from './db';
 import { setSuppressHooks } from './dbHooks';
-import type { Exercise, Workout, Session, PersonalRecord } from './types';
+import type { Exercise, Workout, Session, PersonalRecord, UserPreferences } from './types';
 import { writable, get } from 'svelte/store';
 import {
 	getAllPendingDeletions,
@@ -158,6 +158,15 @@ function transformDeletedRecord(
 				updated_at: deletedAt,
 				deleted_at: deletedAt
 			};
+		case 'preferences':
+			return {
+				id: record.id,
+				weight_unit: record.weightUnit,
+				distance_unit: record.distanceUnit,
+				decimal_places: record.decimalPlaces,
+				updated_at: deletedAt,
+				deleted_at: deletedAt
+			};
 		default:
 			return record;
 	}
@@ -169,6 +178,7 @@ function transformToServer(
 	workouts: Workout[],
 	sessions: Session[],
 	personalRecords: PersonalRecord[],
+	preferences: UserPreferences[],
 	pendingDeletions: PendingDeletion[]
 ) {
 	const now = Date.now();
@@ -185,6 +195,9 @@ function transformToServer(
 		.map(transformDeletedRecord);
 	const deletedPersonalRecords = pendingDeletions
 		.filter((d) => d.table === 'personalRecords')
+		.map(transformDeletedRecord);
+	const deletedPreferences = pendingDeletions
+		.filter((d) => d.table === 'preferences')
 		.map(transformDeletedRecord);
 
 	return {
@@ -243,6 +256,17 @@ function transformToServer(
 			})),
 			...deletedPersonalRecords
 		],
+		preferences: [
+			...preferences.map((p) => ({
+				id: p.id,
+				weight_unit: p.weightUnit,
+				distance_unit: p.distanceUnit,
+				decimal_places: p.decimalPlaces,
+				updated_at: new Date(p.updatedAt).getTime(),
+				deleted_at: null
+			})),
+			...deletedPreferences
+		],
 		lastSync: get(lastSyncTime) || 0
 	};
 }
@@ -253,11 +277,13 @@ function transformFromServer(data: {
 	workouts: Array<Record<string, unknown>>;
 	sessions: Array<Record<string, unknown>>;
 	personal_records: Array<Record<string, unknown>>;
+	preferences: Array<Record<string, unknown>>;
 }): {
 	exercises: Exercise[];
 	workouts: Workout[];
 	sessions: Session[];
 	personalRecords: PersonalRecord[];
+	preferences: UserPreferences[];
 } {
 	return {
 		exercises: data.exercises.map((e) => ({
@@ -295,6 +321,13 @@ function transformFromServer(data: {
 			weight: pr.weight as number,
 			achievedDate: pr.achieved_date as string,
 			sessionId: pr.session_id as string
+		})),
+		preferences: (data.preferences || []).map((p) => ({
+			id: p.id as string,
+			weightUnit: (p.weight_unit as string) === 'lb' ? 'lb' : 'kg',
+			distanceUnit: (p.distance_unit as string) === 'miles' ? 'miles' : 'km',
+			decimalPlaces: (p.decimal_places as number) ?? 1,
+			updatedAt: new Date(p.updated_at as number).toISOString()
 		}))
 	};
 }
@@ -315,16 +348,17 @@ export async function syncData(): Promise<SyncServiceResult> {
 
 	try {
 		// Get all local data and pending deletions
-		const [exercises, workouts, sessions, personalRecords] = await Promise.all([
+		const [exercises, workouts, sessions, personalRecords, preferences] = await Promise.all([
 			db.exercises.toArray(),
 			db.workouts.toArray(),
 			db.sessions.toArray(),
-			db.personalRecords.toArray()
+			db.personalRecords.toArray(),
+			db.preferences.toArray()
 		]);
 		const pendingDeletions = getAllPendingDeletions();
 
 		// Transform and send to server (including deleted records)
-		const payload = transformToServer(exercises, workouts, sessions, personalRecords, pendingDeletions);
+		const payload = transformToServer(exercises, workouts, sessions, personalRecords, preferences, pendingDeletions);
 
 		const response = await fetch(`/api/sync/${key}`, {
 			method: 'POST',
@@ -347,7 +381,7 @@ export async function syncData(): Promise<SyncServiceResult> {
 		try {
 			await db.transaction(
 				'rw',
-				[db.exercises, db.workouts, db.sessions, db.personalRecords],
+				[db.exercises, db.workouts, db.sessions, db.personalRecords, db.preferences],
 				async () => {
 					// Clear and replace each table
 					await db.exercises.clear();
@@ -361,6 +395,11 @@ export async function syncData(): Promise<SyncServiceResult> {
 
 					await db.personalRecords.clear();
 					await db.personalRecords.bulkAdd(serverData.personalRecords);
+
+					await db.preferences.clear();
+					if (serverData.preferences.length > 0) {
+						await db.preferences.bulkAdd(serverData.preferences);
+					}
 				}
 			);
 		} finally {
@@ -376,6 +415,10 @@ export async function syncData(): Promise<SyncServiceResult> {
 
 		// Clear pending deletions after successful sync
 		clearPendingDeletions();
+
+		// Refresh preferences store with synced data
+		const { preferencesStore } = await import('./stores/preferences.svelte');
+		await preferencesStore.refresh();
 
 		// Invalidate all data so load functions re-run with fresh data
 		// Use dynamic import to avoid test environment issues with $app/navigation
