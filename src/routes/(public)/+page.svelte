@@ -13,8 +13,7 @@
 		type VolumeScale
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
-	import { Plot, Line, Dot, AxisX, AxisY } from 'svelteplot';
-	import HTMLTooltip from 'svelteplot/marks/HTMLTooltip.svelte';
+	import { Plot, Line, Dot, AxisX, AxisY, Pointer, Text } from 'svelteplot';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
@@ -573,16 +572,12 @@
 								{/if}
 								<Line data={volumeChartData} x="date" y="value" stroke="#c5ff00" strokeWidth={2} />
 								<Dot data={volumeChartData} x="date" y="value" fill="#c5ff00" r={5} />
-								<HTMLTooltip data={volumeChartData} x="date" y="value">
-									{#snippet children({ datum })}
-										{#if datum}
-											<div class="bg-surface border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
-												<p class="text-text-secondary">{formatChartDate(datum.date)}</p>
-												<p class="font-bold text-accent">{formatVolume(datum.value)} {preferencesStore.weightLabel}</p>
-											</div>
-										{/if}
+								<Pointer data={volumeChartData} x="date" y="value">
+									{#snippet children({ data: selected })}
+										<Dot data={selected} x="date" y="value" fill="#c5ff00" r={8} fillOpacity={0.4} />
+										<Text data={selected} x="date" y="value" dy={-15} text={(d) => `${formatVolume(d.value)} ${preferencesStore.weightLabel}`} fill="white" fontSize={12} textAnchor="middle" />
 									{/snippet}
-								</HTMLTooltip>
+								</Pointer>
 							</Plot>
 						</div>
 						<div class="mt-16 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
