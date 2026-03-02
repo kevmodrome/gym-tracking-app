@@ -13,7 +13,7 @@
 		type VolumeScale
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
-	import { Plot, Line, Dot, AxisX } from 'svelteplot';
+	import { Plot, Line, Dot, AxisX, AxisY } from 'svelteplot';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
@@ -565,6 +565,7 @@
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
 								<AxisX tickFormat={formatChartDate} />
+								<AxisY tickFormat={(v) => formatVolume(v)} />
 								{#if volumeTrendLine}
 									<Line data={volumeTrendLine} x="date" y="value" stroke="#7c5cff" strokeWidth={2} strokeDasharray="5,5" />
 								{/if}
