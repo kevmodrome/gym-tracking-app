@@ -2,7 +2,7 @@
 	import {
 		filterSessionsByDateRange,
 		calculateDashboardMetrics,
-		calculateVolumeTrendsByScale,
+		calculateVolumeTrendsForChart,
 		calculateMuscleBreakdown,
 		calculateDailyWorkouts,
 		calculateDailyMetrics,
@@ -13,7 +13,7 @@
 		type VolumeScale
 	} from '$lib/dashboardMetrics';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
-	import { Plot, Line, Dot, AxisX } from 'svelteplot';
+	import { Plot, Line, Dot, AxisX, AxisY, Pointer, Text } from 'svelteplot';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
 	let { data } = $props();
@@ -28,6 +28,17 @@
 	let customEndDate = $state('');
 	let selectedPeriod = $state<'week' | 'month'>('week');
 	let volumeScale = $state<VolumeScale>('week');
+	let isMobile = $state(false);
+
+	$effect(() => {
+		const mql = window.matchMedia('(max-width: 640px)');
+		isMobile = mql.matches;
+		const handler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
+		mql.addEventListener('change', handler);
+		return () => mql.removeEventListener('change', handler);
+	});
+
+	const maxDataPoints = $derived(isMobile ? 6 : 12);
 
 	const filteredSessions = $derived.by(() => {
 		if (sessions.length === 0) return [];
@@ -79,9 +90,7 @@
 	});
 
 	const volumeTrends = $derived.by(() => {
-		const startDate = customStartDate ? new Date(customStartDate) : undefined;
-		const endDate = customEndDate ? new Date(customEndDate) : undefined;
-		return calculateVolumeTrendsByScale(filteredSessions, volumeScale, dateFilter, startDate, endDate);
+		return calculateVolumeTrendsForChart(sessions, volumeScale, maxDataPoints);
 	});
 
 	const volumeChartData = $derived.by(() => {
@@ -106,6 +115,7 @@
 	}
 
 	function formatVolume(value: number): string {
+		if (value == null) return '0';
 		if (value >= 1000) {
 			return (value / 1000).toFixed(1) + 'k';
 		}
@@ -555,12 +565,19 @@
 					{#if volumeChartData.length > 0}
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
-								<AxisX tickFormat={formatChartDate} />
+								<AxisX tickFormat={formatChartDate} ticks={volumeChartData.map(d => d.date)} />
+								<AxisY tickFormat={(v) => formatVolume(v)} />
 								{#if volumeTrendLine}
 									<Line data={volumeTrendLine} x="date" y="value" stroke="#7c5cff" strokeWidth={2} strokeDasharray="5,5" />
 								{/if}
 								<Line data={volumeChartData} x="date" y="value" stroke="#c5ff00" strokeWidth={2} />
 								<Dot data={volumeChartData} x="date" y="value" fill="#c5ff00" r={5} />
+								<Pointer data={volumeChartData} x="date" y="value">
+									{#snippet children({ data: selected })}
+										<Dot data={selected} x="date" y="value" fill="#c5ff00" r={8} fillOpacity={0.4} />
+										<Text data={selected} x="date" y="value" dy={-15} text={(d) => `${formatVolume(d.value)} ${preferencesStore.weightLabel}`} fill="white" fontSize={12} textAnchor="middle" />
+									{/snippet}
+								</Pointer>
 							</Plot>
 						</div>
 						<div class="mt-16 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
