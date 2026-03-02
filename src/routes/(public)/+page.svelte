@@ -564,7 +564,7 @@
 					{#if volumeChartData.length > 0}
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
-								<AxisX tickFormat={formatChartDate} />
+								<AxisX tickFormat={formatChartDate} ticks={volumeChartData.map(d => d.date)} />
 								<AxisY tickFormat={(v) => formatVolume(v)} />
 								{#if volumeTrendLine}
 									<Line data={volumeTrendLine} x="date" y="value" stroke="#7c5cff" strokeWidth={2} strokeDasharray="5,5" />
