@@ -86,6 +86,31 @@ export function calculateVolumeTrends(
 	return calculateVolumeTrendsByScale(sessions, 'week', dateFilter, customStartDate, customEndDate);
 }
 
+export function calculateVolumeTrendsForChart(
+	sessions: Session[],
+	scale: VolumeScale,
+	maxPoints: number
+): VolumeTrend[] {
+	const now = new Date();
+	let startDate: Date;
+
+	switch (scale) {
+		case 'day':
+			startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - maxPoints);
+			break;
+		case 'week':
+			startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - maxPoints * 7);
+			break;
+		case 'month':
+			startDate = new Date(now.getFullYear(), now.getMonth() - maxPoints, 1);
+			break;
+	}
+
+	const trends = calculateVolumeTrendsByScale(sessions, scale, 'custom', startDate, now);
+	const nonEmpty = trends.filter((t) => t.volume > 0);
+	return nonEmpty.slice(-maxPoints);
+}
+
 export type VolumeScale = 'day' | 'week' | 'month';
 
 export function calculateVolumeTrendsByScale(

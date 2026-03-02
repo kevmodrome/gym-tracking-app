@@ -2,7 +2,7 @@
 	import {
 		filterSessionsByDateRange,
 		calculateDashboardMetrics,
-		calculateVolumeTrendsByScale,
+		calculateVolumeTrendsForChart,
 		calculateMuscleBreakdown,
 		calculateDailyWorkouts,
 		calculateDailyMetrics,
@@ -28,6 +28,17 @@
 	let customEndDate = $state('');
 	let selectedPeriod = $state<'week' | 'month'>('week');
 	let volumeScale = $state<VolumeScale>('week');
+	let isMobile = $state(false);
+
+	$effect(() => {
+		const mql = window.matchMedia('(max-width: 640px)');
+		isMobile = mql.matches;
+		const handler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
+		mql.addEventListener('change', handler);
+		return () => mql.removeEventListener('change', handler);
+	});
+
+	const maxDataPoints = $derived(isMobile ? 6 : 12);
 
 	const filteredSessions = $derived.by(() => {
 		if (sessions.length === 0) return [];
@@ -79,9 +90,7 @@
 	});
 
 	const volumeTrends = $derived.by(() => {
-		const startDate = customStartDate ? new Date(customStartDate) : undefined;
-		const endDate = customEndDate ? new Date(customEndDate) : undefined;
-		return calculateVolumeTrendsByScale(filteredSessions, volumeScale, dateFilter, startDate, endDate);
+		return calculateVolumeTrendsForChart(sessions, volumeScale, maxDataPoints);
 	});
 
 	const volumeChartData = $derived.by(() => {
