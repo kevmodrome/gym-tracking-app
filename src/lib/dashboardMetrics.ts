@@ -107,8 +107,7 @@ export function calculateVolumeTrendsForChart(
 	}
 
 	const trends = calculateVolumeTrendsByScale(sessions, scale, 'custom', startDate, now);
-	const nonEmpty = trends.filter((t) => t.volume > 0);
-	return nonEmpty.slice(-maxPoints);
+	return trends.slice(-maxPoints);
 }
 
 export type VolumeScale = 'day' | 'week' | 'month';
