@@ -1,28 +1,13 @@
 <script lang="ts">
 	import '../../app.css';
-	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
-	import { db } from '$lib/db';
-	import { migrateFromDexieIfNeeded } from '$lib/migrateDexieToTablinum';
-	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import SwipeHandler from '$lib/components/SwipeHandler.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
-
-	onMount(async () => {
-		// Wait for Tablinum to be ready
-		await db.ready;
-
-		// Migrate data from old Dexie database if needed
-		await migrateFromDexieIfNeeded(db);
-
-		// Load user preferences
-		await preferencesStore.load();
-	});
 
 	// Enable CSS View Transitions for page navigation
 	onNavigate((navigation) => {
