@@ -12,6 +12,7 @@
 		calculateLinearRegression,
 		type VolumeScale
 	} from '$lib/dashboardMetrics';
+	import { getDateRange, type DateFilter } from '$lib/dateUtils';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
 	import { Plot, Line, Dot, AxisX, AxisY, Pointer, Text } from 'svelteplot';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
@@ -23,7 +24,7 @@
 	const allExercises = $derived(data.allExercises);
 
 	// UI state
-	let dateFilter = $state<'week' | 'month' | 'year' | 'custom'>('month');
+	let dateFilter = $state<DateFilter>('month');
 	let customStartDate = $state('');
 	let customEndDate = $state('');
 	let selectedPeriod = $state<'week' | 'month'>('week');
@@ -42,29 +43,7 @@
 
 	const filteredSessions = $derived.by(() => {
 		if (sessions.length === 0) return [];
-
-		const now = new Date();
-		let startDate: Date;
-
-		switch (dateFilter) {
-			case 'week':
-				startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-				break;
-			case 'month':
-				startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-				break;
-			case 'year':
-				startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-				break;
-			case 'custom':
-				startDate = customStartDate ? new Date(customStartDate) : new Date(0);
-				break;
-			default:
-				startDate = new Date(0);
-		}
-
-		let endDate = dateFilter === 'custom' && customEndDate ? new Date(customEndDate) : now;
-
+		const { startDate, endDate } = getDateRange(dateFilter, customStartDate, customEndDate);
 		return filterSessionsByDateRange(sessions, startDate, endDate);
 	});
 

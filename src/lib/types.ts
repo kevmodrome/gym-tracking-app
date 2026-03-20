@@ -91,26 +91,11 @@ export type WeightUnit = 'kg' | 'lb';
 
 export type DistanceUnit = 'km' | 'miles';
 
-export interface AppPreferences {
-	theme: Theme;
-	weightUnit: WeightUnit;
-	distanceUnit: DistanceUnit;
-	decimalPlaces: number;
-}
-
 export interface UserPreferences {
 	id: string;
 	weightUnit: WeightUnit;
 	distanceUnit: DistanceUnit;
 	decimalPlaces: number;
 	updatedAt: string;
-}
-
-export interface UserProfile {
-	id: string;
-	name: string;
-	email: string;
-	createdAt: string;
-	status: 'active' | 'inactive' | 'suspended';
 }
 

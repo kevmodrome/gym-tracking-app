@@ -2,7 +2,7 @@
 	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
-	import XIcon from '$lib/components/XIcon.svelte';
+	import { X } from 'lucide-svelte';
 	import { Button, Modal, TextInput, Select, InfoBox } from '$lib/ui';
 	import { invalidateExercises } from '$lib/invalidation';
 
@@ -147,7 +147,7 @@
 									type="button"
 									aria-label={`Remove ${muscle}`}
 								>
-									<XIcon class="w-3 h-3" />
+									<X class="w-3 h-3" />
 								</button>
 							</span>
 						{/each}

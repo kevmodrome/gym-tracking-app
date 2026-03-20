@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { Timer } from '$lib/timer.svelte';
+
 	let { duration = 90, onComplete, onSkip, compact = false } = $props<{
 		duration?: number;
 		onComplete?: () => void;
@@ -6,128 +8,21 @@
 		compact?: boolean;
 	}>();
 
-	let timeLeft = $state(0);
-	let isRunning = $state(false);
-	let isPaused = $state(false);
-	let intervalId: number | null = null;
-	let customDuration = $state(0);
+	const timer = new Timer(duration, () => onComplete);
 
 	$effect(() => {
-		timeLeft = duration;
-		customDuration = duration;
+		timer.setDuration(duration);
 	});
 
-	function adjustDuration(amount: number) {
-		const newDuration = Math.max(10, Math.min(300, timeLeft + amount));
-		timeLeft = newDuration;
-		customDuration = newDuration;
-	}
+	const circumference = $derived(2 * Math.PI * 54);
+	const offset = $derived(circumference - (timer.progressPercent / 100) * circumference);
 
-	const formattedTime = $derived.by(() => {
-		const minutes = Math.floor(timeLeft / 60);
-		const seconds = timeLeft % 60;
-		return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-	});
-
-	const progressPercent = $derived.by(() => {
-		return ((duration - timeLeft) / duration) * 100;
-	});
-
-	const circumference = $derived.by(() => 2 * Math.PI * 54);
-	const offset = $derived.by(() => circumference - (progressPercent / 100) * circumference);
-
-	function startTimer() {
-		if (isRunning) return;
-		isRunning = true;
-		isPaused = false;
-
-		intervalId = window.setInterval(() => {
-			if (timeLeft > 0) {
-				timeLeft--;
-			} else {
-				endTimer();
-			}
-		}, 1000);
-	}
-
-	function pauseTimer() {
-		if (!isRunning) return;
-		isRunning = false;
-		isPaused = true;
-
-		if (intervalId) {
-			clearInterval(intervalId);
-			intervalId = null;
-		}
-	}
-
-	function resumeTimer() {
-		if (!isPaused) return;
-		startTimer();
-	}
-
-	function skipTimer() {
-		resetTimer();
-		if (onSkip) {
-			onSkip();
-		}
-	}
-
-	function endTimer() {
-		if (intervalId) {
-			clearInterval(intervalId);
-			intervalId = null;
-		}
-
-		playSound();
-		vibrate();
-
-		if (onComplete) {
-			onComplete();
-		}
-	}
-
-	function resetTimer() {
-		if (intervalId) {
-			clearInterval(intervalId);
-			intervalId = null;
-		}
-		timeLeft = duration;
-		isRunning = false;
-		isPaused = false;
-	}
-
-	function playSound() {
-		const saved = localStorage.getItem('gym-app-settings');
-		const settings = saved ? JSON.parse(saved) : { soundEnabled: true };
-
-		if (settings.soundEnabled) {
-			const audio = new Audio('/alarm.mp3');
-			audio.play().catch((err) => {
-				console.log('Audio play failed:', err);
-			});
-		}
-	}
-
-	function vibrate() {
-		const saved = localStorage.getItem('gym-app-settings');
-		const settings = saved ? JSON.parse(saved) : { vibrationEnabled: true };
-
-		if (settings.vibrationEnabled && 'vibrate' in navigator) {
-			navigator.vibrate([200, 100, 200, 100, 200]);
-		}
-	}
-
-	function updateCustomDuration() {
-		timeLeft = customDuration;
-	}
+	// Compact mode uses a smaller circle
+	const compactCircumference = $derived(2 * Math.PI * 36);
+	const compactOffset = $derived(compactCircumference - (timer.progressPercent / 100) * compactCircumference);
 
 	$effect(() => {
-		return () => {
-			if (intervalId) {
-				clearInterval(intervalId);
-			}
-		};
+		return () => timer.destroy();
 	});
 </script>
 
@@ -152,37 +47,37 @@
 					stroke-width="6"
 					fill="none"
 					stroke-linecap="round"
-					stroke-dasharray={2 * Math.PI * 36}
-					stroke-dashoffset={2 * Math.PI * 36 - (progressPercent / 100) * 2 * Math.PI * 36}
+					stroke-dasharray={compactCircumference}
+					stroke-dashoffset={compactOffset}
 					class="drop-shadow-[0_0_8px_rgba(197,255,0,0.5)]"
 				/>
 			</svg>
 			<div class="absolute inset-0 flex items-center justify-center">
-				<span class="text-2xl font-display font-bold text-text-primary">{formattedTime}</span>
+				<span class="text-2xl font-display font-bold text-text-primary">{timer.formattedTime}</span>
 			</div>
 		</div>
 
 		<!-- Compact Controls -->
 		<div class="flex items-center gap-2 mb-3">
 			<button
-				onclick={() => adjustDuration(-30)}
-				disabled={isRunning}
+				onclick={() => timer.adjustDuration(-30)}
+				disabled={timer.isRunning}
 				class="px-3 py-1.5 text-sm bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors disabled:opacity-50"
 				type="button"
 			>
 				-30s
 			</button>
-			{#if !isRunning && !isPaused}
+			{#if !timer.isRunning && !timer.isPaused}
 				<button
-					onclick={startTimer}
+					onclick={() => timer.start()}
 					class="px-4 py-1.5 text-sm bg-accent text-bg rounded-lg hover:bg-accent-muted transition-colors font-medium"
 					type="button"
 				>
 					Start
 				</button>
-			{:else if isRunning}
+			{:else if timer.isRunning}
 				<button
-					onclick={pauseTimer}
+					onclick={() => timer.pause()}
 					class="px-4 py-1.5 text-sm bg-warning text-bg rounded-lg hover:opacity-90 transition-colors font-medium"
 					type="button"
 				>
@@ -190,7 +85,7 @@
 				</button>
 			{:else}
 				<button
-					onclick={resumeTimer}
+					onclick={() => timer.resume()}
 					class="px-4 py-1.5 text-sm bg-success text-bg rounded-lg hover:opacity-90 transition-colors font-medium"
 					type="button"
 				>
@@ -198,8 +93,8 @@
 				</button>
 			{/if}
 			<button
-				onclick={() => adjustDuration(30)}
-				disabled={isRunning}
+				onclick={() => timer.adjustDuration(30)}
+				disabled={timer.isRunning}
 				class="px-3 py-1.5 text-sm bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors disabled:opacity-50"
 				type="button"
 			>
@@ -208,7 +103,7 @@
 		</div>
 
 		<button
-			onclick={skipTimer}
+			onclick={() => timer.skip(onSkip)}
 			class="w-full px-4 py-2.5 bg-surface-elevated border border-border text-text-primary rounded-lg hover:bg-surface-hover transition-colors font-medium"
 			type="button"
 		>
@@ -245,7 +140,7 @@
 					/>
 				</svg>
 				<div class="absolute inset-0 flex items-center justify-center">
-					<span class="text-4xl font-display font-bold text-text-primary">{formattedTime}</span>
+					<span class="text-4xl font-display font-bold text-text-primary">{timer.formattedTime}</span>
 				</div>
 			</div>
 
@@ -256,27 +151,27 @@
 					type="number"
 					min="10"
 					max="300"
-					bind:value={customDuration}
-					onchange={updateCustomDuration}
-					disabled={isRunning}
+					value={timer.timeLeft}
+					onchange={(e) => { timer.timeLeft = Number((e.target as HTMLInputElement).value); }}
+					disabled={timer.isRunning}
 					class="w-20 px-2 py-1 bg-surface-elevated border border-border rounded text-center text-text-primary focus:ring-2 focus:ring-accent disabled:opacity-50"
 				/>
 			</div>
 		</div>
 
 		<div class="flex gap-3">
-			{#if !isRunning && !isPaused}
+			{#if !timer.isRunning && !timer.isPaused}
 				<button
-					onclick={startTimer}
+					onclick={() => timer.start()}
 					class="flex-1 px-4 py-3 bg-accent text-bg rounded-lg hover:bg-accent-muted hover:shadow-[0_0_20px_rgba(197,255,0,0.3)] transition-all font-medium flex items-center justify-center gap-2"
 					type="button"
 				>
 					<span class="text-xl">▶</span>
 					Start
 				</button>
-			{:else if isRunning}
+			{:else if timer.isRunning}
 				<button
-					onclick={pauseTimer}
+					onclick={() => timer.pause()}
 					class="flex-1 px-4 py-3 bg-warning text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
 					type="button"
 				>
@@ -285,7 +180,7 @@
 				</button>
 			{:else}
 				<button
-					onclick={resumeTimer}
+					onclick={() => timer.resume()}
 					class="flex-1 px-4 py-3 bg-success text-bg rounded-lg hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2"
 					type="button"
 				>
@@ -295,7 +190,7 @@
 			{/if}
 
 			<button
-				onclick={skipTimer}
+				onclick={() => timer.skip(onSkip)}
 				class="flex-1 px-4 py-3 bg-surface-elevated border border-border text-text-secondary rounded-lg hover:bg-surface hover:text-text-primary transition-colors font-medium flex items-center justify-center gap-2"
 				type="button"
 			>
@@ -304,7 +199,7 @@
 			</button>
 
 			<button
-				onclick={resetTimer}
+				onclick={() => timer.reset()}
 				class="w-16 px-4 py-3 bg-danger text-white rounded-lg hover:opacity-90 transition-colors flex items-center justify-center"
 				type="button"
 				title="Reset"

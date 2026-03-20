@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SearchIcon from '$lib/components/SearchIcon.svelte';
+	import { Search } from 'lucide-svelte';
 
 	interface SearchInputProps {
 		value: string;
@@ -41,7 +41,7 @@
 		</label>
 	{/if}
 	<div class="relative">
-		<SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+		<Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
 		<input
 			id={inputId}
 			type="text"
