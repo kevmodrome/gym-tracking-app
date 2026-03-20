@@ -1,12 +1,27 @@
 <script lang="ts">
-	import type { ExerciseCategory, MuscleGroup, PersonalRecord } from '$lib/types';
-	import { getRepRangeLabel } from '$lib/prUtils';
+	import { db } from '$lib/db';
+	import type { Exercise, ExerciseCategory, MuscleGroup, PersonalRecord } from '$lib/types';
+	import { getAllPersonalRecords, getRepRangeLabel } from '$lib/prUtils';
 	import { Search, X, Plus } from 'lucide-svelte';
 	import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle } from '$lib/formatUtils';
 
-	let { data } = $props();
+	const exercisesCol = db.collection('exercises');
+	let exercises = $derived(await exercisesCol.get() as Exercise[]);
+	let allPRs = $derived(await getAllPersonalRecords());
+
+	let exercisePRs = $derived.by(() => {
+		const map: Record<string, PersonalRecord[]> = {};
+		for (const pr of allPRs) {
+			if (!map[pr.exerciseId]) map[pr.exerciseId] = [];
+			map[pr.exerciseId].push(pr);
+		}
+		for (const prs of Object.values(map)) {
+			prs.sort((a, b) => a.reps - b.reps);
+		}
+		return map;
+	});
 
 	let searchQuery = $state('');
 	let selectedCategory = $state<ExerciseCategory | ''>('');
@@ -25,11 +40,8 @@
 		...muscles.map((m) => ({ value: m, label: formatMuscle(m) }))
 	];
 
-	// Convert PRs object to Map for easier lookup
-	const exercisePRs = $derived(new Map<string, PersonalRecord[]>(Object.entries(data.exercisePRs)));
-
 	const filteredExercises = $derived.by(() => {
-		return data.exercises.filter((exercise) => {
+		return exercises.filter((exercise) => {
 			const matchesSearch =
 				searchQuery === '' ||
 				exercise.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -87,7 +99,7 @@
 				{#if searchQuery || selectedCategory || selectedMuscle}
 					<div class="mt-4 flex items-center justify-between">
 						<p class="text-sm text-text-secondary">
-							Showing {filteredExercises.length} of {data.exercises.length} exercises
+							Showing {filteredExercises.length} of {exercises.length} exercises
 						</p>
 						<button
 							onclick={clearFilters}
@@ -132,21 +144,21 @@
 								{/if}
 							</div>
 
-							{#if exercisePRs.has(exercise.id)}
+							{#if exercisePRs[exercise.id]}
 								<div class="bg-warning/10 border border-warning/30 rounded-lg p-3 mb-3">
 									<div class="flex items-center gap-2 mb-2">
 										<span class="text-xl">🏆</span>
 										<span class="font-semibold text-sm text-warning">Personal Records</span>
 									</div>
 									<div class="flex flex-wrap gap-2">
-										{#each exercisePRs.get(exercise.id)?.slice(0, 3) as pr}
+										{#each exercisePRs[exercise.id]?.slice(0, 3) as pr}
 											<span class="text-xs bg-warning/20 text-warning px-2 py-1 rounded-full font-medium">
 												{getRepRangeLabel(pr.reps)}: {pr.weight} {preferencesStore.weightLabel}
 											</span>
 										{/each}
-										{#if (exercisePRs.get(exercise.id)?.length || 0) > 3}
+										{#if (exercisePRs[exercise.id]?.length || 0) > 3}
 											<span class="text-xs bg-surface-elevated text-text-secondary px-2 py-1 rounded-full">
-												+{(exercisePRs.get(exercise.id)?.length || 0) - 3} more
+												+{(exercisePRs[exercise.id]?.length || 0) - 3} more
 											</span>
 										{/if}
 									</div>

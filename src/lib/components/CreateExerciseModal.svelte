@@ -4,7 +4,7 @@
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
 	import { X } from 'lucide-svelte';
 	import { Button, Modal, TextInput, Select, InfoBox } from '$lib/ui';
-	import { invalidateExercises } from '$lib/invalidation';
+
 
 	let { onCreate, onClose } = $props<{
 		onCreate: (exercise: Exercise) => void;
@@ -75,7 +75,6 @@
 			equipment: newExercise.equipment,
 			is_custom: newExercise.is_custom,
 		});
-		await invalidateExercises();
 		onCreate({ ...newExercise, id });
 		onClose();
 	}
