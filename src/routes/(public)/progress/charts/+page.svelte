@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
 	import type { Exercise, Session } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
@@ -7,15 +6,10 @@
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
 
-	let exercises = $state<Exercise[]>([]);
-	let sessions = $state<Session[]>([]);
+	let exercises = $derived(await db.collection('exercises').get() as Exercise[]);
+	let sessions = $derived(await db.collection('sessions').orderBy('date').reverse().get() as Session[]);
 	let selectedExercise = $state<Exercise | undefined>(undefined);
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
-
-	onMount(async () => {
-		exercises = await db.collection('exercises').get() as Exercise[];
-		sessions = await db.collection('sessions').orderBy('date').reverse().get() as Session[];
-	});
 
 	let exerciseSessions = $derived.by(() => {
 		if (!selectedExercise) return [];

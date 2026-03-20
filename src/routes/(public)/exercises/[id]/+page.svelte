@@ -1,19 +1,22 @@
 <script lang="ts">
 	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
-	import type { PersonalRecord } from '$lib/types';
+	import { getPersonalRecordsForExercise } from '$lib/prUtils';
+	import type { PersonalRecord, Exercise, Session } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Button, Card, Modal, Select } from '$lib/ui';
 	import { ArrowLeft } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
+	import { db } from '$lib/db';
+	import { redirect } from '@sveltejs/kit';
 
 	let { data } = $props();
 
-	// Destructure data for easier access
-	const exercise = $derived(data.exercise);
-	const sessions = $derived(data.sessions);
-	const personalRecords = $derived(data.personalRecords);
 	const exerciseId = $derived(data.exerciseId);
+	let exercise = $derived(await db.collection('exercises').get(exerciseId) as Exercise);
+	let allSessions = $derived(await db.collection('sessions').orderBy('date').reverse().get() as Session[]);
+	let sessions = $derived(allSessions.filter((s) => s.exercises.some((e) => e.exerciseId === exerciseId)));
+	let personalRecords = $derived(await getPersonalRecordsForExercise(exerciseId));
 
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
 	let selectedPR = $state<PersonalRecord | null>(null);

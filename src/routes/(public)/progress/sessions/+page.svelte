@@ -3,19 +3,16 @@
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { db } from '$lib/db';
-	import type { Session } from '$lib/types';
+	import type { Session, Workout } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
 	import { Search, X, ChevronDown } from 'lucide-svelte';
 	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox, SearchInput, NumberSpinner } from '$lib/ui';
 	import type { SessionExercise, ExerciseSet } from '$lib/types';
-	import { invalidateSessions, invalidatePersonalRecords } from '$lib/invalidation';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { getDateRange } from '$lib/dateUtils';
 
-	let { data } = $props();
-
-	// Data from load function
-	const sessions = $derived(data.sessions);
+	let sessions = $derived(await db.collection('sessions').orderBy('date').reverse().get() as Session[]);
+	let allWorkouts = $derived((await db.collection('workouts').get() as Workout[]).map((w) => ({ id: w.id, name: w.name })));
 
 	// Helper to get muscle groups from a session
 	function getSessionMuscleGroups(session: Session): string[] {
@@ -165,8 +162,6 @@
 			await new Promise((r) => setTimeout(r, 200));
 
 			await calculatePersonalRecords();
-			await invalidateSessions();
-			await invalidatePersonalRecords();
 
 			if (undoTimeout) clearTimeout(undoTimeout);
 			undoTimeout = window.setTimeout(() => {
@@ -190,8 +185,6 @@
 				createdAt: deletedSession.createdAt,
 			});
 			await calculatePersonalRecords();
-			await invalidateSessions();
-			await invalidatePersonalRecords();
 
 			if (undoTimeout) clearTimeout(undoTimeout);
 			undoTimeout = null;
@@ -251,8 +244,6 @@
 			});
 
 			await calculatePersonalRecords();
-			await invalidateSessions();
-			await invalidatePersonalRecords();
 
 			showSessionDetail = updatedSession;
 			isEditMode = false;

@@ -12,15 +12,23 @@
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { ArrowLeft, Undo, Plus, Search, Star, Check } from 'lucide-svelte';
 	import { Button, Modal, ConfirmDialog, Textarea, NumberSpinner, TextInput } from '$lib/ui';
-	import { invalidateSessions, invalidatePersonalRecords, invalidateExercises } from '$lib/invalidation';
 
 	let { data } = $props();
 
-	// Data from load function
 	const sessionId = $derived(data.sessionId);
-	const exercises = $derived(data.exercises);
-	const existingSession = $derived(data.existingSession);
-	const sourceSession = $derived(data.sourceSession);
+	const fromSessionId = $derived(data.fromSessionId);
+
+	async function tryGetSession(id: string): Promise<Session | null> {
+		try {
+			return await db.collection('sessions').get(id) as Session;
+		} catch {
+			return null;
+		}
+	}
+
+	let exercises = $derived(await db.collection('exercises').get() as Exercise[]);
+	let existingSession = $derived(await tryGetSession(sessionId));
+	let sourceSession = $derived(fromSessionId ? await tryGetSession(fromSessionId) : null);
 
 	// Session state
 	let sessionExercises = $state<SessionExercise[]>([]);
@@ -333,8 +341,6 @@
 			createdAt: session.createdAt,
 		});
 		await calculatePersonalRecords();
-		await invalidateSessions();
-		await invalidatePersonalRecords();
 
 		localStorage.removeItem(`gym-app-session-${sessionId}`);
 
@@ -444,7 +450,6 @@
 	async function toggleFavorite(exercise: Exercise) {
 		const newValue = !exercise.favorited;
 		await db.collection('exercises').update(exercise.id, { favorited: newValue });
-		await invalidateExercises();
 		toastStore.showSuccess(newValue ? 'Added to favorites' : 'Removed from favorites');
 	}
 

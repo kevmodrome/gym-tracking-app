@@ -16,12 +16,11 @@
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
 	import { Plot, Line, Dot, AxisX, AxisY, Pointer, Text } from 'svelteplot';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { db } from '$lib/db';
+	import type { Session, Exercise } from '$lib/types';
 
-	let { data } = $props();
-
-	// Data from load function
-	const sessions = $derived(data.sessions);
-	const allExercises = $derived(data.allExercises);
+	let sessions = $derived(await db.collection('sessions').orderBy('date').reverse().get() as Session[]);
+	let allExercises = $derived(await db.collection('exercises').get() as Exercise[]);
 
 	// UI state
 	let dateFilter = $state<DateFilter>('month');

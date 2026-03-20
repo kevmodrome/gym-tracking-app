@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
-	import type { PersonalRecord } from '$lib/types';
+	import { db } from '$lib/db';
+	import type { Exercise, PersonalRecord } from '$lib/types';
 	import { Card, Modal, Button } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
-	let { data } = $props();
-
-	// Data from load function
-	const exercises = $derived(data.exercises);
-	const allPRs = $derived(data.allPRs);
+	let exercises = $derived(await db.collection('exercises').get() as Exercise[]);
+	let allPRs = $derived(await db.collection('personalRecords').get() as PersonalRecord[]);
 
 	// UI state
 	let selectedExerciseId = $state<string | null>(null);
