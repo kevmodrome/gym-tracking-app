@@ -78,11 +78,21 @@ export function storeInvite(invite: Invite) {
 
 const storedInvite = getStoredInvite();
 
+const membersChangedCallbacks = new Set<() => void>();
+
+export function onMembersChanged(callback: () => void): () => void {
+	membersChangedCallbacks.add(callback);
+	return () => membersChangedCallbacks.delete(callback);
+}
+
 export const db = new Tablinum({
 	schema,
 	relays: storedInvite?.relays ?? ['wss://relay.tablinum.dev/'],
 	dbName: storedInvite?.dbName ?? 'gym-recording-app',
 	epochKeys: storedInvite?.epochKeys,
+	onMembersChanged: () => {
+		for (const cb of membersChangedCallbacks) cb();
+	},
 });
 
 // Helper: look up an exercise by name from the DB

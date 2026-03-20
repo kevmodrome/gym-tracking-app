@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { dev } from '$app/environment';
 	import type { AppSettings } from '$lib/types';
 	import type { MemberRecord } from 'tablinum/svelte';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import InviteModal from '$lib/components/InviteModal.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
-	import { db } from '$lib/db';
+	import { db, onMembersChanged } from '$lib/db';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
@@ -49,10 +49,17 @@
 		}, 300);
 	});
 
+	async function refreshMembers() {
+		members = await db.getMembers();
+	}
+
+	const unsubMembers = onMembersChanged(refreshMembers);
+	onDestroy(unsubMembers);
+
 	onMount(async () => {
 		loadSettings();
 		hasLoaded = true;
-		members = await db.getMembers();
+		await refreshMembers();
 		const profile = await db.getProfile();
 		deviceName = profile.name ?? '';
 	});
