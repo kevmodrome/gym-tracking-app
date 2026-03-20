@@ -11,8 +11,10 @@
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { getDateRange } from '$lib/dateUtils';
 
-	let sessions = $derived(await db.collection('sessions').orderBy('date').reverse().get() as Session[]);
-	let allWorkouts = $derived((await db.collection('workouts').get() as Workout[]).map((w) => ({ id: w.id, name: w.name })));
+	const sessionsCol = db.collection('sessions');
+	const workoutsCol = db.collection('workouts');
+	let sessions = $derived(await sessionsCol.orderBy('date').reverse().get() as Session[]);
+	let allWorkouts = $derived((await workoutsCol.get() as Workout[]).map((w) => ({ id: w.id, name: w.name })));
 
 	// Helper to get muscle groups from a session
 	function getSessionMuscleGroups(session: Session): string[] {

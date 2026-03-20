@@ -7,7 +7,8 @@
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle } from '$lib/formatUtils';
 
-	let exercises = $derived(await db.collection('exercises').get() as Exercise[]);
+	const exercisesCol = db.collection('exercises');
+	let exercises = $derived(await exercisesCol.get() as Exercise[]);
 	let allPRs = $derived(await getAllPersonalRecords());
 
 	let exercisePRs = $derived.by(() => {

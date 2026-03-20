@@ -18,15 +18,18 @@
 	const sessionId = $derived(data.sessionId);
 	const fromSessionId = $derived(data.fromSessionId);
 
+	const exercisesCol = db.collection('exercises');
+	const sessionsCol = db.collection('sessions');
+
 	async function tryGetSession(id: string): Promise<Session | null> {
 		try {
-			return await db.collection('sessions').get(id) as Session;
+			return await sessionsCol.get(id) as Session;
 		} catch {
 			return null;
 		}
 	}
 
-	let exercises = $derived(await db.collection('exercises').get() as Exercise[]);
+	let exercises = $derived(await exercisesCol.get() as Exercise[]);
 	let existingSession = $derived(await tryGetSession(sessionId));
 	let sourceSession = $derived(fromSessionId ? await tryGetSession(fromSessionId) : null);
 

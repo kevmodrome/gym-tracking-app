@@ -5,8 +5,10 @@
 	import { Card, Modal, Button } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 
-	let exercises = $derived(await db.collection('exercises').get() as Exercise[]);
-	let allPRs = $derived(await db.collection('personalRecords').get() as PersonalRecord[]);
+	const exercisesCol = db.collection('exercises');
+	const personalRecordsCol = db.collection('personalRecords');
+	let exercises = $derived(await exercisesCol.get() as Exercise[]);
+	let allPRs = $derived(await personalRecordsCol.get() as PersonalRecord[]);
 
 	// UI state
 	let selectedExerciseId = $state<string | null>(null);

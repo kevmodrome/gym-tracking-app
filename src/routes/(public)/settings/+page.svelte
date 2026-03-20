@@ -29,7 +29,8 @@
 	let syncStatus = $state(db.syncStatus);
 	let pendingCount = $state(db.pendingCount);
 	let relayStatus = $state(db.relayStatus);
-	let members = $derived(await db.members.get());
+	const membersCol = db.members;
+	let members = $derived(await membersCol.get());
 	let deviceName = $state('');
 	let isEditingName = $state(false);
 

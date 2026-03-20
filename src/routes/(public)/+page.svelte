@@ -19,8 +19,10 @@
 	import { db } from '$lib/db';
 	import type { Session, Exercise } from '$lib/types';
 
-	let sessions = $derived(await db.collection('sessions').orderBy('date').reverse().get() as Session[]);
-	let allExercises = $derived(await db.collection('exercises').get() as Exercise[]);
+	const sessionsCol = db.collection('sessions');
+	const exercisesCol = db.collection('exercises');
+	let sessions = $derived(await sessionsCol.orderBy('date').reverse().get() as Session[]);
+	let allExercises = $derived(await exercisesCol.get() as Exercise[]);
 
 	// UI state
 	let dateFilter = $state<DateFilter>('month');

@@ -13,8 +13,10 @@
 	let { data } = $props();
 
 	const exerciseId = $derived(data.exerciseId);
-	let exercise = $derived(await db.collection('exercises').get(exerciseId) as Exercise);
-	let allSessions = $derived(await db.collection('sessions').orderBy('date').reverse().get() as Session[]);
+	const exercisesCol = db.collection('exercises');
+	const sessionsCol = db.collection('sessions');
+	let exercise = $derived(await exercisesCol.get(exerciseId) as Exercise);
+	let allSessions = $derived(await sessionsCol.orderBy('date').reverse().get() as Session[]);
 	let sessions = $derived(allSessions.filter((s) => s.exercises.some((e) => e.exerciseId === exerciseId)));
 	let personalRecords = $derived(await getPersonalRecordsForExercise(exerciseId));
 
