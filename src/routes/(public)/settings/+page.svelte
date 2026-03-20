@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
 	import type { AppSettings } from '$lib/types';
-	import type { MemberRecord } from 'tablinum/svelte';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import InviteModal from '$lib/components/InviteModal.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
@@ -30,7 +29,7 @@
 	let syncStatus = $state(db.syncStatus);
 	let pendingCount = $state(db.pendingCount);
 	let relayStatus = $state(db.relayStatus);
-	let members = $state<ReadonlyArray<MemberRecord>>([]);
+	let members = $derived(await db.members.get());
 	let deviceName = $state('');
 	let isEditingName = $state(false);
 
@@ -49,18 +48,11 @@
 		}, 300);
 	});
 
-	async function refreshMembers() {
-		members = await db.getMembers();
-	}
-
-	onMount(() => {
+	onMount(async () => {
 		loadSettings();
 		hasLoaded = true;
-		refreshMembers();
-		db.getProfile().then((p) => (deviceName = p.name ?? ''));
-
-		const interval = setInterval(refreshMembers, 3000);
-		return () => clearInterval(interval);
+		const profile = await db.getProfile();
+		deviceName = profile.name ?? '';
 	});
 
 	async function saveDeviceName() {
