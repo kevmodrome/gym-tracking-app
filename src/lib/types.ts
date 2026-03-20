@@ -106,13 +106,6 @@ export interface UserPreferences {
 	updatedAt: string;
 }
 
-export interface NotificationPreferences {
-	workoutReminders: boolean;
-	prAchievements: boolean;
-	progressUpdates: boolean;
-	emailNotifications: boolean;
-}
-
 export interface UserProfile {
 	id: string;
 	name: string;
@@ -121,36 +114,3 @@ export interface UserProfile {
 	status: 'active' | 'inactive' | 'suspended';
 }
 
-export type SyncOperation = 'create' | 'update' | 'delete';
-
-export type SyncTargetType = 'exercise' | 'workout' | 'session' | 'personalRecord';
-
-export type SyncStatus = 'pending' | 'syncing' | 'synced' | 'failed';
-
-export interface SyncQueueItem {
-	id: string;
-	targetType: SyncTargetType;
-	targetId: string;
-	operation: SyncOperation;
-	data: unknown;
-	timestamp: string;
-	retries: number;
-	lastRetryTime?: string;
-	status: SyncStatus;
-	error?: string;
-}
-
-export interface SyncResult {
-	success: boolean;
-	itemsProcessed: number;
-	itemsFailed: number;
-	itemsSkipped: number;
-	duration: number;
-	message: string;
-}
-
-export interface SyncProgress {
-	current: number;
-	total: number;
-	stage: string;
-}

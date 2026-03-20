@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Dexie from 'dexie';
 	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
@@ -68,9 +67,16 @@
 			is_custom: true
 		};
 
-		await db.exercises.add(Dexie.deepClone(newExercise));
+		const id = await db.collection('exercises').add({
+			name: newExercise.name,
+			category: newExercise.category,
+			primary_muscle: newExercise.primary_muscle,
+			secondary_muscles: newExercise.secondary_muscles,
+			equipment: newExercise.equipment,
+			is_custom: newExercise.is_custom,
+		});
 		await invalidateExercises();
-		onCreate(newExercise);
+		onCreate({ ...newExercise, id });
 		onClose();
 	}
 

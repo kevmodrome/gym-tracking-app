@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
+	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
-	import Dexie from 'dexie';
 	import { db } from '$lib/db';
 	import type { Session } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
@@ -171,11 +171,18 @@
 		if (!showSessionDetail) return;
 
 		try {
-			await db.sessions.delete(showSessionDetail.id);
-			deletedSession = showSessionDetail;
-			showSessionDetail = null;
+			const sessionToDelete = showSessionDetail;
+			await db.collection('sessions').delete(sessionToDelete.id);
+			deletedSession = sessionToDelete;
+
+			// Close modals first
 			showDeleteConfirm = false;
+			showSessionDetail = null;
 			showUndoToast = true;
+
+			// Wait for Svelte to process state changes and modal exit transitions (150ms) to complete
+			await tick();
+			await new Promise((r) => setTimeout(r, 200));
 
 			await calculatePersonalRecords();
 			await invalidateSessions();
@@ -195,7 +202,13 @@
 		if (!deletedSession) return;
 
 		try {
-			await db.sessions.add(deletedSession);
+			await db.collection('sessions').add({
+				exercises: deletedSession.exercises,
+				date: deletedSession.date,
+				duration: deletedSession.duration,
+				notes: deletedSession.notes,
+				createdAt: deletedSession.createdAt,
+			});
 			await calculatePersonalRecords();
 			await invalidateSessions();
 			await invalidatePersonalRecords();
@@ -251,7 +264,7 @@
 				date: new Date(editingSessionDate).toISOString()
 			};
 
-			await db.sessions.update(showSessionDetail.id, Dexie.deepClone({
+			await db.collection('sessions').update(showSessionDetail.id, structuredClone({
 				exercises: updatedSession.exercises,
 				notes: updatedSession.notes,
 				date: updatedSession.date
@@ -356,7 +369,7 @@
 	</Card>
 {:else}
 	<div class="grid grid-cols-1 gap-4">
-		{#each paginatedSessions as session}
+		{#each paginatedSessions as session (session.id)}
 			<Card hoverable>
 				{#snippet children()}
 					<button

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { db, liveQuery } from '$lib/db';
+	import { onMount } from 'svelte';
+	import { db } from '$lib/db';
 	import type { Exercise, Session } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Select } from '$lib/ui';
@@ -11,21 +11,9 @@
 	let selectedExercise = $state<Exercise | undefined>(undefined);
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
 
-	let unsubscribe: (() => void) | undefined;
-
 	onMount(async () => {
-		exercises = await db.exercises.toArray();
-
-		const subscription = liveQuery(() => db.sessions.orderBy('date').reverse().toArray()).subscribe(
-			(data) => {
-				sessions = data;
-			}
-		);
-		unsubscribe = () => subscription.unsubscribe();
-	});
-
-	onDestroy(() => {
-		unsubscribe?.();
+		exercises = await db.collection('exercises').get() as Exercise[];
+		sessions = await db.collection('sessions').orderBy('date').reverse().get() as Session[];
 	});
 
 	let exerciseSessions = $derived.by(() => {

@@ -1,4 +1,3 @@
-import Dexie from 'dexie';
 import type { Exercise, Workout, Session, PersonalRecord } from './types';
 import { db } from './db';
 
@@ -47,25 +46,25 @@ export async function exportBackupData(
 
 	try {
 		onProgress?.(0, 0, 'Loading exercises...');
-		const exercises = await db.exercises.toArray();
+		const exercises = await db.collection('exercises').get() as Exercise[];
 		currentItems += exercises.length;
 		totalItems += exercises.length;
 		onProgress?.(currentItems, totalItems, 'Loading exercises...');
 
 		onProgress?.(currentItems, totalItems, 'Loading workouts...');
-		const workouts = await db.workouts.toArray();
+		const workouts = await db.collection('workouts').get() as Workout[];
 		currentItems += workouts.length;
 		totalItems += workouts.length;
 		onProgress?.(currentItems, totalItems, 'Loading workouts...');
 
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');
-		const sessions = await db.sessions.toArray();
+		const sessions = await db.collection('sessions').get() as Session[];
 		currentItems += sessions.length;
 		totalItems += sessions.length;
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');
 
 		onProgress?.(currentItems, totalItems, 'Loading personal records...');
-		const personalRecords = await db.personalRecords.toArray();
+		const personalRecords = await db.collection('personalRecords').get() as PersonalRecord[];
 		currentItems += personalRecords.length;
 		totalItems += personalRecords.length;
 		onProgress?.(currentItems, totalItems, 'Loading personal records...');
@@ -151,36 +150,85 @@ export async function detectDuplicates(backup: BackupData): Promise<{
 		personalRecords: [] as string[]
 	};
 
-	const existingExerciseIds = new Set((await db.exercises.toCollection().keys()).map(String));
-	const existingWorkoutIds = new Set((await db.workouts.toCollection().keys()).map(String));
-	const existingSessionIds = new Set((await db.sessions.toCollection().keys()).map(String));
-	const existingPRIds = new Set((await db.personalRecords.toCollection().keys()).map(String));
+	const existingExercises = await db.collection('exercises').get() as Exercise[];
+	const existingWorkouts = await db.collection('workouts').get() as Workout[];
+	const existingSessions = await db.collection('sessions').get() as Session[];
+	const existingPRs = await db.collection('personalRecords').get() as PersonalRecord[];
+
+	const existingExerciseNames = new Set(existingExercises.map((e) => e.name));
+	const existingWorkoutNames = new Set(existingWorkouts.map((w) => w.name));
+	const existingSessionDates = new Set(existingSessions.map((s) => s.date));
+	const existingPRKeys = new Set(existingPRs.map((pr) => `${pr.exerciseId}-${pr.reps}`));
 
 	for (const exercise of backup.exercises) {
-		if (existingExerciseIds.has(exercise.id)) {
-			duplicates.exercises.push(`${exercise.name} (ID: ${exercise.id})`);
+		if (existingExerciseNames.has(exercise.name)) {
+			duplicates.exercises.push(`${exercise.name}`);
 		}
 	}
 
 	for (const workout of backup.workouts) {
-		if (existingWorkoutIds.has(workout.id)) {
-			duplicates.workouts.push(`${workout.name} (ID: ${workout.id})`);
+		if (existingWorkoutNames.has(workout.name)) {
+			duplicates.workouts.push(`${workout.name}`);
 		}
 	}
 
 	for (const session of backup.sessions) {
-		if (existingSessionIds.has(session.id)) {
-			duplicates.sessions.push(`Session from ${new Date(session.date).toLocaleDateString()} (ID: ${session.id})`);
+		if (existingSessionDates.has(session.date)) {
+			duplicates.sessions.push(`Session from ${new Date(session.date).toLocaleDateString()}`);
 		}
 	}
 
 	for (const pr of backup.personalRecords) {
-		if (existingPRIds.has(pr.id)) {
-			duplicates.personalRecords.push(`${pr.exerciseName} (ID: ${pr.id})`);
+		if (existingPRKeys.has(`${pr.exerciseId}-${pr.reps}`)) {
+			duplicates.personalRecords.push(`${pr.exerciseName}`);
 		}
 	}
 
 	return duplicates;
+}
+
+// Strip unknown fields so Tablinum validation doesn't reject legacy backup data
+function pickExerciseFields(data: Record<string, any>) {
+	return {
+		name: data.name,
+		category: data.category,
+		primary_muscle: data.primary_muscle,
+		secondary_muscles: data.secondary_muscles,
+		equipment: data.equipment,
+		is_custom: data.is_custom,
+		...(data.favorited != null ? { favorited: data.favorited } : {})
+	};
+}
+
+function pickWorkoutFields(data: Record<string, any>) {
+	return {
+		name: data.name,
+		exercises: data.exercises,
+		createdAt: data.createdAt,
+		updatedAt: data.updatedAt,
+		...(data.notes != null ? { notes: data.notes } : {})
+	};
+}
+
+function pickSessionFields(data: Record<string, any>) {
+	return {
+		exercises: data.exercises,
+		date: data.date,
+		duration: data.duration,
+		createdAt: data.createdAt,
+		...(data.notes != null ? { notes: data.notes } : {})
+	};
+}
+
+function pickPRFields(data: Record<string, any>) {
+	return {
+		exerciseId: data.exerciseId,
+		exerciseName: data.exerciseName,
+		reps: data.reps,
+		weight: data.weight,
+		achievedDate: data.achievedDate,
+		sessionId: data.sessionId
+	};
 }
 
 export async function importBackupData(
@@ -203,11 +251,20 @@ export async function importBackupData(
 		}
 	};
 
+	// Round-trip through JSON to strip Svelte reactivity proxies before writing to IndexedDB
+	backup = JSON.parse(JSON.stringify(backup));
+
 	try {
-		const existingExerciseIds = new Set((await db.exercises.toCollection().keys()).map(String));
-		const existingWorkoutIds = new Set((await db.workouts.toCollection().keys()).map(String));
-		const existingSessionIds = new Set((await db.sessions.toCollection().keys()).map(String));
-		const existingPRIds = new Set((await db.personalRecords.toCollection().keys()).map(String));
+		// Build maps of existing records by natural key
+		const existingExercises = await db.collection('exercises').get() as Exercise[];
+		const existingWorkouts = await db.collection('workouts').get() as Workout[];
+		const existingSessions = await db.collection('sessions').get() as Session[];
+		const existingPRs = await db.collection('personalRecords').get() as PersonalRecord[];
+
+		const exerciseByName = new Map(existingExercises.map((e) => [e.name, e]));
+		const workoutByName = new Map(existingWorkouts.map((w) => [w.name, w]));
+		const sessionByDate = new Map(existingSessions.map((s) => [s.date, s]));
+		const prByKey = new Map(existingPRs.map((pr) => [`${pr.exerciseId}-${pr.reps}`, pr]));
 
 		result.totalItems =
 			backup.exercises.length +
@@ -215,228 +272,125 @@ export async function importBackupData(
 			backup.sessions.length +
 			backup.personalRecords.length;
 
-		if (signal?.aborted) {
-			throw new Error('Import cancelled by user');
+		// Build exercise ID mapping (backup ID -> new Tablinum ID)
+		const exerciseIdMap = new Map<string, string>();
+
+		if (signal?.aborted) throw new Error('Import cancelled by user');
+
+		// Import exercises
+		for (const exercise of backup.exercises) {
+			if (signal?.aborted) throw new Error('Import cancelled by user');
+			const existing = exerciseByName.get(exercise.name);
+			const cleanData = pickExerciseFields(exercise);
+			if (existing) {
+				result.duplicates.exercises.push(exercise.name);
+				exerciseIdMap.set(exercise.id, existing.id);
+				if (resolution.exercises === 'skip') {
+					result.skippedItems++;
+				} else {
+					await db.collection('exercises').update(existing.id, cleanData);
+					result.replacedItems++;
+				}
+			} else {
+				const newId = await db.collection('exercises').add(cleanData);
+				exerciseIdMap.set(exercise.id, newId);
+				result.importedItems++;
+			}
 		}
 
-		await importExercises(
-			backup.exercises,
-			existingExerciseIds,
-			resolution.exercises,
-			result,
-			signal
-		);
+		if (signal?.aborted) throw new Error('Import cancelled by user');
 
-		if (signal?.aborted) {
-			throw new Error('Import cancelled by user');
+		// Import workouts (rewrite exerciseId references)
+		for (const workout of backup.workouts) {
+			if (signal?.aborted) throw new Error('Import cancelled by user');
+			const remappedWorkout = {
+				...workout,
+				exercises: workout.exercises.map((ex) => ({
+					...ex,
+					exerciseId: exerciseIdMap.get(ex.exerciseId) ?? ex.exerciseId
+				}))
+			};
+			const cleanData = pickWorkoutFields(remappedWorkout);
+			const existing = workoutByName.get(workout.name);
+			if (existing) {
+				result.duplicates.workouts.push(workout.name);
+				if (resolution.workouts === 'skip') {
+					result.skippedItems++;
+				} else {
+					await db.collection('workouts').update(existing.id, cleanData);
+					result.replacedItems++;
+				}
+			} else {
+				await db.collection('workouts').add(cleanData);
+				result.importedItems++;
+			}
 		}
 
-		await importWorkouts(
-			backup.workouts,
-			existingWorkoutIds,
-			resolution.workouts,
-			result,
-			signal
-		);
+		if (signal?.aborted) throw new Error('Import cancelled by user');
 
-		if (signal?.aborted) {
-			throw new Error('Import cancelled by user');
+		// Import sessions (rewrite exerciseId references, strip legacy fields)
+		for (const rawSession of backup.sessions) {
+			if (signal?.aborted) throw new Error('Import cancelled by user');
+			const remappedSession = {
+				...rawSession,
+				exercises: rawSession.exercises.map((ex) => ({
+					...ex,
+					exerciseId: exerciseIdMap.get(ex.exerciseId) ?? ex.exerciseId
+				}))
+			};
+			const cleanData = pickSessionFields(remappedSession);
+			const existing = sessionByDate.get(rawSession.date);
+			if (existing) {
+				result.duplicates.sessions.push(`Session from ${new Date(rawSession.date).toLocaleDateString()}`);
+				if (resolution.sessions === 'skip') {
+					result.skippedItems++;
+				} else {
+					await db.collection('sessions').update(existing.id, cleanData);
+					result.replacedItems++;
+				}
+			} else {
+				await db.collection('sessions').add(cleanData);
+				result.importedItems++;
+			}
 		}
 
-		await importSessions(
-			backup.sessions,
-			existingSessionIds,
-			resolution.sessions,
-			result,
-			signal
-		);
+		if (signal?.aborted) throw new Error('Import cancelled by user');
 
-		if (signal?.aborted) {
-			throw new Error('Import cancelled by user');
+		// Import personal records (rewrite exerciseId references)
+		for (const pr of backup.personalRecords) {
+			if (signal?.aborted) throw new Error('Import cancelled by user');
+			const remappedPR = {
+				...pr,
+				exerciseId: exerciseIdMap.get(pr.exerciseId) ?? pr.exerciseId
+			};
+			const cleanData = pickPRFields(remappedPR);
+			const prKey = `${cleanData.exerciseId}-${cleanData.reps}`;
+			const existing = prByKey.get(prKey);
+			if (existing) {
+				result.duplicates.personalRecords.push(pr.exerciseName);
+				if (resolution.personalRecords === 'skip') {
+					result.skippedItems++;
+				} else if (resolution.personalRecords === 'merge') {
+					if (new Date(pr.achievedDate) > new Date(existing.achievedDate)) {
+						await db.collection('personalRecords').update(existing.id, cleanData);
+						result.replacedItems++;
+					} else {
+						result.skippedItems++;
+					}
+				} else {
+					await db.collection('personalRecords').update(existing.id, cleanData);
+					result.replacedItems++;
+				}
+			} else {
+				await db.collection('personalRecords').add(cleanData);
+				result.importedItems++;
+			}
 		}
-
-		await importPersonalRecords(
-			backup.personalRecords,
-			existingPRIds,
-			resolution.personalRecords,
-			result,
-			signal
-		);
 
 		return result;
 	} catch (error) {
 		result.success = false;
 		result.errors.push(error instanceof Error ? error.message : 'Unknown error occurred');
 		return result;
-	}
-}
-
-async function importExercises(
-	exercises: Exercise[],
-	existingIds: Set<string>,
-	resolution: 'replace' | 'skip' | 'merge',
-	result: ImportResult,
-	signal?: AbortSignal
-): Promise<void> {
-	const toAdd: Exercise[] = [];
-	const toUpdate: Exercise[] = [];
-
-	for (const exercise of exercises) {
-		if (signal?.aborted) throw new Error('Import cancelled by user');
-
-		if (existingIds.has(exercise.id)) {
-			result.duplicates.exercises.push(exercise.name);
-			if (resolution === 'skip') {
-				result.skippedItems++;
-			} else if (resolution === 'replace') {
-				toUpdate.push(exercise);
-				result.replacedItems++;
-			} else {
-				toUpdate.push(exercise);
-				result.replacedItems++;
-			}
-		} else {
-			toAdd.push(exercise);
-			result.importedItems++;
-		}
-	}
-
-	if (toAdd.length > 0) {
-		await db.exercises.bulkAdd(Dexie.deepClone(toAdd));
-	}
-
-	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.exercises.bulkPut(Dexie.deepClone(toUpdate));
-	}
-}
-
-async function importWorkouts(
-	workouts: Workout[],
-	existingIds: Set<string>,
-	resolution: 'replace' | 'skip' | 'merge',
-	result: ImportResult,
-	signal?: AbortSignal
-): Promise<void> {
-	const toAdd: Workout[] = [];
-	const toUpdate: Workout[] = [];
-
-	for (const workout of workouts) {
-		if (signal?.aborted) throw new Error('Import cancelled by user');
-
-		if (existingIds.has(workout.id)) {
-			result.duplicates.workouts.push(workout.name);
-			if (resolution === 'skip') {
-				result.skippedItems++;
-			} else if (resolution === 'replace') {
-				toUpdate.push(workout);
-				result.replacedItems++;
-			} else {
-				toUpdate.push(workout);
-				result.replacedItems++;
-			}
-		} else {
-			toAdd.push(workout);
-			result.importedItems++;
-		}
-	}
-
-	if (toAdd.length > 0) {
-		await db.workouts.bulkAdd(Dexie.deepClone(toAdd));
-	}
-
-	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.workouts.bulkPut(Dexie.deepClone(toUpdate));
-	}
-}
-
-// Strip legacy workout fields from old-style backup data
-function sanitizeSession(session: Session & { workoutId?: string; workoutName?: string }): Session {
-	const { workoutId, workoutName, ...cleanSession } = session;
-	return cleanSession;
-}
-
-async function importSessions(
-	sessions: (Session & { workoutId?: string; workoutName?: string })[],
-	existingIds: Set<string>,
-	resolution: 'replace' | 'skip' | 'merge',
-	result: ImportResult,
-	signal?: AbortSignal
-): Promise<void> {
-	const toAdd: Session[] = [];
-	const toUpdate: Session[] = [];
-
-	for (const rawSession of sessions) {
-		if (signal?.aborted) throw new Error('Import cancelled by user');
-
-		// Strip legacy workout fields from old backups
-		const session = sanitizeSession(rawSession);
-
-		if (existingIds.has(session.id)) {
-			result.duplicates.sessions.push(`Session from ${new Date(session.date).toLocaleDateString()}`);
-			if (resolution === 'skip') {
-				result.skippedItems++;
-			} else if (resolution === 'replace') {
-				toUpdate.push(session);
-				result.replacedItems++;
-			} else {
-				toUpdate.push(session);
-				result.replacedItems++;
-			}
-		} else {
-			toAdd.push(session);
-			result.importedItems++;
-		}
-	}
-
-	if (toAdd.length > 0) {
-		await db.sessions.bulkAdd(Dexie.deepClone(toAdd));
-	}
-
-	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.sessions.bulkPut(Dexie.deepClone(toUpdate));
-	}
-}
-
-async function importPersonalRecords(
-	prs: PersonalRecord[],
-	existingIds: Set<string>,
-	resolution: 'replace' | 'skip' | 'merge',
-	result: ImportResult,
-	signal?: AbortSignal
-): Promise<void> {
-	const toAdd: PersonalRecord[] = [];
-	const toUpdate: PersonalRecord[] = [];
-
-	for (const pr of prs) {
-		if (signal?.aborted) throw new Error('Import cancelled by user');
-
-		if (existingIds.has(pr.id)) {
-			result.duplicates.personalRecords.push(pr.exerciseName);
-			if (resolution === 'skip') {
-				result.skippedItems++;
-			} else if (resolution === 'replace') {
-				toUpdate.push(pr);
-				result.replacedItems++;
-			} else {
-				const existingPR = await db.personalRecords.get(pr.id);
-				if (existingPR && new Date(pr.achievedDate) > new Date(existingPR.achievedDate)) {
-					toUpdate.push(pr);
-					result.replacedItems++;
-				} else {
-					result.skippedItems++;
-				}
-			}
-		} else {
-			toAdd.push(pr);
-			result.importedItems++;
-		}
-	}
-
-	if (toAdd.length > 0) {
-		await db.personalRecords.bulkAdd(Dexie.deepClone(toAdd));
-	}
-
-	if (resolution !== 'skip' && toUpdate.length > 0) {
-		await db.personalRecords.bulkPut(Dexie.deepClone(toUpdate));
 	}
 }

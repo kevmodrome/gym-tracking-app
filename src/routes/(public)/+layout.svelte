@@ -3,30 +3,25 @@
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
-	import { initializeDbHooks } from '$lib/dbHooks';
-	import { syncManager } from '$lib/syncUtils';
-	import { isSyncEnabled } from '$lib/syncService';
+	import { db } from '$lib/db';
+	import { migrateFromDexieIfNeeded } from '$lib/migrateDexieToTablinum';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import SwipeHandler from '$lib/components/SwipeHandler.svelte';
-	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
-	import SyncOverlay from '$lib/components/SyncOverlay.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
 
-	onMount(() => {
-		// Load user preferences from IDB
-		preferencesStore.load();
+	onMount(async () => {
+		// Wait for Tablinum to be ready
+		await db.ready;
 
-		// Initialize Dexie hooks for auto-sync on data changes
-		initializeDbHooks();
+		// Migrate data from old Dexie database if needed
+		await migrateFromDexieIfNeeded(db);
 
-		// Initial sync on app open (blocking)
-		if (isSyncEnabled()) {
-			syncManager.scheduleBlockingSync();
-		}
+		// Load user preferences
+		await preferencesStore.load();
 	});
 
 	// Enable CSS View Transitions for page navigation
@@ -58,8 +53,6 @@
 </svelte:head>
 
 <Toast />
-<SyncOverlay />
-<SyncIndicator />
 <PWAInstallPrompt />
 <SwipeHandler />
 <div class="pb-16 md:pb-0 md:pt-16 w-full min-w-[320px] min-h-screen bg-bg">

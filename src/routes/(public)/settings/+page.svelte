@@ -1,23 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
-	import type { AppSettings, NotificationPreferences } from '$lib/types';
+	import type { AppSettings } from '$lib/types';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
-	import SyncIndicator from '$lib/components/SyncIndicator.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
-	import { syncManager, formatLastSyncTime } from '$lib/syncUtils';
-	import { formatSyncMessage } from '$lib/syncUtils';
+	import { db } from '$lib/db';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
-	import {
-		syncKey,
-		isSyncing as isSyncingStore,
-		lastSyncTime,
-		generateSyncKey,
-		setSyncKey,
-		clearSyncKey
-	} from '$lib/syncService';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import { Button, TextInput, Select, Toggle, Card, Modal, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
+	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
 	import { seedDemoData } from '$lib/db';
 
 	let settings = $state<AppSettings>({
@@ -26,36 +16,22 @@
 		vibrationEnabled: true
 	});
 
-	let notificationPreferences = $state<NotificationPreferences>({
-		workoutReminders: true,
-		prAchievements: true,
-		progressUpdates: false,
-		emailNotifications: false
-	});
-
 	let showImportModal = $state(false);
 	let showExportProgress = $state(false);
 	let exportProgress = $state({ current: 0, total: 0, stage: '' });
 	let exportResult = $state<{ success: boolean; message: string } | null>(null);
-	let exportFormat = $state<'json'>('json');
-	let isSyncing = $state(false);
-
-	// Sync key state
-	let currentSyncKey = $state<string | null>(null);
-	let currentLastSyncTime = $state<number | null>(null);
-	let enterKeyInput = $state('');
-	let showEnterKeyModal = $state(false);
-	let isGeneratingKey = $state(false);
-	let isEnteringKey = $state(false);
-	let syncKeyError = $state<string | null>(null);
-	let showCopiedMessage = $state(false);
 	let hasLoaded = $state(false);
 	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Sync status from Tablinum
+	let syncStatus = $state(db.syncStatus);
+	let pendingCount = $state(db.pendingCount);
+	let relayStatus = $state(db.relayStatus);
 
 	// Auto-save settings when they change (with debounce)
 	$effect(() => {
 		// Read all settings to create dependencies
-		const _ = JSON.stringify(settings) + JSON.stringify(notificationPreferences);
+		const _ = JSON.stringify(settings);
 
 		// Don't save on initial load
 		if (!hasLoaded) return;
@@ -64,33 +40,11 @@
 		if (saveTimeout) clearTimeout(saveTimeout);
 		saveTimeout = setTimeout(() => {
 			localStorage.setItem('gym-app-settings', JSON.stringify(settings));
-			localStorage.setItem('gym-app-notification-prefs', JSON.stringify(notificationPreferences));
 		}, 300);
-	});
-
-	// Subscribe to sync stores
-	$effect(() => {
-		const unsubKey = syncKey.subscribe((value) => {
-			currentSyncKey = value;
-		});
-		const unsubTime = lastSyncTime.subscribe((value) => {
-			currentLastSyncTime = value;
-		});
-		const unsubSyncing = isSyncingStore.subscribe((value) => {
-			isSyncing = value;
-		});
-
-		return () => {
-			unsubKey();
-			unsubTime();
-			unsubSyncing();
-		};
 	});
 
 	onMount(() => {
 		loadSettings();
-		loadNotificationPreferences();
-		// Mark as loaded after initial load to enable auto-save
 		hasLoaded = true;
 	});
 
@@ -103,43 +57,6 @@
 			} catch (e) {
 				console.error('Failed to parse settings:', e);
 			}
-		}
-	}
-
-	function loadNotificationPreferences() {
-		const saved = localStorage.getItem('gym-app-notification-prefs');
-		if (saved) {
-			try {
-				const parsed = JSON.parse(saved);
-				notificationPreferences = { ...notificationPreferences, ...parsed };
-			} catch (e) {
-				console.error('Failed to parse notification preferences:', e);
-			}
-		}
-	}
-
-	async function handleSync() {
-		isSyncing = true;
-
-		// Run sync with a minimum 500ms delay to avoid jarring UI
-		const minDelay = new Promise((resolve) => setTimeout(resolve, 500));
-		const [result] = await Promise.all([
-			syncManager.sync((progress) => {
-				exportProgress = {
-					current: progress.current,
-					total: progress.total,
-					stage: progress.stage
-				};
-			}),
-			minDelay
-		]);
-
-		isSyncing = false;
-
-		if (result.success) {
-			toastStore.showSuccess(result.message);
-		} else {
-			toastStore.showError(result.message);
 		}
 	}
 
@@ -177,93 +94,15 @@
 		}
 	}
 
-	async function handleGenerateSyncKey() {
-		isGeneratingKey = true;
-
-		const result = await generateSyncKey();
-
-		isGeneratingKey = false;
-
-		if (result.success) {
-			toastStore.showSuccess('Sync key generated! Your data has been synced.');
-		} else {
-			toastStore.showError(result.error || 'Failed to generate sync key');
-		}
-	}
-
-	function handleShowEnterKeyModal() {
-		enterKeyInput = '';
-		syncKeyError = null;
-		showEnterKeyModal = true;
-	}
-
-	function handleCloseEnterKeyModal() {
-		showEnterKeyModal = false;
-		enterKeyInput = '';
-		syncKeyError = null;
-	}
-
-	async function handleEnterSyncKey() {
-		if (!enterKeyInput.trim()) {
-			syncKeyError = 'Please enter a sync key';
-			return;
-		}
-
-		isEnteringKey = true;
-		syncKeyError = null;
-
-		const result = await setSyncKey(enterKeyInput.trim());
-
-		isEnteringKey = false;
-
-		if (result.success) {
-			showEnterKeyModal = false;
-			enterKeyInput = '';
-			toastStore.showSuccess('Sync key connected! Your data has been synced.');
-		} else {
-			toastStore.showError(result.error || 'Failed to connect sync key');
-		}
-	}
-
-	function handleDisconnectSync() {
-		if (confirm('Are you sure you want to disconnect? Your data will remain on this device but will no longer sync.')) {
-			clearSyncKey();
-			toastStore.showInfo('Sync disconnected.');
-		}
-	}
-
-	async function handleCopySyncKey() {
-		if (currentSyncKey) {
-			try {
-				await navigator.clipboard.writeText(currentSyncKey);
-				showCopiedMessage = true;
-				setTimeout(() => {
-					showCopiedMessage = false;
-				}, 2000);
-			} catch {
-				alert('Failed to copy. Your sync key is: ' + currentSyncKey);
-			}
-		}
-	}
-
 	const weightUnitOptions = [
 		{ value: 'kg', label: 'Kilograms (kg)' },
 		{ value: 'lb', label: 'Pounds (lb)' }
-	];
-
-	const distanceUnitOptions = [
-		{ value: 'km', label: 'Kilometers (km)' },
-		{ value: 'miles', label: 'Miles' }
 	];
 
 	const decimalPlacesOptions = [
 		{ value: 0, label: '0 decimal places (whole numbers)' },
 		{ value: 1, label: '1 decimal place' },
 		{ value: 2, label: '2 decimal places' }
-	];
-
-	const exportFormatOptions = [
-		{ value: 'json', label: 'JSON (Recommended)' }
 	];
 </script>
 
@@ -273,85 +112,46 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">Data Sync</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Sync</h2>
 
 				<div class="space-y-4">
-					{#if currentSyncKey}
-						<!-- Sync is enabled - show key and controls -->
-						<div class="bg-surface-elevated border border-border rounded-lg p-4">
-							<div class="flex items-center justify-between mb-2">
-								<h3 class="font-medium text-text-primary">Your Sync Key</h3>
-								<span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-success/20 text-success">
-									<span class="w-2 h-2 bg-success rounded-full"></span>
-									Connected
-								</span>
-							</div>
-							<div class="flex items-center gap-2">
-								<code class="flex-1 bg-bg px-3 py-2 rounded text-sm font-mono text-text-secondary break-all">
-									{currentSyncKey}
-								</code>
-								<Button variant="ghost" onclick={handleCopySyncKey}>
-									{showCopiedMessage ? '✓' : '📋'}
-								</Button>
-							</div>
-							<p class="mt-2 text-xs text-text-muted">
-								Save this key somewhere safe. Use it on other devices to sync your data.
+					<div class="bg-surface-elevated border border-border rounded-lg p-4">
+						<div class="flex items-center justify-between mb-2">
+							<h3 class="font-medium text-text-primary">Connection Status</h3>
+							<span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full {relayStatus.connectedUrls?.length > 0 ? 'bg-success/20 text-success' : 'bg-text-muted/20 text-text-muted'}">
+								<span class="w-2 h-2 rounded-full {relayStatus.connectedUrls?.length > 0 ? 'bg-success' : 'bg-text-muted'}"></span>
+								{relayStatus.connectedUrls?.length > 0 ? 'Connected' : 'Disconnected'}
+							</span>
+						</div>
+						{#if relayStatus.connectedUrls?.length > 0}
+							<p class="text-sm text-text-secondary">
+								Connected to {relayStatus.connectedUrls.length} relay{relayStatus.connectedUrls.length > 1 ? 's' : ''}
+							</p>
+						{:else}
+							<p class="text-sm text-text-secondary">
+								Not connected to any relays
+							</p>
+						{/if}
+					</div>
+
+					<div class="flex items-center justify-between">
+						<div>
+							<h3 class="font-medium text-text-primary">Sync Status</h3>
+							<p class="text-sm text-text-secondary">
+								{syncStatus === 'syncing' ? 'Syncing...' : 'Idle'}
+								{#if pendingCount > 0}
+									&bull; {pendingCount} pending change{pendingCount > 1 ? 's' : ''}
+								{/if}
 							</p>
 						</div>
-
-						<div class="flex items-center justify-between">
-							<div>
-								<h3 class="font-medium text-text-primary">Last Synced</h3>
-								<p class="text-sm text-text-secondary">
-									{formatLastSyncTime(currentLastSyncTime)}
-								</p>
-							</div>
-							<SyncIndicator position="inline" />
-						</div>
-
-						<div class="border-t border-border pt-4">
-							<div class="flex flex-col sm:flex-row gap-3">
-								<Button
-									onclick={handleSync}
-									disabled={isSyncing || !syncManager.isOnline()}
-									loading={isSyncing}
-									class="flex-1"
-								>
-									Sync Now
-								</Button>
-								<Button variant="ghost" onclick={handleDisconnectSync}>
-									Disconnect
-								</Button>
-							</div>
-						</div>
-					{:else}
-						<!-- Sync not enabled - show setup options -->
-						<div class="text-center py-4">
-							<p class="text-text-secondary mb-4">
-								Enable sync to keep your data synchronized across devices.
-							</p>
-							<div class="flex flex-col sm:flex-row gap-3 justify-center">
-								<Button
-									onclick={handleGenerateSyncKey}
-									disabled={isGeneratingKey}
-									loading={isGeneratingKey}
-								>
-									{isGeneratingKey ? 'Generating...' : 'Generate New Key'}
-								</Button>
-								<Button variant="secondary" onclick={handleShowEnterKeyModal}>
-									Enter Existing Key
-								</Button>
-							</div>
-						</div>
-					{/if}
+					</div>
 
 					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<h3 class="font-medium text-text-primary mb-2">ℹ️ About Sync</h3>
+						<h3 class="font-medium text-text-primary mb-2">About Sync</h3>
 						<ul class="text-sm text-text-secondary space-y-1">
-							<li>• Your sync key is like a password - keep it safe</li>
-							<li>• Use the same key on all your devices to sync data</li>
-							<li>• Changes sync automatically when online</li>
-							<li>• Last write wins in case of conflicts</li>
+							<li>Your data is encrypted end-to-end</li>
+							<li>Changes sync automatically via Nostr relays</li>
+							<li>Use invites to share across devices</li>
 						</ul>
 					</div>
 				</div>
@@ -409,17 +209,6 @@
 
 					<div class="border-t border-border pt-4">
 						<Select
-							bind:value={preferencesStore.distanceUnit}
-							options={distanceUnitOptions}
-							label="Distance Unit"
-							id="distance-unit"
-							hint="Unit for displaying distance values"
-							onchange={() => preferencesStore.update({ distanceUnit: preferencesStore.distanceUnit })}
-						/>
-					</div>
-
-					<div class="border-t border-border pt-4">
-						<Select
 							bind:value={preferencesStore.decimalPlaces}
 							options={decimalPlacesOptions}
 							label="Decimal Places"
@@ -432,42 +221,12 @@
 			{/snippet}
 		</Card>
 
-		<Card class="mb-6">
-			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">Notifications</h2>
-
-				<div class="space-y-4">
-					<Toggle
-						bind:checked={notificationPreferences.workoutReminders}
-						label="Workout Reminders"
-						description="Get notified about upcoming workouts"
-					/>
-
-					<div class="border-t border-border pt-4">
-						<Toggle
-							bind:checked={notificationPreferences.prAchievements}
-							label="PR Achievements"
-							description="Celebrate new personal records"
-						/>
-					</div>
-
-					<div class="border-t border-border pt-4">
-						<Toggle
-							bind:checked={notificationPreferences.progressUpdates}
-							label="Progress Updates"
-							description="Weekly progress summaries"
-						/>
-					</div>
-				</div>
-			{/snippet}
-		</Card>
-
 		<InfoBox type="info" title="Tips">
 			<ul class="space-y-1">
-				<li>• You can manually adjust the timer duration during your workout</li>
-				<li>• Skip the timer anytime to move to the next set</li>
-				<li>• Sound and vibration will alert you when rest period ends</li>
-				<li>• Typical rest periods: 2-3 minutes for compound exercises, 1-2 minutes for isolation</li>
+				<li>You can manually adjust the timer duration during your workout</li>
+				<li>Skip the timer anytime to move to the next set</li>
+				<li>Sound and vibration will alert you when rest period ends</li>
+				<li>Typical rest periods: 2-3 minutes for compound exercises, 1-2 minutes for isolation</li>
 			</ul>
 		</InfoBox>
 
@@ -476,15 +235,7 @@
 				<h2 class="text-xl font-bold text-text-primary mb-4">Data Management</h2>
 
 				<div class="space-y-4">
-					<Select
-						bind:value={exportFormat}
-						options={exportFormatOptions}
-						label="Export File Format"
-						id="export-format"
-						hint="Choose the format for exported data files"
-					/>
-
-					<div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
+					<div class="flex flex-col sm:flex-row gap-3">
 						<Button onclick={handleExport} disabled={showExportProgress} class="flex-1">
 							<span class="text-lg">📤</span>
 							<span>Export Data</span>
@@ -496,12 +247,12 @@
 					</div>
 
 					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<h3 class="font-medium text-text-primary mb-2">ℹ️ About Import/Export</h3>
+						<h3 class="font-medium text-text-primary mb-2">About Import/Export</h3>
 						<ul class="text-sm text-text-secondary space-y-1">
-							<li>• Export creates a backup file with all your workout data</li>
-							<li>• Import restores data from a previously exported backup</li>
-							<li>• You can choose how to handle duplicate items during import</li>
-							<li>• Store backup files in a safe location for data security</li>
+							<li>Export creates a backup file with all your workout data</li>
+							<li>Import restores data from a previously exported backup</li>
+							<li>You can choose how to handle duplicate items during import</li>
+							<li>Store backup files in a safe location for data security</li>
 						</ul>
 					</div>
 
@@ -543,7 +294,6 @@
 					{:else if exportResult.success}
 						<div class="space-y-3">
 							<div class="flex items-center gap-2 text-success">
-								<span class="text-2xl">✅</span>
 								<p class="font-medium">Export Complete!</p>
 							</div>
 							<p class="text-sm text-text-secondary">{exportResult.message}</p>
@@ -552,7 +302,6 @@
 					{:else}
 						<div class="space-y-3">
 							<div class="flex items-center gap-2 text-danger">
-								<span class="text-2xl">❌</span>
 								<p class="font-medium">Export Failed</p>
 							</div>
 							<p class="text-sm text-text-secondary">{exportResult.message}</p>
@@ -565,35 +314,5 @@
 		{#if showImportModal}
 			<ImportBackupModal onClose={handleImportModalClose} />
 		{/if}
-
-		<Modal open={showEnterKeyModal} title="Enter Sync Key" size="sm" onclose={handleCloseEnterKeyModal}>
-			{#snippet children()}
-				<div class="space-y-4">
-					<p class="text-sm text-text-secondary">
-						Enter your sync key to connect this device to your existing data.
-					</p>
-					<TextInput
-						bind:value={enterKeyInput}
-						label="Sync Key"
-						id="sync-key-input"
-						placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-						autofocus
-					/>
-					{#if syncKeyError}
-						<p class="text-sm text-danger">{syncKeyError}</p>
-					{/if}
-				</div>
-			{/snippet}
-			{#snippet footer()}
-				<div class="flex justify-end gap-3">
-					<Button variant="secondary" onclick={handleCloseEnterKeyModal}>
-						Cancel
-					</Button>
-					<Button onclick={handleEnterSyncKey} disabled={isEnteringKey} loading={isEnteringKey}>
-						{isEnteringKey ? 'Connecting...' : 'Connect'}
-					</Button>
-				</div>
-			{/snippet}
-		</Modal>
 	</div>
 </div>

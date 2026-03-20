@@ -9,7 +9,7 @@ export const load: PageLoad = async ({ depends }) => {
 	depends(DEPS.personalRecords);
 
 	await initializeExercises();
-	const exercises = await db.exercises.toArray();
+	const exercises = await db.collection('exercises').get() as Exercise[];
 
 	// Load personal records for all exercises
 	const exercisePRs = new Map<string, PersonalRecord[]>();

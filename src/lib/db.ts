@@ -1,411 +1,246 @@
-import Dexie, { liveQuery } from 'dexie';
-import type { Table } from 'dexie';
-import type { Exercise, Workout, Session, PersonalRecord, SyncQueueItem, UserPreferences } from './types';
+import { field, collection } from 'tablinum';
+import { Tablinum } from 'tablinum/svelte';
+import type { Exercise, Workout, Session, PersonalRecord, UserPreferences } from './types';
 
-export class GymDB extends Dexie {
-	exercises!: Table<Exercise>;
-	workouts!: Table<Workout>;
-	sessions!: Table<Session>;
-	personalRecords!: Table<PersonalRecord>;
-	syncQueue!: Table<SyncQueueItem>;
-	preferences!: Table<UserPreferences>;
+const exercisesDef = collection('exercises', {
+	name: field.string(),
+	category: field.string(),
+	primary_muscle: field.string(),
+	secondary_muscles: field.json(),
+	equipment: field.string(),
+	is_custom: field.boolean(),
+	favorited: field.optional(field.boolean()),
+}, { indices: ['name', 'category', 'primary_muscle', 'is_custom'] });
 
-	constructor() {
-		super('gym-recording-app-db');
-		this.version(1).stores({
-			exercises: 'id, name, category, primary_muscle, is_custom',
-			workouts: 'id, name, createdAt, updatedAt'
-		});
-		this.version(2).stores({
-			sessions: 'id, workoutId, date, createdAt'
-		});
-		this.version(3).stores({
-			personalRecords: 'id, exerciseId, reps, weight, achievedDate'
-		});
-		this.version(4).stores({
-			syncQueue: 'id, targetType, targetId, timestamp, status'
-		});
-		// v5: Remove workout dependency from sessions, add favorited to exercises
-		this.version(5)
-			.stores({
-				exercises: 'id, name, category, primary_muscle, is_custom, favorited',
-				sessions: 'id, date, createdAt' // removed workoutId index
-			})
-			.upgrade((tx) => {
-				// Migrate existing sessions to remove workout references
-				return tx
-					.table('sessions')
-					.toCollection()
-					.modify((session) => {
-						delete session.workoutId;
-						delete session.workoutName;
-					});
-			});
-		// v6: Add preferences table
-		this.version(6).stores({
-			preferences: 'id'
-		});
-	}
+const workoutsDef = collection('workouts', {
+	name: field.string(),
+	exercises: field.json(),
+	notes: field.optional(field.string()),
+	createdAt: field.string(),
+	updatedAt: field.string(),
+}, { indices: ['name', 'createdAt'] });
+
+const sessionsDef = collection('sessions', {
+	exercises: field.json(),
+	date: field.string(),
+	duration: field.number(),
+	notes: field.optional(field.string()),
+	createdAt: field.string(),
+}, { indices: ['date', 'createdAt'] });
+
+const personalRecordsDef = collection('personalRecords', {
+	exerciseId: field.string(),
+	exerciseName: field.string(),
+	reps: field.number(),
+	weight: field.number(),
+	achievedDate: field.string(),
+	sessionId: field.string(),
+}, { indices: ['exerciseId', 'reps'] });
+
+const preferencesDef = collection('preferences', {
+	weightUnit: field.string(),
+	distanceUnit: field.string(),
+	decimalPlaces: field.number(),
+	updatedAt: field.string(),
+});
+
+const schema = {
+	exercises: exercisesDef,
+	workouts: workoutsDef,
+	sessions: sessionsDef,
+	personalRecords: personalRecordsDef,
+	preferences: preferencesDef,
+};
+
+export const db = new Tablinum({
+	schema,
+	relays: ['wss://relay.tablinum.dev/'],
+	dbName: 'gym-recording-app',
+});
+
+// Helper: look up an exercise by name from the DB
+async function findExerciseByName(name: string): Promise<string | null> {
+	const results = await db.collection('exercises').where('name').equals(name).get();
+	return results.length > 0 ? results[0].id : null;
 }
 
-export const db = new GymDB();
-export { liveQuery };
-
 export async function seedDemoData(): Promise<void> {
-	// Seed sample workouts
-	const workouts: Workout[] = [
-		{
-			id: 'demo-workout-1',
-			name: 'Push Day',
-			exercises: [
-				{ exerciseId: '1', exerciseName: 'Bench Press', targetSets: 4, targetReps: 8, targetWeight: 135 },
-				{ exerciseId: '2', exerciseName: 'Incline Dumbbell Press', targetSets: 3, targetReps: 10, targetWeight: 50 },
-				{ exerciseId: '10', exerciseName: 'Overhead Press', targetSets: 3, targetReps: 8, targetWeight: 95 },
-				{ exerciseId: '14', exerciseName: 'Tricep Pushdowns', targetSets: 3, targetReps: 12, targetWeight: 40 }
-			],
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString()
-		},
-		{
-			id: 'demo-workout-2',
-			name: 'Pull Day',
-			exercises: [
-				{ exerciseId: '6', exerciseName: 'Deadlift', targetSets: 4, targetReps: 5, targetWeight: 225 },
-				{ exerciseId: '8', exerciseName: 'Barbell Row', targetSets: 4, targetReps: 8, targetWeight: 135 },
-				{ exerciseId: '7', exerciseName: 'Pull-ups', targetSets: 3, targetReps: 8, targetWeight: 0 },
-				{ exerciseId: '13', exerciseName: 'Bicep Curls', targetSets: 3, targetReps: 12, targetWeight: 30 }
-			],
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString()
-		},
-		{
-			id: 'demo-workout-3',
-			name: 'Leg Day',
-			exercises: [
-				{ exerciseId: '5', exerciseName: 'Squat', targetSets: 4, targetReps: 6, targetWeight: 185 },
-				{ exerciseId: '24', exerciseName: 'Leg Press', targetSets: 3, targetReps: 10, targetWeight: 270 },
-				{ exerciseId: '25', exerciseName: 'Walking Lunges', targetSets: 3, targetReps: 12, targetWeight: 40 }
-			],
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString()
-		}
+	// Look up exercise IDs by name (they were seeded by initializeExercises)
+	const exerciseNames = [
+		'Bench Press', 'Incline Dumbbell Press', 'Overhead Press',
+		'Tricep Pushdowns', 'Deadlift', 'Barbell Row', 'Pull-ups',
+		'Bicep Curls', 'Squat', 'Leg Press', 'Walking Lunges'
 	];
+	const idMap = new Map<string, string>();
+	for (const name of exerciseNames) {
+		const id = await findExerciseByName(name);
+		if (id) idMap.set(name, id);
+	}
 
 	// Clear existing demo data
-	await db.workouts.where('id').startsWith('demo-').delete();
-	await db.sessions.where('id').startsWith('demo-').delete();
+	const allWorkouts = await db.collection('workouts').get();
+	for (const w of allWorkouts) {
+		if (w.id.startsWith('demo-') || w.name === 'Push Day' || w.name === 'Pull Day' || w.name === 'Leg Day') {
+			await db.collection('workouts').delete(w.id);
+		}
+	}
+	const allSessions = await db.collection('sessions').get();
+	for (const s of allSessions) {
+		if (s.id.startsWith('demo-')) {
+			await db.collection('sessions').delete(s.id);
+		}
+	}
 
-	// Add workouts
-	await db.workouts.bulkAdd(workouts);
-
-	// Seed sample sessions (past completed sessions)
-	const sessions: Session[] = [
+	// Seed workouts
+	const workoutData = [
 		{
-			id: 'demo-session-1',
+			name: 'Push Day',
+			exercises: [
+				{ exerciseId: idMap.get('Bench Press') ?? '', exerciseName: 'Bench Press', targetSets: 4, targetReps: 8, targetWeight: 135 },
+				{ exerciseId: idMap.get('Incline Dumbbell Press') ?? '', exerciseName: 'Incline Dumbbell Press', targetSets: 3, targetReps: 10, targetWeight: 50 },
+				{ exerciseId: idMap.get('Overhead Press') ?? '', exerciseName: 'Overhead Press', targetSets: 3, targetReps: 8, targetWeight: 95 },
+				{ exerciseId: idMap.get('Tricep Pushdowns') ?? '', exerciseName: 'Tricep Pushdowns', targetSets: 3, targetReps: 12, targetWeight: 40 },
+			],
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		},
+		{
+			name: 'Pull Day',
+			exercises: [
+				{ exerciseId: idMap.get('Deadlift') ?? '', exerciseName: 'Deadlift', targetSets: 4, targetReps: 5, targetWeight: 225 },
+				{ exerciseId: idMap.get('Barbell Row') ?? '', exerciseName: 'Barbell Row', targetSets: 4, targetReps: 8, targetWeight: 135 },
+				{ exerciseId: idMap.get('Pull-ups') ?? '', exerciseName: 'Pull-ups', targetSets: 3, targetReps: 8, targetWeight: 0 },
+				{ exerciseId: idMap.get('Bicep Curls') ?? '', exerciseName: 'Bicep Curls', targetSets: 3, targetReps: 12, targetWeight: 30 },
+			],
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		},
+		{
+			name: 'Leg Day',
+			exercises: [
+				{ exerciseId: idMap.get('Squat') ?? '', exerciseName: 'Squat', targetSets: 4, targetReps: 6, targetWeight: 185 },
+				{ exerciseId: idMap.get('Leg Press') ?? '', exerciseName: 'Leg Press', targetSets: 3, targetReps: 10, targetWeight: 270 },
+				{ exerciseId: idMap.get('Walking Lunges') ?? '', exerciseName: 'Walking Lunges', targetSets: 3, targetReps: 12, targetWeight: 40 },
+			],
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		},
+	];
+
+	for (const w of workoutData) {
+		await db.collection('workouts').add(w);
+	}
+
+	// Seed sessions
+	const sessionData = [
+		{
 			exercises: [
 				{
-					exerciseId: '1',
+					exerciseId: idMap.get('Bench Press') ?? '',
 					exerciseName: 'Bench Press',
 					primaryMuscle: 'chest',
 					sets: [
 						{ reps: 8, weight: 135, completed: true },
 						{ reps: 8, weight: 135, completed: true },
 						{ reps: 7, weight: 135, completed: true },
-						{ reps: 6, weight: 135, completed: true }
-					]
+						{ reps: 6, weight: 135, completed: true },
+					],
 				},
 				{
-					exerciseId: '2',
+					exerciseId: idMap.get('Incline Dumbbell Press') ?? '',
 					exerciseName: 'Incline Dumbbell Press',
 					primaryMuscle: 'chest',
 					sets: [
 						{ reps: 10, weight: 50, completed: true },
 						{ reps: 10, weight: 50, completed: true },
-						{ reps: 8, weight: 50, completed: true }
-					]
+						{ reps: 8, weight: 50, completed: true },
+					],
 				},
 				{
-					exerciseId: '10',
+					exerciseId: idMap.get('Overhead Press') ?? '',
 					exerciseName: 'Overhead Press',
 					primaryMuscle: 'shoulders',
 					sets: [
 						{ reps: 8, weight: 95, completed: true },
 						{ reps: 8, weight: 95, completed: true },
-						{ reps: 6, weight: 95, completed: true }
-					]
-				}
+						{ reps: 6, weight: 95, completed: true },
+					],
+				},
 			],
 			date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
 			duration: 45,
-			createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+			createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
 		},
 		{
-			id: 'demo-session-2',
 			exercises: [
 				{
-					exerciseId: '6',
+					exerciseId: idMap.get('Deadlift') ?? '',
 					exerciseName: 'Deadlift',
 					primaryMuscle: 'back',
 					sets: [
 						{ reps: 5, weight: 225, completed: true },
 						{ reps: 5, weight: 225, completed: true },
 						{ reps: 5, weight: 225, completed: true },
-						{ reps: 4, weight: 225, completed: true }
-					]
+						{ reps: 4, weight: 225, completed: true },
+					],
 				},
 				{
-					exerciseId: '8',
+					exerciseId: idMap.get('Barbell Row') ?? '',
 					exerciseName: 'Barbell Row',
 					primaryMuscle: 'back',
 					sets: [
 						{ reps: 8, weight: 135, completed: true },
 						{ reps: 8, weight: 135, completed: true },
 						{ reps: 8, weight: 135, completed: true },
-						{ reps: 7, weight: 135, completed: true }
-					]
-				}
+						{ reps: 7, weight: 135, completed: true },
+					],
+				},
 			],
 			date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
 			duration: 50,
-			createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-		}
+			createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+		},
 	];
 
-	await db.sessions.bulkAdd(sessions);
+	for (const s of sessionData) {
+		await db.collection('sessions').add(s);
+	}
 
 	console.log('Demo data seeded successfully!');
 }
 
 export async function initializeExercises(): Promise<void> {
-	const count = await db.exercises.count();
+	const count = await db.collection('exercises').count();
 	if (count === 0) {
-		const initialExercises: Exercise[] = [
-			{
-				id: '1',
-				name: 'Bench Press',
-				category: 'compound',
-				primary_muscle: 'chest',
-				secondary_muscles: ['triceps', 'shoulders'],
-				equipment: 'Barbell',
-				is_custom: false
-			},
-			{
-				id: '2',
-				name: 'Incline Dumbbell Press',
-				category: 'compound',
-				primary_muscle: 'chest',
-				secondary_muscles: ['shoulders', 'triceps'],
-				equipment: 'Dumbbells',
-				is_custom: false
-			},
-			{
-				id: '3',
-				name: 'Chest Fly',
-				category: 'isolation',
-				primary_muscle: 'chest',
-				secondary_muscles: [],
-				equipment: 'Dumbbells or Machine',
-				is_custom: false
-			},
-			{
-				id: '4',
-				name: 'Push-ups',
-				category: 'compound',
-				primary_muscle: 'chest',
-				secondary_muscles: ['triceps', 'shoulders', 'core'],
-				equipment: 'Bodyweight',
-				is_custom: false
-			},
-			{
-				id: '5',
-				name: 'Squat',
-				category: 'compound',
-				primary_muscle: 'legs',
-				secondary_muscles: ['core', 'back'],
-				equipment: 'Barbell',
-				is_custom: false
-			},
-			{
-				id: '6',
-				name: 'Deadlift',
-				category: 'compound',
-				primary_muscle: 'back',
-				secondary_muscles: ['legs', 'core'],
-				equipment: 'Barbell',
-				is_custom: false
-			},
-			{
-				id: '7',
-				name: 'Pull-ups',
-				category: 'compound',
-				primary_muscle: 'back',
-				secondary_muscles: ['biceps', 'shoulders'],
-				equipment: 'Pull-up Bar',
-				is_custom: false
-			},
-			{
-				id: '8',
-				name: 'Barbell Row',
-				category: 'compound',
-				primary_muscle: 'back',
-				secondary_muscles: ['biceps', 'shoulders'],
-				equipment: 'Barbell',
-				is_custom: false
-			},
-			{
-				id: '9',
-				name: 'Lat Pulldown',
-				category: 'compound',
-				primary_muscle: 'back',
-				secondary_muscles: ['biceps'],
-				equipment: 'Cable Machine',
-				is_custom: false
-			},
-			{
-				id: '10',
-				name: 'Overhead Press',
-				category: 'compound',
-				primary_muscle: 'shoulders',
-				secondary_muscles: ['triceps', 'core'],
-				equipment: 'Barbell or Dumbbells',
-				is_custom: false
-			},
-			{
-				id: '11',
-				name: 'Lateral Raises',
-				category: 'isolation',
-				primary_muscle: 'shoulders',
-				secondary_muscles: [],
-				equipment: 'Dumbbells',
-				is_custom: false
-			},
-			{
-				id: '12',
-				name: 'Face Pulls',
-				category: 'isolation',
-				primary_muscle: 'shoulders',
-				secondary_muscles: [],
-				equipment: 'Cable Machine or Band',
-				is_custom: false
-			},
-			{
-				id: '13',
-				name: 'Bicep Curls',
-				category: 'isolation',
-				primary_muscle: 'arms',
-				secondary_muscles: [],
-				equipment: 'Barbell or Dumbbells',
-				is_custom: false
-			},
-			{
-				id: '14',
-				name: 'Tricep Pushdowns',
-				category: 'isolation',
-				primary_muscle: 'arms',
-				secondary_muscles: [],
-				equipment: 'Cable Machine',
-				is_custom: false
-			},
-			{
-				id: '15',
-				name: 'Hammer Curls',
-				category: 'isolation',
-				primary_muscle: 'arms',
-				secondary_muscles: [],
-				equipment: 'Dumbbells',
-				is_custom: false
-			},
-			{
-				id: '16',
-				name: 'Plank',
-				category: 'isolation',
-				primary_muscle: 'core',
-				secondary_muscles: [],
-				equipment: 'Bodyweight',
-				is_custom: false
-			},
-			{
-				id: '17',
-				name: 'Russian Twists',
-				category: 'isolation',
-				primary_muscle: 'core',
-				secondary_muscles: [],
-				equipment: 'Bodyweight or Medicine Ball',
-				is_custom: false
-			},
-			{
-				id: '18',
-				name: 'Running',
-				category: 'cardio',
-				primary_muscle: 'legs',
-				secondary_muscles: ['core'],
-				equipment: 'None or Treadmill',
-				is_custom: false
-			},
-			{
-				id: '19',
-				name: 'Cycling',
-				category: 'cardio',
-				primary_muscle: 'legs',
-				secondary_muscles: ['core'],
-				equipment: 'Bike or Stationary Bike',
-				is_custom: false
-			},
-			{
-				id: '20',
-				name: 'Jump Rope',
-				category: 'cardio',
-				primary_muscle: 'legs',
-				secondary_muscles: ['core', 'arms', 'shoulders'],
-				equipment: 'Jump Rope',
-				is_custom: false
-			},
-			{
-				id: '21',
-				name: 'Hip Flexor Stretch',
-				category: 'mobility',
-				primary_muscle: 'legs',
-				secondary_muscles: ['core'],
-				equipment: 'None',
-				is_custom: false
-			},
-			{
-				id: '22',
-				name: 'Shoulder Circles',
-				category: 'mobility',
-				primary_muscle: 'shoulders',
-				secondary_muscles: [],
-				equipment: 'None',
-				is_custom: false
-			},
-			{
-				id: '23',
-				name: 'Cat-Cow Stretch',
-				category: 'mobility',
-				primary_muscle: 'back',
-				secondary_muscles: ['core'],
-				equipment: 'None',
-				is_custom: false
-			},
-			{
-				id: '24',
-				name: 'Leg Press',
-				category: 'compound',
-				primary_muscle: 'legs',
-				secondary_muscles: ['glutes'],
-				equipment: 'Leg Press Machine',
-				is_custom: false
-			},
-			{
-				id: '25',
-				name: 'Walking Lunges',
-				category: 'compound',
-				primary_muscle: 'legs',
-				secondary_muscles: ['glutes', 'core'],
-				equipment: 'Bodyweight or Dumbbells',
-				is_custom: false
-			}
+		const initialExercises: Omit<Exercise, 'id'>[] = [
+			{ name: 'Bench Press', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['triceps', 'shoulders'], equipment: 'Barbell', is_custom: false },
+			{ name: 'Incline Dumbbell Press', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['shoulders', 'triceps'], equipment: 'Dumbbells', is_custom: false },
+			{ name: 'Chest Fly', category: 'isolation', primary_muscle: 'chest', secondary_muscles: [], equipment: 'Dumbbells or Machine', is_custom: false },
+			{ name: 'Push-ups', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['triceps', 'shoulders', 'core'], equipment: 'Bodyweight', is_custom: false },
+			{ name: 'Squat', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['core', 'back'], equipment: 'Barbell', is_custom: false },
+			{ name: 'Deadlift', category: 'compound', primary_muscle: 'back', secondary_muscles: ['legs', 'core'], equipment: 'Barbell', is_custom: false },
+			{ name: 'Pull-ups', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps', 'shoulders'], equipment: 'Pull-up Bar', is_custom: false },
+			{ name: 'Barbell Row', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps', 'shoulders'], equipment: 'Barbell', is_custom: false },
+			{ name: 'Lat Pulldown', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps'], equipment: 'Cable Machine', is_custom: false },
+			{ name: 'Overhead Press', category: 'compound', primary_muscle: 'shoulders', secondary_muscles: ['triceps', 'core'], equipment: 'Barbell or Dumbbells', is_custom: false },
+			{ name: 'Lateral Raises', category: 'isolation', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'Dumbbells', is_custom: false },
+			{ name: 'Face Pulls', category: 'isolation', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'Cable Machine or Band', is_custom: false },
+			{ name: 'Bicep Curls', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Barbell or Dumbbells', is_custom: false },
+			{ name: 'Tricep Pushdowns', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Cable Machine', is_custom: false },
+			{ name: 'Hammer Curls', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Dumbbells', is_custom: false },
+			{ name: 'Plank', category: 'isolation', primary_muscle: 'core', secondary_muscles: [], equipment: 'Bodyweight', is_custom: false },
+			{ name: 'Russian Twists', category: 'isolation', primary_muscle: 'core', secondary_muscles: [], equipment: 'Bodyweight or Medicine Ball', is_custom: false },
+			{ name: 'Running', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'None or Treadmill', is_custom: false },
+			{ name: 'Cycling', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'Bike or Stationary Bike', is_custom: false },
+			{ name: 'Jump Rope', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core', 'arms', 'shoulders'], equipment: 'Jump Rope', is_custom: false },
+			{ name: 'Hip Flexor Stretch', category: 'mobility', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'None', is_custom: false },
+			{ name: 'Shoulder Circles', category: 'mobility', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'None', is_custom: false },
+			{ name: 'Cat-Cow Stretch', category: 'mobility', primary_muscle: 'back', secondary_muscles: ['core'], equipment: 'None', is_custom: false },
+			{ name: 'Leg Press', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['glutes'], equipment: 'Leg Press Machine', is_custom: false },
+			{ name: 'Walking Lunges', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['glutes', 'core'], equipment: 'Bodyweight or Dumbbells', is_custom: false },
 		];
-		await db.exercises.bulkAdd(initialExercises);
+		for (const exercise of initialExercises) {
+			await db.collection('exercises').add(exercise);
+		}
 	}
 }
