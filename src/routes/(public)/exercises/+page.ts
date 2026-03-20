@@ -1,6 +1,6 @@
 import type { PageLoad } from './$types';
 import { db, initializeExercises } from '$lib/db';
-import { getPersonalRecordsForExercise } from '$lib/prUtils';
+import { getAllPersonalRecords } from '$lib/prUtils';
 import { DEPS } from '$lib/invalidation';
 import type { Exercise, PersonalRecord } from '$lib/types';
 
@@ -9,15 +9,22 @@ export const load: PageLoad = async ({ depends }) => {
 	depends(DEPS.personalRecords);
 
 	await initializeExercises();
-	const exercises = await db.exercises.toArray();
+	const exercises = await db.collection('exercises').get() as Exercise[];
 
-	// Load personal records for all exercises
+	// Load all personal records in a single query, then group by exerciseId
+	const allPRs = await getAllPersonalRecords();
 	const exercisePRs = new Map<string, PersonalRecord[]>();
-	for (const exercise of exercises) {
-		const prs = await getPersonalRecordsForExercise(exercise.id);
-		if (prs.length > 0) {
-			exercisePRs.set(exercise.id, prs);
+	for (const pr of allPRs) {
+		const list = exercisePRs.get(pr.exerciseId);
+		if (list) {
+			list.push(pr);
+		} else {
+			exercisePRs.set(pr.exerciseId, [pr]);
 		}
+	}
+	// Sort each exercise's PRs by reps (matching previous behavior)
+	for (const prs of exercisePRs.values()) {
+		prs.sort((a, b) => a.reps - b.reps);
 	}
 
 	return {

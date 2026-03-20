@@ -5,6 +5,7 @@
 	import { Button, Card, Modal, Select } from '$lib/ui';
 	import { ArrowLeft } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { formatMuscle, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
 
 	let { data } = $props();
 
@@ -75,27 +76,6 @@
 		}));
 	});
 
-	function getMetricLabel(): string {
-		switch (selectedMetric) {
-			case 'weight':
-				return 'Weight (' + preferencesStore.weightLabel + ')';
-			case 'volume':
-				return 'Volume (' + preferencesStore.weightLabel + ')';
-			case 'reps':
-				return 'Max Reps';
-		}
-	}
-
-	function getMetricUnit(): string {
-		switch (selectedMetric) {
-			case 'weight':
-				return ' ' + preferencesStore.weightLabel;
-			case 'volume':
-				return ' ' + preferencesStore.weightLabel;
-			case 'reps':
-				return ' reps';
-		}
-	}
 
 	async function showHistory(pr: PersonalRecord) {
 		selectedPR = pr;
@@ -115,9 +95,6 @@
 		});
 	}
 
-	function formatMuscle(muscle: string): string {
-		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
-	}
 
 	const metricOptions = $derived([
 		{ value: 'weight', label: `Weight (${preferencesStore.weightLabel})` },
@@ -271,13 +248,13 @@
 								<div class="bg-accent/10 rounded-lg p-3">
 									<p class="text-xs text-accent font-medium mb-1">Latest</p>
 									<p class="text-lg font-bold text-accent">
-										{chartData[chartData.length - 1].value}{getMetricUnit()}
+										{chartData[chartData.length - 1].value}{getMetricUnit(selectedMetric)}
 									</p>
 								</div>
 								<div class="bg-success/10 rounded-lg p-3">
 									<p class="text-xs text-success font-medium mb-1">Best</p>
 									<p class="text-lg font-bold text-success">
-										{Math.max(...chartData.map((d) => d.value))}{getMetricUnit()}
+										{Math.max(...chartData.map((d) => d.value))}{getMetricUnit(selectedMetric)}
 									</p>
 								</div>
 								<div class="bg-secondary/10 rounded-lg p-3">
@@ -285,7 +262,7 @@
 									<p class="text-lg font-bold text-secondary">
 										{Math.round(
 											chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length
-										)}{getMetricUnit()}
+										)}{getMetricUnit(selectedMetric)}
 									</p>
 								</div>
 							</div>

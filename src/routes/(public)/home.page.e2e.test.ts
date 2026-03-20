@@ -48,6 +48,16 @@ describe('Home Page - E2E Verification', () => {
 		}
 	];
 
+	let mockExercisesCollection: {
+		get: ReturnType<typeof vi.fn>;
+		add: ReturnType<typeof vi.fn>;
+		update: ReturnType<typeof vi.fn>;
+		delete: ReturnType<typeof vi.fn>;
+		count: ReturnType<typeof vi.fn>;
+		where: ReturnType<typeof vi.fn>;
+		orderBy: ReturnType<typeof vi.fn>;
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		localStorage.clear();
@@ -82,8 +92,22 @@ describe('Home Page - E2E Verification', () => {
 			}
 		];
 
+		mockExercisesCollection = {
+			get: vi.fn().mockResolvedValue(mockExercises),
+			add: vi.fn().mockResolvedValue('new-id'),
+			update: vi.fn().mockResolvedValue(undefined),
+			delete: vi.fn().mockResolvedValue(undefined),
+			count: vi.fn().mockResolvedValue(3),
+			where: vi.fn().mockReturnValue({ equals: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue([]) }) }),
+			orderBy: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue([]), reverse: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue([]) }) }),
+		};
+
+		vi.mocked(db.collection).mockImplementation((name: string) => {
+			if (name === 'exercises') return mockExercisesCollection as any;
+			return mockExercisesCollection as any;
+		});
+
 		(db as any).initializeExercises = vi.fn().mockResolvedValue(undefined);
-		(db.exercises.toArray as any).mockResolvedValue(mockExercises);
 		(getPersonalRecordsForExercise as any).mockImplementation(async (exerciseId: string) => {
 			return mockPRs.filter((pr) => pr.exerciseId === exerciseId);
 		});
@@ -117,11 +141,11 @@ describe('Home Page - E2E Verification', () => {
 		});
 
 		it('should load exercises from database', async () => {
-			const exercises = await db.exercises.toArray();
+			const exercises = await db.collection('exercises').get();
 			expect(exercises).toHaveLength(3);
 			expect(exercises[0].name).toBe('Bench Press');
 			expect(exercises[2].is_custom).toBe(true);
-			expect(db.exercises.toArray).toHaveBeenCalled();
+			expect(mockExercisesCollection.get).toHaveBeenCalled();
 		});
 
 		it('should load personal records for exercises', async () => {
@@ -132,8 +156,8 @@ describe('Home Page - E2E Verification', () => {
 		});
 
 		it('should handle empty exercises scenario', async () => {
-			(db.exercises.toArray as any).mockResolvedValueOnce([]);
-			const exercises = await db.exercises.toArray();
+			mockExercisesCollection.get.mockResolvedValueOnce([]);
+			const exercises = await db.collection('exercises').get();
 			expect(exercises).toHaveLength(0);
 		});
 	});
@@ -251,8 +275,8 @@ describe('Home Page - E2E Verification', () => {
 		});
 
 		it('should return consistent exercise data on repeated calls', async () => {
-			const exercises1 = await db.exercises.toArray();
-			const exercises2 = await db.exercises.toArray();
+			const exercises1 = await db.collection('exercises').get();
+			const exercises2 = await db.collection('exercises').get();
 			expect(exercises1.length).toBe(exercises2.length);
 			expect(exercises1[0].id).toBe(exercises2[0].id);
 		});
@@ -277,9 +301,9 @@ describe('Home Page - E2E Verification', () => {
 		});
 
 		it('should handle error scenarios gracefully', async () => {
-			(db.exercises.toArray as any).mockRejectedValueOnce(new Error('Database error'));
+			mockExercisesCollection.get.mockRejectedValueOnce(new Error('Database error'));
 			try {
-				await db.exercises.toArray();
+				await db.collection('exercises').get();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Error);
 			}

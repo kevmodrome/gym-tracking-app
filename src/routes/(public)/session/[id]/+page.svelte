@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Dexie from 'dexie';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
@@ -326,7 +325,13 @@
 			createdAt: new Date().toISOString()
 		};
 
-		await db.sessions.add(Dexie.deepClone(session));
+		await db.collection('sessions').add({
+			exercises: $state.snapshot(session.exercises),
+			date: session.date,
+			duration: session.duration,
+			notes: session.notes,
+			createdAt: session.createdAt,
+		});
 		await calculatePersonalRecords();
 		await invalidateSessions();
 		await invalidatePersonalRecords();
@@ -382,7 +387,7 @@
 
 	async function getLastWeightForExercise(exerciseId: string): Promise<number> {
 		// Get all sessions sorted by date descending (most recent first)
-		const sessions = await db.sessions.orderBy('date').reverse().toArray();
+		const sessions = await db.collection('sessions').orderBy('date').reverse().get() as Session[];
 
 		for (const session of sessions) {
 			const exerciseData = session.exercises.find((e) => e.exerciseId === exerciseId);
@@ -438,7 +443,7 @@
 
 	async function toggleFavorite(exercise: Exercise) {
 		const newValue = !exercise.favorited;
-		await db.exercises.update(exercise.id, { favorited: newValue });
+		await db.collection('exercises').update(exercise.id, { favorited: newValue });
 		await invalidateExercises();
 		toastStore.showSuccess(newValue ? 'Added to favorites' : 'Removed from favorites');
 	}

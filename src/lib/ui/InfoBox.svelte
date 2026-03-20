@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import XIcon from '$lib/components/XIcon.svelte';
+	import { X } from 'lucide-svelte';
 
 	type InfoBoxType = 'info' | 'success' | 'warning' | 'error';
 
@@ -72,7 +72,7 @@
 				type="button"
 				aria-label="Dismiss"
 			>
-				<XIcon class="w-4 h-4 text-text-secondary" />
+				<X class="w-4 h-4 text-text-secondary" />
 			</button>
 		{/if}
 	</div>

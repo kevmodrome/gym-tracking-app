@@ -2,11 +2,11 @@ import type { Session, PersonalRecord, PRHistory } from './types';
 import { db } from './db';
 
 export async function calculatePersonalRecords(): Promise<void> {
-	const sessions = await db.sessions.toArray();
-	const exercisePRs: Map<string, Map<number, PersonalRecord>> = new Map();
+	const sessions = await db.collection('sessions').get();
+	const exercisePRs: Map<string, Map<number, Omit<PersonalRecord, 'id'>>> = new Map();
 
 	sessions.forEach((session) => {
-		session.exercises.forEach((exercise) => {
+		(session.exercises as Session['exercises']).forEach((exercise) => {
 			if (!exercisePRs.has(exercise.exerciseId)) {
 				exercisePRs.set(exercise.exerciseId, new Map());
 			}
@@ -19,53 +19,53 @@ export async function calculatePersonalRecords(): Promise<void> {
 				const currentPR = prMap.get(set.reps);
 
 				if (!currentPR || set.weight > currentPR.weight) {
-					const pr: PersonalRecord = {
-						id: `pr-${exercise.exerciseId}-${set.reps}`,
+					prMap.set(set.reps, {
 						exerciseId: exercise.exerciseId,
 						exerciseName: exercise.exerciseName,
 						reps: set.reps,
 						weight: set.weight,
 						achievedDate: session.date,
 						sessionId: session.id
-					};
-
-					prMap.set(set.reps, pr);
+					});
 				}
 			});
 		});
 	});
 
-	await db.personalRecords.clear();
-	const allPRs: PersonalRecord[] = [];
-	exercisePRs.forEach((prMap) => {
-		prMap.forEach((pr) => {
-			allPRs.push(pr);
-		});
-	});
-	await db.personalRecords.bulkPut(allPRs);
+	// Clear all existing PRs
+	const existingPRs = await db.collection('personalRecords').get();
+	for (const pr of existingPRs) {
+		await db.collection('personalRecords').delete(pr.id);
+	}
+
+	// Add all new PRs
+	for (const prMap of exercisePRs.values()) {
+		for (const pr of prMap.values()) {
+			await db.collection('personalRecords').add(pr);
+		}
+	}
 }
 
 export async function getPersonalRecordsForExercise(
 	exerciseId: string
 ): Promise<PersonalRecord[]> {
-	return (await db.personalRecords.where('exerciseId').equals(exerciseId).toArray()).sort(
-		(a, b) => a.reps - b.reps
-	);
+	const records = await db.collection('personalRecords').where('exerciseId').equals(exerciseId).get();
+	return (records as PersonalRecord[]).sort((a, b) => a.reps - b.reps);
 }
 
 export async function getAllPersonalRecords(): Promise<PersonalRecord[]> {
-	return await db.personalRecords.toArray();
+	return await db.collection('personalRecords').get() as PersonalRecord[];
 }
 
 export async function getPRHistoryForExercise(
 	exerciseId: string,
 	reps: number
 ): Promise<PRHistory[]> {
-	const sessions = await db.sessions.toArray();
+	const sessions = await db.collection('sessions').get();
 	const history: PRHistory[] = [];
 
 	sessions.forEach((session) => {
-		const exercise = session.exercises.find((e) => e.exerciseId === exerciseId);
+		const exercise = (session.exercises as Session['exercises']).find((e) => e.exerciseId === exerciseId);
 		if (!exercise) return;
 
 		exercise.sets.forEach((set) => {
@@ -103,7 +103,7 @@ export async function checkForNewPRs(
 		if (existingPR) {
 			if (set.weight > existingPR.weight) {
 				newPRs.push({
-					id: `pr-${exerciseId}-${set.reps}`,
+					id: existingPR.id,
 					exerciseId: exercise.exerciseId,
 					exerciseName: exercise.exerciseName,
 					reps: set.reps,
@@ -114,7 +114,7 @@ export async function checkForNewPRs(
 			}
 		} else {
 			newPRs.push({
-				id: `pr-${exerciseId}-${set.reps}`,
+				id: '',
 				exerciseId: exercise.exerciseId,
 				exerciseName: exercise.exerciseName,
 				reps: set.reps,

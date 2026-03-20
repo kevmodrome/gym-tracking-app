@@ -54,21 +54,20 @@ export interface AggregateComparison {
 	sessionCountChangePercent: number;
 }
 
-export function calculateTotalVolume(sessions: Session[]): number {
-	return sessions.reduce((total, session) => {
+export function calculateSessionVolume(session: Pick<Session, 'exercises'>): number {
+	return session.exercises.reduce((exerciseTotal, exercise) => {
 		return (
-			total +
-			session.exercises.reduce((exerciseTotal, exercise) => {
-				return (
-					exerciseTotal +
-					exercise.sets.reduce((setTotal, set) => {
-						if (!set.completed) return setTotal;
-						return setTotal + set.reps * set.weight;
-					}, 0)
-				);
-			}, 0)
+			exerciseTotal +
+			exercise.sets.reduce(
+				(setTotal, set) => setTotal + (set.completed ? set.reps * set.weight : 0),
+				0
+			)
 		);
 	}, 0);
+}
+
+export function calculateTotalVolume(sessions: Session[]): number {
+	return sessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
 }
 
 export function calculateAverageDuration(sessions: Session[]): number {
@@ -77,14 +76,7 @@ export function calculateAverageDuration(sessions: Session[]): number {
 	return totalTime / sessions.length;
 }
 
-export function calculateVolumeTrends(
-	sessions: Session[],
-	dateFilter: 'week' | 'month' | 'year' | 'custom',
-	customStartDate?: Date,
-	customEndDate?: Date
-): VolumeTrend[] {
-	return calculateVolumeTrendsByScale(sessions, 'week', dateFilter, customStartDate, customEndDate);
-}
+export type VolumeScale = 'day' | 'week' | 'month';
 
 export function calculateVolumeTrendsForChart(
 	sessions: Session[],
@@ -117,42 +109,8 @@ export function calculateVolumeTrendsForChart(
 		startDate = earliestSession;
 	}
 
-	const trends = calculateVolumeTrendsByScale(sessions, scale, 'custom', startDate, now);
-	return trends.slice(-maxPoints);
-}
-
-export type VolumeScale = 'day' | 'week' | 'month';
-
-export function calculateVolumeTrendsByScale(
-	sessions: Session[],
-	scale: VolumeScale,
-	dateFilter: 'week' | 'month' | 'year' | 'custom',
-	customStartDate?: Date,
-	customEndDate?: Date
-): VolumeTrend[] {
-	const now = new Date();
-
-	let startDate: Date;
-	let endDate: Date = dateFilter === 'custom' && customEndDate ? customEndDate : now;
-
-	switch (dateFilter) {
-		case 'week':
-			startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-			break;
-		case 'month':
-			startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-			break;
-		case 'year':
-			startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-			break;
-		case 'custom':
-			startDate = customStartDate || new Date(0);
-			break;
-		default:
-			startDate = new Date(0);
-	}
-
 	startDate.setHours(0, 0, 0, 0);
+	const endDate = new Date(now);
 	endDate.setHours(23, 59, 59, 999);
 
 	const filteredSessions = sessions.filter((session) => {
@@ -160,117 +118,64 @@ export function calculateVolumeTrendsByScale(
 		return sessionDate >= startDate && sessionDate <= endDate;
 	});
 
-	switch (scale) {
-		case 'day':
-			return aggregateByDay(filteredSessions, startDate, endDate);
-		case 'week':
-			return aggregateByWeek(filteredSessions, startDate, endDate);
-		case 'month':
-			return aggregateByMonth(filteredSessions, startDate, endDate);
-	}
+	return aggregateByPeriod(filteredSessions, startDate, endDate, scale).slice(-maxPoints);
 }
 
-function calculateSessionVolume(session: Session): number {
-	return session.exercises.reduce((exerciseTotal, exercise) => {
-		return (
-			exerciseTotal +
-			exercise.sets.reduce(
-				(setTotal, set) => setTotal + (set.completed ? set.reps * set.weight : 0),
-				0
-			)
-		);
-	}, 0);
-}
-
-function aggregateByDay(sessions: Session[], startDate: Date, endDate: Date): VolumeTrend[] {
+function aggregateByPeriod(
+	sessions: Session[],
+	startDate: Date,
+	endDate: Date,
+	scale: VolumeScale
+): VolumeTrend[] {
 	const trends: VolumeTrend[] = [];
 	const current = new Date(startDate);
 
-	while (current <= endDate) {
-		const dayStart = new Date(current);
-		dayStart.setHours(0, 0, 0, 0);
-		const dayEnd = new Date(current);
-		dayEnd.setHours(23, 59, 59, 999);
-
-		const daySessions = sessions.filter((session) => {
-			const sessionDate = new Date(session.date);
-			return sessionDate >= dayStart && sessionDate <= dayEnd;
-		});
-
-		const volume = daySessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
-
-		trends.push({
-			date: dayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-			rawDate: new Date(dayStart),
-			volume,
-			sessions: daySessions.length
-		});
-
-		current.setDate(current.getDate() + 1);
+	// Align cursor to period boundary
+	if (scale === 'week') {
+		current.setDate(current.getDate() - current.getDay()); // Align to Sunday
+	} else if (scale === 'month') {
+		current.setDate(1);
 	}
-
-	return trends;
-}
-
-function aggregateByWeek(sessions: Session[], startDate: Date, endDate: Date): VolumeTrend[] {
-	const trends: VolumeTrend[] = [];
-	const current = new Date(startDate);
-
-	// Align to start of week (Sunday)
-	const dayOfWeek = current.getDay();
-	current.setDate(current.getDate() - dayOfWeek);
 	current.setHours(0, 0, 0, 0);
 
 	while (current <= endDate) {
-		const weekStart = new Date(current);
-		const weekEnd = new Date(current);
-		weekEnd.setDate(weekEnd.getDate() + 6);
-		weekEnd.setHours(23, 59, 59, 999);
+		const periodStart = new Date(current);
+		let periodEnd: Date;
+		let label: string;
 
-		const weekSessions = sessions.filter((session) => {
+		switch (scale) {
+			case 'day':
+				periodEnd = new Date(current);
+				periodEnd.setHours(23, 59, 59, 999);
+				label = periodStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+				current.setDate(current.getDate() + 1);
+				break;
+			case 'week':
+				periodEnd = new Date(current);
+				periodEnd.setDate(periodEnd.getDate() + 6);
+				periodEnd.setHours(23, 59, 59, 999);
+				label = periodStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+				current.setDate(current.getDate() + 7);
+				break;
+			case 'month':
+				periodEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+				periodEnd.setHours(23, 59, 59, 999);
+				label = periodStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+				current.setMonth(current.getMonth() + 1);
+				break;
+		}
+
+		const periodSessions = sessions.filter((session) => {
 			const sessionDate = new Date(session.date);
-			return sessionDate >= weekStart && sessionDate <= weekEnd;
+			return sessionDate >= periodStart && sessionDate <= periodEnd;
 		});
-
-		const volume = weekSessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
 
 		trends.push({
-			date: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-			rawDate: new Date(weekStart),
-			volume,
-			sessions: weekSessions.length
+			date: label,
+			rawDate: new Date(periodStart),
+			volume: periodSessions.reduce((total, s) => total + calculateSessionVolume(s), 0),
+			sessions: periodSessions.length
 		});
-
-		current.setDate(current.getDate() + 7);
-	}
-
-	return trends;
-}
-
-function aggregateByMonth(sessions: Session[], startDate: Date, endDate: Date): VolumeTrend[] {
-	const trends: VolumeTrend[] = [];
-	const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-
-	while (current <= endDate) {
-		const monthStart = new Date(current);
-		const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
-		monthEnd.setHours(23, 59, 59, 999);
-
-		const monthSessions = sessions.filter((session) => {
-			const sessionDate = new Date(session.date);
-			return sessionDate >= monthStart && sessionDate <= monthEnd;
-		});
-
-		const volume = monthSessions.reduce((total, session) => total + calculateSessionVolume(session), 0);
-
-		trends.push({
-			date: monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-			rawDate: new Date(monthStart),
-			volume,
-			sessions: monthSessions.length
-		});
-
-		current.setMonth(current.getMonth() + 1);
 	}
 
 	return trends;
@@ -339,15 +244,7 @@ export function calculateDailyMetrics(
 		const sessionDate = toLocalDateString(new Date(session.date));
 		if (sessionDate in metrics) {
 			metrics[sessionDate].sessionCount++;
-			metrics[sessionDate].volume += session.exercises.reduce((exerciseTotal, exercise) => {
-				return (
-					exerciseTotal +
-					exercise.sets.reduce((setTotal, set) => {
-						if (!set.completed) return setTotal;
-						return setTotal + set.reps * set.weight;
-					}, 0)
-				);
-			}, 0);
+			metrics[sessionDate].volume += calculateSessionVolume(session);
 		}
 	});
 
@@ -477,60 +374,41 @@ export function calculateMonthlyAggregate(
 	};
 }
 
-export function calculateWeeklyComparison(
-	sessions: Session[]
+function calculatePeriodComparison(
+	sessions: Session[],
+	period: 'week' | 'month'
 ): AggregateComparison {
 	const now = new Date();
-	const current = calculateWeeklyAggregate(sessions, now);
-	const previousWeekStart = new Date(current.startDate);
-	previousWeekStart.setDate(previousWeekStart.getDate() - 7);
-	const previousWeekEnd = new Date(current.endDate);
-	previousWeekEnd.setDate(previousWeekEnd.getDate() - 7);
-	const previous = calculateWeeklyAggregate(sessions, previousWeekStart);
+	const aggregateFn = period === 'week' ? calculateWeeklyAggregate : calculateMonthlyAggregate;
+	const current = aggregateFn(sessions, now);
+
+	const previousStart = new Date(current.startDate);
+	if (period === 'week') {
+		previousStart.setDate(previousStart.getDate() - 7);
+	} else {
+		previousStart.setMonth(previousStart.getMonth() - 1);
+	}
+	const previous = aggregateFn(sessions, previousStart);
 
 	const volumeChange = current.volume - previous.volume;
-	const volumeChangePercent =
-		previous.volume > 0 ? (volumeChange / previous.volume) * 100 : 0;
 	const sessionCountChange = current.sessionCount - previous.sessionCount;
-	const sessionCountChangePercent =
-		previous.sessionCount > 0 ? (sessionCountChange / previous.sessionCount) * 100 : 0;
 
 	return {
 		current,
 		previous,
 		volumeChange,
-		volumeChangePercent,
+		volumeChangePercent: previous.volume > 0 ? (volumeChange / previous.volume) * 100 : 0,
 		sessionCountChange,
-		sessionCountChangePercent
+		sessionCountChangePercent: previous.sessionCount > 0 ? (sessionCountChange / previous.sessionCount) * 100 : 0
 	};
 }
 
-export function calculateMonthlyComparison(
-	sessions: Session[]
-): AggregateComparison {
-	const now = new Date();
-	const current = calculateMonthlyAggregate(sessions, now);
-	const previousMonthStart = new Date(current.startDate);
-	previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
-	const previousMonthEnd = new Date(current.endDate);
-	previousMonthEnd.setMonth(previousMonthEnd.getMonth() - 1);
-	const previous = calculateMonthlyAggregate(sessions, previousMonthStart);
+export function calculateWeeklyComparison(sessions: Session[]): AggregateComparison {
+	return calculatePeriodComparison(sessions, 'week');
+}
 
-	const volumeChange = current.volume - previous.volume;
-	const volumeChangePercent =
-		previous.volume > 0 ? (volumeChange / previous.volume) * 100 : 0;
-	const sessionCountChange = current.sessionCount - previous.sessionCount;
-	const sessionCountChangePercent =
-		previous.sessionCount > 0 ? (sessionCountChange / previous.sessionCount) * 100 : 0;
-
-	return {
-		current,
-		previous,
-		volumeChange,
-		volumeChangePercent,
-		sessionCountChange,
-		sessionCountChangePercent
-	};
+export function calculateMonthlyComparison(sessions: Session[]): AggregateComparison {
+	return calculatePeriodComparison(sessions, 'month');
 }
 
 /**

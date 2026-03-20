@@ -1,9 +1,8 @@
 <script lang="ts">
-	import Dexie from 'dexie';
 	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup } from '$lib/types';
-	import XIcon from '$lib/components/XIcon.svelte';
+	import { X } from 'lucide-svelte';
 	import { Button, Modal, TextInput, Select, InfoBox } from '$lib/ui';
 	import { invalidateExercises } from '$lib/invalidation';
 
@@ -68,9 +67,16 @@
 			is_custom: true
 		};
 
-		await db.exercises.add(Dexie.deepClone(newExercise));
+		const id = await db.collection('exercises').add({
+			name: newExercise.name,
+			category: newExercise.category,
+			primary_muscle: newExercise.primary_muscle,
+			secondary_muscles: newExercise.secondary_muscles,
+			equipment: newExercise.equipment,
+			is_custom: newExercise.is_custom,
+		});
 		await invalidateExercises();
-		onCreate(newExercise);
+		onCreate({ ...newExercise, id });
 		onClose();
 	}
 
@@ -141,7 +147,7 @@
 									type="button"
 									aria-label={`Remove ${muscle}`}
 								>
-									<XIcon class="w-3 h-3" />
+									<X class="w-3 h-3" />
 								</button>
 							</span>
 						{/each}

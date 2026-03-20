@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as backupUtils from '$lib/backupUtils';
-import { syncManager } from '$lib/syncUtils';
 
 vi.mock('$lib/backupUtils');
-vi.mock('$lib/syncUtils');
 
 describe('Settings Page - E2E Verification', () => {
 	beforeEach(() => {
@@ -32,17 +30,6 @@ describe('Settings Page - E2E Verification', () => {
 			totalItems: 1,
 			message: 'Data exported successfully'
 		});
-
-		vi.mocked(syncManager.sync).mockResolvedValue({
-			success: true,
-			itemsProcessed: 1,
-			itemsFailed: 0,
-			itemsSkipped: 0,
-			duration: 100,
-			message: 'Successfully synced 1 item'
-		});
-
-		vi.mocked(syncManager.isOnline).mockReturnValue(true);
 	});
 
 	afterEach(() => {
@@ -85,27 +72,10 @@ describe('Settings Page - E2E Verification', () => {
 			expect(backupUtils.exportBackupData).toBeDefined();
 		});
 
-		it('should have syncManager available', () => {
-			expect(syncManager).toBeDefined();
-			expect(syncManager.sync).toBeDefined();
-			expect(syncManager.isOnline).toBeDefined();
-		});
-
 		it('should export data when called', async () => {
 			const result = await backupUtils.exportBackupData();
 			expect(result.success).toBe(true);
 			expect(backupUtils.exportBackupData).toHaveBeenCalled();
-		});
-
-		it('should sync data when called', async () => {
-			const result = await syncManager.sync();
-			expect(result.success).toBe(true);
-			expect(syncManager.sync).toHaveBeenCalled();
-		});
-
-		it('should check online status', () => {
-			const isOnline = syncManager.isOnline();
-			expect(typeof isOnline).toBe('boolean');
 		});
 	});
 
@@ -138,14 +108,6 @@ describe('Settings Page - E2E Verification', () => {
 			await backupUtils.exportBackupData();
 
 			expect(backupUtils.exportBackupData).toHaveBeenCalledTimes(3);
-		});
-
-		it('should handle multiple successive syncs', async () => {
-			await syncManager.sync();
-			await syncManager.sync();
-			await syncManager.sync();
-
-			expect(syncManager.sync).toHaveBeenCalledTimes(3);
 		});
 
 		it('should handle error scenarios gracefully', async () => {
@@ -190,22 +152,6 @@ describe('Settings Page - E2E Verification', () => {
 			expect(savedProfile).toBeDefined();
 			const parsed = JSON.parse(savedProfile!);
 			expect(parsed.name).toBe('Test User');
-		});
-
-		it('should save and retrieve notification preferences', () => {
-			const notifPrefs = {
-				workoutReminders: true,
-				prAchievements: true,
-				progressUpdates: false,
-				emailNotifications: false
-			};
-			localStorage.setItem('gym-app-notification-prefs', JSON.stringify(notifPrefs));
-
-			const savedPrefs = localStorage.getItem('gym-app-notification-prefs');
-			expect(savedPrefs).toBeDefined();
-			const parsed = JSON.parse(savedPrefs!);
-			expect(parsed.workoutReminders).toBe(true);
-			expect(parsed.progressUpdates).toBe(false);
 		});
 
 		it('should save and retrieve app preferences', () => {

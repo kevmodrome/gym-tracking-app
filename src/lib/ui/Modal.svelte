@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import XIcon from '$lib/components/XIcon.svelte';
+	import { X } from 'lucide-svelte';
 
 	type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -94,7 +94,7 @@
 							type="button"
 							aria-label="Close modal"
 						>
-							<XIcon class="w-6 h-6 text-text-secondary hover:text-text-primary" />
+							<X class="w-6 h-6 text-text-secondary hover:text-text-primary" />
 						</button>
 					{/if}
 				</div>

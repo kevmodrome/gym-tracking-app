@@ -8,6 +8,26 @@ describe('Progress Page - E2E Verification', () => {
 	let mockExercises: Exercise[];
 	let mockSessions: Session[];
 
+	let mockExercisesCollection: {
+		get: ReturnType<typeof vi.fn>;
+		add: ReturnType<typeof vi.fn>;
+		update: ReturnType<typeof vi.fn>;
+		delete: ReturnType<typeof vi.fn>;
+		count: ReturnType<typeof vi.fn>;
+		where: ReturnType<typeof vi.fn>;
+		orderBy: ReturnType<typeof vi.fn>;
+	};
+
+	let mockSessionsCollection: {
+		get: ReturnType<typeof vi.fn>;
+		add: ReturnType<typeof vi.fn>;
+		update: ReturnType<typeof vi.fn>;
+		delete: ReturnType<typeof vi.fn>;
+		count: ReturnType<typeof vi.fn>;
+		where: ReturnType<typeof vi.fn>;
+		orderBy: ReturnType<typeof vi.fn>;
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		localStorage.clear();
@@ -179,10 +199,31 @@ describe('Progress Page - E2E Verification', () => {
 			}
 		];
 
-		vi.mocked(db.exercises.toArray).mockResolvedValue(mockExercises);
-		vi.mocked(db.sessions.orderBy).mockReturnValue({
-			toArray: vi.fn().mockResolvedValue(mockSessions)
-		} as any);
+		mockExercisesCollection = {
+			get: vi.fn().mockResolvedValue(mockExercises),
+			add: vi.fn().mockResolvedValue('new-id'),
+			update: vi.fn().mockResolvedValue(undefined),
+			delete: vi.fn().mockResolvedValue(undefined),
+			count: vi.fn().mockResolvedValue(3),
+			where: vi.fn().mockReturnValue({ equals: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue([]) }) }),
+			orderBy: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockExercises), reverse: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockExercises) }) }),
+		};
+
+		mockSessionsCollection = {
+			get: vi.fn().mockResolvedValue(mockSessions),
+			add: vi.fn().mockResolvedValue('new-id'),
+			update: vi.fn().mockResolvedValue(undefined),
+			delete: vi.fn().mockResolvedValue(undefined),
+			count: vi.fn().mockResolvedValue(4),
+			where: vi.fn().mockReturnValue({ equals: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue([]) }) }),
+			orderBy: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockSessions), reverse: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockSessions) }) }),
+		};
+
+		vi.mocked(db.collection).mockImplementation((name: string) => {
+			if (name === 'exercises') return mockExercisesCollection as any;
+			if (name === 'sessions') return mockSessionsCollection as any;
+			return mockExercisesCollection as any;
+		});
 	});
 
 	afterEach(() => {
@@ -205,31 +246,32 @@ describe('Progress Page - E2E Verification', () => {
 		}, 10000);
 
 		it('should load exercises from database', async () => {
-			const exercises = await db.exercises.toArray();
+			const exercises = await db.collection('exercises').get();
 			expect(exercises).toBeDefined();
 			expect(exercises.length).toBe(3);
 			expect(exercises[0].name).toBe('Bench Press');
-			expect(db.exercises.toArray).toHaveBeenCalled();
+			expect(mockExercisesCollection.get).toHaveBeenCalled();
 		});
 
 		it('should load sessions from database', async () => {
-			await db.sessions.orderBy('date').toArray();
-			expect(db.sessions.orderBy).toHaveBeenCalledWith('date');
+			await db.collection('sessions').orderBy('date').get();
+			expect(mockSessionsCollection.orderBy).toHaveBeenCalledWith('date');
 		});
 
 		it('should handle empty exercises list', async () => {
-			vi.mocked(db.exercises.toArray).mockResolvedValueOnce([]);
-			const exercises = await db.exercises.toArray();
+			mockExercisesCollection.get.mockResolvedValueOnce([]);
+			const exercises = await db.collection('exercises').get();
 			expect(exercises).toEqual([]);
 			expect(exercises.length).toBe(0);
 		});
 
 		it('should handle empty sessions list', async () => {
-			vi.mocked(db.sessions.orderBy).mockReturnValueOnce({
-				toArray: vi.fn().mockResolvedValueOnce([])
-			} as any);
+			mockSessionsCollection.orderBy.mockReturnValueOnce({
+				get: vi.fn().mockResolvedValueOnce([]),
+				reverse: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue([]) })
+			});
 
-			const result = await db.sessions.orderBy('date').toArray();
+			const result = await db.collection('sessions').orderBy('date').get();
 			expect(result).toEqual([]);
 			expect(result.length).toBe(0);
 		});
@@ -252,11 +294,12 @@ describe('Progress Page - E2E Verification', () => {
 				}
 			];
 
-			vi.mocked(db.sessions.orderBy).mockReturnValueOnce({
-				toArray: vi.fn().mockResolvedValueOnce(sessionsWithMissingExercise)
-			} as any);
+			mockSessionsCollection.orderBy.mockReturnValueOnce({
+				get: vi.fn().mockResolvedValueOnce(sessionsWithMissingExercise),
+				reverse: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(sessionsWithMissingExercise) })
+			});
 
-			const sessions = await db.sessions.orderBy('date').toArray();
+			const sessions = await db.collection('sessions').orderBy('date').get() as unknown as Session[];
 			expect(sessions).toHaveLength(1);
 			expect(sessions[0].exercises[0].sets).toHaveLength(0);
 		});
@@ -264,13 +307,13 @@ describe('Progress Page - E2E Verification', () => {
 
 	describe('Test: Exercise selector works', () => {
 		it('should have exercises available for selection', async () => {
-			const exercises = await db.exercises.toArray();
+			const exercises = await db.collection('exercises').get() as unknown as Exercise[];
 			expect(exercises.length).toBeGreaterThan(0);
 			expect(exercises.some((ex) => ex.id === 'exercise-1')).toBe(true);
 		});
 
 		it('should retrieve exercise by id', async () => {
-			const exercises = await db.exercises.toArray();
+			const exercises = await db.collection('exercises').get() as unknown as Exercise[];
 			const benchPress = exercises.find((ex) => ex.id === 'exercise-1');
 			expect(benchPress).toBeDefined();
 			expect(benchPress?.name).toBe('Bench Press');
@@ -278,7 +321,7 @@ describe('Progress Page - E2E Verification', () => {
 		});
 
 		it('should filter sessions by selected exercise', async () => {
-			const sessions = await db.sessions.orderBy('date').toArray();
+			const sessions = await db.collection('sessions').orderBy('date').get() as unknown as Session[];
 			const benchPressSessions = sessions.filter((session) =>
 				session.exercises.some((ex) => ex.exerciseId === 'exercise-1')
 			);
@@ -290,7 +333,7 @@ describe('Progress Page - E2E Verification', () => {
 		});
 
 		it('should handle exercise change', async () => {
-			const exercises = await db.exercises.toArray();
+			const exercises = await db.collection('exercises').get();
 			const firstExercise = exercises[0];
 			const secondExercise = exercises[1];
 
@@ -333,7 +376,7 @@ describe('Progress Page - E2E Verification', () => {
 		});
 
 		it('should verify exercises are sorted correctly', async () => {
-			const exercises = await db.exercises.toArray();
+			const exercises = await db.collection('exercises').get();
 			expect(exercises[0].name).toBe('Bench Press');
 			expect(exercises[1].name).toBe('Squat');
 			expect(exercises[2].name).toBe('Deadlift');
@@ -505,26 +548,26 @@ describe('Progress Page - E2E Verification', () => {
 		});
 
 		it('should handle multiple successive exercise retrievals', async () => {
-			await db.exercises.toArray();
-			await db.exercises.toArray();
-			await db.exercises.toArray();
+			await db.collection('exercises').get();
+			await db.collection('exercises').get();
+			await db.collection('exercises').get();
 
-			expect(db.exercises.toArray).toHaveBeenCalledTimes(3);
+			expect(mockExercisesCollection.get).toHaveBeenCalledTimes(3);
 		});
 
 		it('should handle multiple successive session retrievals', async () => {
-			await db.sessions.orderBy('date').toArray();
-			await db.sessions.orderBy('date').toArray();
-			await db.sessions.orderBy('date').toArray();
+			await db.collection('sessions').orderBy('date').get();
+			await db.collection('sessions').orderBy('date').get();
+			await db.collection('sessions').orderBy('date').get();
 
-			expect(db.sessions.orderBy).toHaveBeenCalledTimes(3);
+			expect(mockSessionsCollection.orderBy).toHaveBeenCalledTimes(3);
 		});
 
 		it('should handle error scenarios gracefully', async () => {
-			vi.mocked(db.exercises.toArray).mockRejectedValueOnce(new Error('Failed to load exercises'));
+			mockExercisesCollection.get.mockRejectedValueOnce(new Error('Failed to load exercises'));
 
 			try {
-				await db.exercises.toArray();
+				await db.collection('exercises').get();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Error);
 			}
@@ -532,9 +575,9 @@ describe('Progress Page - E2E Verification', () => {
 
 		it('should handle concurrent data operations', async () => {
 			const [exercises1, exercises2, exercises3] = await Promise.all([
-				db.exercises.toArray(),
-				db.exercises.toArray(),
-				db.exercises.toArray()
+				db.collection('exercises').get(),
+				db.collection('exercises').get(),
+				db.collection('exercises').get()
 			]);
 
 			expect(exercises1).toHaveLength(3);
@@ -544,15 +587,15 @@ describe('Progress Page - E2E Verification', () => {
 
 		it('should verify test consistency across runs', async () => {
 			for (let i = 0; i < 3; i++) {
-				const exercises = await db.exercises.toArray();
+				const exercises = await db.collection('exercises').get();
 				expect(exercises).toHaveLength(3);
 				expect(exercises[0].name).toBe('Bench Press');
 			}
 		});
 
 		it('should verify session ordering by date', async () => {
-			const sessions = await db.sessions.orderBy('date').toArray();
-			
+			const sessions = await db.collection('sessions').orderBy('date').get() as unknown as Session[];
+
 			const sortedSessions = [...sessions].sort(
 				(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
 			);
@@ -653,28 +696,30 @@ describe('Progress Page - E2E Verification', () => {
 	});
 
 	describe('Mock and spy verification', () => {
-		it('should verify db.exercises.toArray is mocked', () => {
-			expect(db.exercises.toArray).toBeDefined();
-			expect(typeof db.exercises.toArray).toBe('function');
+		it('should verify db.collection exercises is mocked', () => {
+			const col = db.collection('exercises');
+			expect(col.get).toBeDefined();
+			expect(typeof col.get).toBe('function');
 		});
 
-		it('should verify db.sessions.orderBy is mocked', () => {
-			expect(db.sessions.orderBy).toBeDefined();
-			expect(typeof db.sessions.orderBy).toBe('function');
+		it('should verify db.collection sessions is mocked', () => {
+			const col = db.collection('sessions');
+			expect(col.orderBy).toBeDefined();
+			expect(typeof col.orderBy).toBe('function');
 		});
 
 		it('should verify all mocks can be called', async () => {
-			await db.exercises.toArray();
-			await db.sessions.orderBy('date').toArray();
+			await db.collection('exercises').get();
+			await db.collection('sessions').orderBy('date').get();
 
-			expect(db.exercises.toArray).toHaveBeenCalled();
-			expect(db.sessions.orderBy).toHaveBeenCalledWith('date');
+			expect(mockExercisesCollection.get).toHaveBeenCalled();
+			expect(mockSessionsCollection.orderBy).toHaveBeenCalledWith('date');
 		});
 	});
 
 	describe('Chart data calculation testing', () => {
 		it('should calculate weight progression data points', async () => {
-			const sessions = await db.sessions.orderBy('date').toArray();
+			const sessions = await db.collection('sessions').orderBy('date').get() as unknown as Session[];
 			const benchPressSessions = sessions.filter((session) =>
 				session.exercises.some((ex) => ex.exerciseId === 'exercise-1')
 			);
@@ -697,7 +742,7 @@ describe('Progress Page - E2E Verification', () => {
 		});
 
 		it('should calculate volume progression data points', async () => {
-			const sessions = await db.sessions.orderBy('date').toArray();
+			const sessions = await db.collection('sessions').orderBy('date').get() as unknown as Session[];
 			const benchPressSessions = sessions.filter((session) =>
 				session.exercises.some((ex) => ex.exerciseId === 'exercise-1')
 			);
@@ -717,7 +762,7 @@ describe('Progress Page - E2E Verification', () => {
 		});
 
 		it('should handle null data points gracefully', async () => {
-			const sessions = await db.sessions.orderBy('date').toArray();
+			const sessions = await db.collection('sessions').orderBy('date').get() as unknown as Session[];
 			const dataPoints = sessions.map((session) => {
 				const exerciseInSession = session.exercises.find(
 					(ex) => ex.exerciseId === 'exercise-99'

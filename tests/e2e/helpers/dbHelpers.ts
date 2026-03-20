@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-const DB_NAME = 'gym-recording-app-db';
+const DB_NAME = 'gym-recording-app';
 
 /**
  * Clears all IndexedDB databases in the browser context

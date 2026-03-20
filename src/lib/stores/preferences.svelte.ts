@@ -1,8 +1,6 @@
 import { db } from '$lib/db';
 import type { WeightUnit, DistanceUnit, UserPreferences } from '$lib/types';
 
-const PREFERENCES_ID = 'default';
-
 const DEFAULTS: Omit<UserPreferences, 'id' | 'updatedAt'> = {
 	weightUnit: 'kg',
 	distanceUnit: 'km',
@@ -14,6 +12,7 @@ class PreferencesStore {
 	distanceUnit = $state<DistanceUnit>(DEFAULTS.distanceUnit);
 	decimalPlaces = $state<number>(DEFAULTS.decimalPlaces);
 	private loaded = false;
+	private prefsId: string | null = null;
 
 	get weightLabel(): string {
 		return this.weightUnit === 'kg' ? 'kg' : 'lbs';
@@ -26,8 +25,9 @@ class PreferencesStore {
 	async load(): Promise<void> {
 		if (this.loaded) return;
 		try {
-			const saved = await db.preferences.get(PREFERENCES_ID);
+			const saved = await db.collection('preferences').first() as (UserPreferences | null);
 			if (saved) {
+				this.prefsId = saved.id;
 				this.weightUnit = saved.weightUnit;
 				this.distanceUnit = saved.distanceUnit;
 				this.decimalPlaces = saved.decimalPlaces;
@@ -40,7 +40,7 @@ class PreferencesStore {
 						if (parsed.weightUnit) this.weightUnit = parsed.weightUnit;
 						if (parsed.distanceUnit) this.distanceUnit = parsed.distanceUnit;
 						if (parsed.decimalPlaces !== undefined) this.decimalPlaces = parsed.decimalPlaces;
-						// Save to IDB
+						// Save to Tablinum
 						await this.persist();
 					} catch {
 						// ignore parse errors
@@ -48,7 +48,7 @@ class PreferencesStore {
 				}
 			}
 		} catch {
-			// IDB not available (SSR), use defaults
+			// DB not available (SSR), use defaults
 		}
 		this.loaded = true;
 	}
@@ -62,23 +62,28 @@ class PreferencesStore {
 
 	private async persist(): Promise<void> {
 		try {
-			await db.preferences.put({
-				id: PREFERENCES_ID,
+			const data = {
 				weightUnit: this.weightUnit,
 				distanceUnit: this.distanceUnit,
 				decimalPlaces: this.decimalPlaces,
 				updatedAt: new Date().toISOString()
-			});
+			};
+			if (this.prefsId) {
+				await db.collection('preferences').update(this.prefsId, data);
+			} else {
+				this.prefsId = await db.collection('preferences').add(data);
+			}
 		} catch {
-			// IDB not available
+			// DB not available
 		}
 	}
 
-	/** Called after sync replaces IDB data to refresh store state */
+	/** Called after sync replaces data to refresh store state */
 	async refresh(): Promise<void> {
 		try {
-			const saved = await db.preferences.get(PREFERENCES_ID);
+			const saved = await db.collection('preferences').first() as (UserPreferences | null);
 			if (saved) {
+				this.prefsId = saved.id;
 				this.weightUnit = saved.weightUnit;
 				this.distanceUnit = saved.distanceUnit;
 				this.decimalPlaces = saved.decimalPlaces;

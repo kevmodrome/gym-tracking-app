@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { SessionExercise } from '$lib/types';
+	import { calculateSessionVolume } from '$lib/dashboardMetrics';
 	import { Button, Textarea, InfoBox } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import ActionBar from '$lib/components/ActionBar.svelte';
 
 	interface CompletionPageProps {
 		sessionDuration: number;
@@ -20,14 +22,6 @@
 		onBack,
 		onSave
 	}: CompletionPageProps = $props();
-
-	function calculateSessionVolume(): number {
-		return sessionExercises.reduce((total, exercise) => {
-			return total + exercise.sets.reduce((exerciseTotal, set) => {
-				return exerciseTotal + (set.reps * set.weight);
-			}, 0);
-		}, 0);
-	}
 
 	const totalSets = $derived(sessionExercises.reduce((acc, ex) => acc + ex.sets.length, 0));
 	const completedSets = $derived(sessionExercises.reduce((acc, ex) => acc + ex.sets.filter(s => s.completed).length, 0));
@@ -63,7 +57,7 @@
 					</div>
 					<div>
 						<p class="text-text-muted text-xs uppercase tracking-wide">Volume</p>
-						<p class="text-text-primary font-semibold text-lg">{calculateSessionVolume().toLocaleString()} {preferencesStore.weightLabel}</p>
+						<p class="text-text-primary font-semibold text-lg">{calculateSessionVolume({ exercises: sessionExercises }).toLocaleString()} {preferencesStore.weightLabel}</p>
 					</div>
 				</div>
 			</InfoBox>
@@ -81,46 +75,22 @@
 		</div>
 	</div>
 
-	<!-- Fixed Bottom Action Bar - Mobile -->
-	<div class="fixed bottom-20 left-0 right-0 bg-surface border-t border-border p-4 md:hidden z-40">
-		<div class="max-w-md mx-auto space-y-3">
-			<Button
-				variant="success"
-				fullWidth
-				size="lg"
-				onclick={onSave}
-			>
-				Save Workout
-			</Button>
-			<Button
-				variant="ghost"
-				fullWidth
-				onclick={onBack}
-			>
-				Back to Workout
-			</Button>
-		</div>
-	</div>
-
-	<!-- Desktop Action Buttons (inline) -->
-	<div class="hidden md:block px-4 pb-6">
-		<div class="max-w-md mx-auto space-y-3">
-			<Button
-				variant="success"
-				fullWidth
-				size="lg"
-				onclick={onSave}
-			>
-				Save Workout
-			</Button>
-			<Button
-				variant="ghost"
-				fullWidth
-				size="lg"
-				onclick={onBack}
-			>
-				Back to Workout
-			</Button>
-		</div>
-	</div>
+	<ActionBar>
+		<Button
+			variant="success"
+			fullWidth
+			size="lg"
+			onclick={onSave}
+		>
+			Save Workout
+		</Button>
+		<Button
+			variant="ghost"
+			fullWidth
+			size="lg"
+			onclick={onBack}
+		>
+			Back to Workout
+		</Button>
+	</ActionBar>
 </div>

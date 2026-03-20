@@ -1,11 +1,10 @@
 <script lang="ts">
 	import type { ExerciseCategory, MuscleGroup, PersonalRecord } from '$lib/types';
 	import { getRepRangeLabel } from '$lib/prUtils';
-	import SearchIcon from '$lib/components/SearchIcon.svelte';
-	import XIcon from '$lib/components/XIcon.svelte';
-	import PlusIcon from '$lib/components/PlusIcon.svelte';
+	import { Search, X, Plus } from 'lucide-svelte';
 	import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { formatMuscle } from '$lib/formatUtils';
 
 	let { data } = $props();
 
@@ -49,9 +48,6 @@
 		selectedMuscle = '';
 	}
 
-	function formatMuscle(muscle: string): string {
-		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
-	}
 </script>
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
@@ -59,7 +55,7 @@
 		<PageHeader title="Browse Exercises">
 			{#snippet actions()}
 				<Button variant="secondary" href="/exercises/new">
-					<PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+					<Plus class="w-4 h-4 sm:w-5 sm:h-5" />
 					<span class="hidden sm:inline">Add Exercise</span>
 				</Button>
 			{/snippet}
@@ -97,7 +93,7 @@
 							onclick={clearFilters}
 							class="flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary transition-colors"
 						>
-							<XIcon class="w-4 h-4" />
+							<X class="w-4 h-4" />
 							Clear Filters
 						</button>
 					</div>
@@ -109,7 +105,7 @@
 			<Card class="text-center" padding="lg">
 				{#snippet children()}
 					<div class="text-text-muted mb-4">
-						<SearchIcon class="w-16 h-16 mx-auto opacity-50" />
+						<Search class="w-16 h-16 mx-auto opacity-50" />
 					</div>
 					<h2 class="text-xl font-semibold font-display text-text-primary mb-2">No exercises found</h2>
 					<p class="text-text-secondary">

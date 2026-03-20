@@ -1,17 +1,16 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
+	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
-	import Dexie from 'dexie';
 	import { db } from '$lib/db';
 	import type { Session } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
-	import SearchIcon from '$lib/components/SearchIcon.svelte';
-	import XIcon from '$lib/components/XIcon.svelte';
-	import ChevronDownIcon from '$lib/components/ChevronDownIcon.svelte';
+	import { Search, X, ChevronDown } from 'lucide-svelte';
 	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox, SearchInput, NumberSpinner } from '$lib/ui';
 	import type { SessionExercise, ExerciseSet } from '$lib/types';
 	import { invalidateSessions, invalidatePersonalRecords } from '$lib/invalidation';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { getDateRange } from '$lib/dateUtils';
 
 	let { data } = $props();
 
@@ -90,32 +89,13 @@
 			});
 		}
 
-		const now = new Date();
-		let startDate: Date;
-
-		switch (dateFilter) {
-			case 'week':
-				startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-				break;
-			case 'month':
-				startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-				break;
-			case 'year':
-				startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-				break;
-			case 'custom':
-				startDate = customStartDate ? new Date(customStartDate) : new Date(0);
-				break;
-			default:
-				startDate = new Date(0);
+		if (dateFilter !== 'all') {
+			const { startDate, endDate } = getDateRange(dateFilter, customStartDate, customEndDate);
+			filtered = filtered.filter((session) => {
+				const sessionDate = new Date(session.date);
+				return sessionDate >= startDate && sessionDate <= endDate;
+			});
 		}
-
-		let endDate = dateFilter === 'custom' && customEndDate ? new Date(customEndDate) : now;
-
-		filtered = filtered.filter((session) => {
-			const sessionDate = new Date(session.date);
-			return sessionDate >= startDate && sessionDate <= endDate;
-		});
 
 		return filtered;
 	});
@@ -171,11 +151,18 @@
 		if (!showSessionDetail) return;
 
 		try {
-			await db.sessions.delete(showSessionDetail.id);
-			deletedSession = showSessionDetail;
-			showSessionDetail = null;
+			const sessionToDelete = showSessionDetail;
+			await db.collection('sessions').delete(sessionToDelete.id);
+			deletedSession = sessionToDelete;
+
+			// Close modals first
 			showDeleteConfirm = false;
+			showSessionDetail = null;
 			showUndoToast = true;
+
+			// Wait for Svelte to process state changes and modal exit transitions (150ms) to complete
+			await tick();
+			await new Promise((r) => setTimeout(r, 200));
 
 			await calculatePersonalRecords();
 			await invalidateSessions();
@@ -195,7 +182,13 @@
 		if (!deletedSession) return;
 
 		try {
-			await db.sessions.add(deletedSession);
+			await db.collection('sessions').add({
+				exercises: $state.snapshot(deletedSession.exercises),
+				date: deletedSession.date,
+				duration: deletedSession.duration,
+				notes: deletedSession.notes,
+				createdAt: deletedSession.createdAt,
+			});
 			await calculatePersonalRecords();
 			await invalidateSessions();
 			await invalidatePersonalRecords();
@@ -251,11 +244,11 @@
 				date: new Date(editingSessionDate).toISOString()
 			};
 
-			await db.sessions.update(showSessionDetail.id, Dexie.deepClone({
-				exercises: updatedSession.exercises,
+			await db.collection('sessions').update(showSessionDetail.id, {
+				exercises: $state.snapshot(updatedSession.exercises),
 				notes: updatedSession.notes,
 				date: updatedSession.date
-			}));
+			});
 
 			await calculatePersonalRecords();
 			await invalidateSessions();
@@ -307,7 +300,7 @@
 					Showing: {filteredSessions.length} sessions
 				</span>
 				<Button variant="ghost" onclick={clearFilters} fullWidth>
-					<XIcon class="w-4 h-4" />
+					<X class="w-4 h-4" />
 					Clear
 				</Button>
 			</div>
@@ -342,7 +335,7 @@
 	<Card class="text-center" padding="lg">
 		{#snippet children()}
 			<div class="text-text-muted mb-4">
-				<SearchIcon class="w-16 h-16 mx-auto" />
+				<Search class="w-16 h-16 mx-auto" />
 			</div>
 			<h2 class="text-xl font-semibold text-text-primary mb-2">No workout sessions found</h2>
 			<p class="text-text-secondary">
@@ -356,7 +349,7 @@
 	</Card>
 {:else}
 	<div class="grid grid-cols-1 gap-4">
-		{#each paginatedSessions as session}
+		{#each paginatedSessions as session (session.id)}
 			<Card hoverable>
 				{#snippet children()}
 					<button
@@ -391,7 +384,7 @@
 								{/if}
 							</div>
 							<div class="flex items-center gap-2 ml-4">
-								<ChevronDownIcon class="w-5 h-5 text-text-muted" />
+								<ChevronDown class="w-5 h-5 text-text-muted" />
 							</div>
 						</div>
 					</button>
@@ -675,7 +668,7 @@
 			class="text-text-muted hover:text-text-primary"
 			type="button"
 		>
-			<XIcon class="w-5 h-5" />
+			<X class="w-5 h-5" />
 		</button>
 	</div>
 {/if}

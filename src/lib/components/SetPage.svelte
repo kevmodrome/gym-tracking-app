@@ -3,6 +3,7 @@
 	import { NumberSpinner, Button } from '$lib/ui';
 	import { Timer } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import ActionBar from '$lib/components/ActionBar.svelte';
 
 	interface SetPageProps {
 		exercise: SessionExercise;
@@ -74,70 +75,33 @@
 		</div>
 	</div>
 
-	<!-- Fixed Bottom Action Bar - Mobile -->
-	<div class="fixed bottom-20 left-0 right-0 bg-surface border-t border-border p-4 md:hidden z-40">
-		<div class="max-w-md mx-auto space-y-3">
-			<!-- Primary Action: Start Timer -->
+	<ActionBar>
+		<Button
+			variant="primary"
+			fullWidth
+			size="lg"
+			onclick={onStartTimer}
+		>
+			<Timer class="w-5 h-5" />
+			Start Timer
+		</Button>
+		<div class="grid grid-cols-2 gap-3">
 			<Button
-				variant="primary"
+				variant="success"
 				fullWidth
 				size="lg"
-				onclick={onStartTimer}
+				onclick={onComplete}
 			>
-				<Timer class="w-5 h-5" />
-				Start Timer
+				✓ Complete
 			</Button>
-
-			<!-- Secondary Actions: Complete and Skip -->
-			<div class="grid grid-cols-2 gap-3">
-				<Button
-					variant="success"
-					fullWidth
-					onclick={onComplete}
-				>
-					✓ Complete
-				</Button>
-				<Button
-					variant="secondary"
-					fullWidth
-					onclick={onSkip}
-				>
-					Skip
-				</Button>
-			</div>
-		</div>
-	</div>
-
-	<!-- Desktop Action Buttons (inline) -->
-	<div class="hidden md:block px-4 pb-6">
-		<div class="max-w-md mx-auto space-y-3">
 			<Button
-				variant="primary"
+				variant="secondary"
 				fullWidth
 				size="lg"
-				onclick={onStartTimer}
+				onclick={onSkip}
 			>
-				<Timer class="w-5 h-5" />
-				Start Timer
+				Skip
 			</Button>
-			<div class="grid grid-cols-2 gap-3">
-				<Button
-					variant="success"
-					fullWidth
-					size="lg"
-					onclick={onComplete}
-				>
-					✓ Complete
-				</Button>
-				<Button
-					variant="secondary"
-					fullWidth
-					size="lg"
-					onclick={onSkip}
-				>
-					Skip
-				</Button>
-			</div>
 		</div>
-	</div>
+	</ActionBar>
 </div>
