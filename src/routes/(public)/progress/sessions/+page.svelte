@@ -183,7 +183,7 @@
 
 		try {
 			await db.collection('sessions').add({
-				exercises: deletedSession.exercises,
+				exercises: $state.snapshot(deletedSession.exercises),
 				date: deletedSession.date,
 				duration: deletedSession.duration,
 				notes: deletedSession.notes,
@@ -244,11 +244,11 @@
 				date: new Date(editingSessionDate).toISOString()
 			};
 
-			await db.collection('sessions').update(showSessionDetail.id, structuredClone({
-				exercises: updatedSession.exercises,
+			await db.collection('sessions').update(showSessionDetail.id, {
+				exercises: $state.snapshot(updatedSession.exercises),
 				notes: updatedSession.notes,
 				date: updatedSession.date
-			}));
+			});
 
 			await calculatePersonalRecords();
 			await invalidateSessions();

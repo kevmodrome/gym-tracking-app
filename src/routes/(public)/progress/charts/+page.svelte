@@ -5,6 +5,7 @@
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Select } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { formatMuscle, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
 
 	let exercises = $state<Exercise[]>([]);
 	let sessions = $state<Session[]>([]);
@@ -80,27 +81,6 @@
 		}));
 	});
 
-	function getMetricLabel(): string {
-		switch (selectedMetric) {
-			case 'weight':
-				return 'Weight (' + preferencesStore.weightLabel + ')';
-			case 'volume':
-				return 'Volume (' + preferencesStore.weightLabel + ')';
-			case 'reps':
-				return 'Max Reps';
-		}
-	}
-
-	function getMetricUnit(): string {
-		switch (selectedMetric) {
-			case 'weight':
-				return ' ' + preferencesStore.weightLabel;
-			case 'volume':
-				return ' ' + preferencesStore.weightLabel;
-			case 'reps':
-				return ' reps';
-		}
-	}
 
 	function handleExerciseChange(value: string | number) {
 		selectedExercise = exercises.find((ex) => ex.id === value);
@@ -119,9 +99,6 @@
 		{ value: 'reps', label: 'Max Reps' }
 	]);
 
-	function formatMuscle(muscle: string): string {
-		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
-	}
 </script>
 
 <div class="bg-surface rounded-xl border border-border p-4 sm:p-6 mb-4 sm:mb-6">
@@ -234,21 +211,21 @@
 				<div class="bg-accent/10 rounded-lg p-3 sm:p-4">
 					<p class="text-xs sm:text-sm text-accent font-medium mb-1">Latest</p>
 					<p class="text-xl sm:text-2xl font-display font-bold text-accent">
-						{chartData[chartData.length - 1].value}{getMetricUnit()}
+						{chartData[chartData.length - 1].value}{getMetricUnit(selectedMetric)}
 					</p>
 				</div>
 				<div class="bg-success/10 rounded-lg p-3 sm:p-4">
 					<p class="text-xs sm:text-sm text-success font-medium mb-1">Best</p>
 					<p class="text-xl sm:text-2xl font-display font-bold text-success">
 						{Math.max(...chartData.map((d) => d.value))}
-						{getMetricUnit()}
+						{getMetricUnit(selectedMetric)}
 					</p>
 				</div>
 				<div class="bg-secondary/10 rounded-lg p-3 sm:p-4">
 					<p class="text-xs sm:text-sm text-secondary font-medium mb-1">Average</p>
 					<p class="text-xl sm:text-2xl font-display font-bold text-secondary">
 						{Math.round(chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length)}
-						{getMetricUnit()}
+						{getMetricUnit(selectedMetric)}
 					</p>
 				</div>
 			{/if}

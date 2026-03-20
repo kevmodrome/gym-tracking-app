@@ -4,6 +4,7 @@
 	import { Search, X, Plus } from 'lucide-svelte';
 	import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { formatMuscle } from '$lib/formatUtils';
 
 	let { data } = $props();
 
@@ -47,9 +48,6 @@
 		selectedMuscle = '';
 	}
 
-	function formatMuscle(muscle: string): string {
-		return muscle.charAt(0).toUpperCase() + muscle.slice(1);
-	}
 </script>
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">

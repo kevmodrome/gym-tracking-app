@@ -325,13 +325,13 @@
 			createdAt: new Date().toISOString()
 		};
 
-		await db.collection('sessions').add(structuredClone({
-			exercises: session.exercises,
+		await db.collection('sessions').add({
+			exercises: $state.snapshot(session.exercises),
 			date: session.date,
 			duration: session.duration,
 			notes: session.notes,
 			createdAt: session.createdAt,
-		}));
+		});
 		await calculatePersonalRecords();
 		await invalidateSessions();
 		await invalidatePersonalRecords();
