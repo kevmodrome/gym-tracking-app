@@ -5,11 +5,36 @@ import type { Exercise, Workout, Session, PersonalRecord, UserPreferences } from
 
 const INVITE_STORAGE_KEY = 'gym-app-invite';
 
+const exerciseSetDef = field.object({
+	reps: field.number(),
+	weight: field.number(),
+	rpe: field.optional(field.number()),
+	completed: field.boolean(),
+	notes: field.optional(field.string()),
+});
+
+const sessionExerciseDef = field.object({
+	exerciseId: field.string(),
+	exerciseName: field.string(),
+	primaryMuscle: field.string(),
+	sets: field.array(exerciseSetDef),
+	notes: field.optional(field.string()),
+});
+
+const exerciseRoutineDef = field.object({
+	exerciseId: field.string(),
+	exerciseName: field.string(),
+	targetSets: field.number(),
+	targetReps: field.number(),
+	targetWeight: field.number(),
+	notes: field.optional(field.string()),
+});
+
 const exercisesDef = collection('exercises', {
 	name: field.string(),
 	category: field.string(),
 	primary_muscle: field.string(),
-	secondary_muscles: field.json(),
+	secondary_muscles: field.array(field.string()),
 	equipment: field.string(),
 	is_custom: field.boolean(),
 	favorited: field.optional(field.boolean()),
@@ -17,14 +42,14 @@ const exercisesDef = collection('exercises', {
 
 const workoutsDef = collection('workouts', {
 	name: field.string(),
-	exercises: field.json(),
+	exercises: field.array(exerciseRoutineDef),
 	notes: field.optional(field.string()),
 	createdAt: field.string(),
 	updatedAt: field.string(),
 }, { indices: ['name', 'createdAt'] });
 
 const sessionsDef = collection('sessions', {
-	exercises: field.json(),
+	exercises: field.array(sessionExerciseDef),
 	date: field.string(),
 	duration: field.number(),
 	notes: field.optional(field.string()),
