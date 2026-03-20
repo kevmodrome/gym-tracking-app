@@ -1,6 +1,9 @@
 import { field, collection } from 'tablinum';
 import { Tablinum } from 'tablinum/svelte';
+import type { Invite } from 'tablinum/svelte';
 import type { Exercise, Workout, Session, PersonalRecord, UserPreferences } from './types';
+
+const INVITE_STORAGE_KEY = 'gym-app-invite';
 
 const exercisesDef = collection('exercises', {
 	name: field.string(),
@@ -52,10 +55,34 @@ const schema = {
 	preferences: preferencesDef,
 };
 
+function getStoredInvite(): Invite | null {
+	if (typeof localStorage === 'undefined') return null;
+	const raw = localStorage.getItem(INVITE_STORAGE_KEY);
+	if (!raw) return null;
+	try {
+		return JSON.parse(raw) as Invite;
+	} catch {
+		return null;
+	}
+}
+
+export function clearStoredInvite() {
+	if (typeof localStorage !== 'undefined') {
+		localStorage.removeItem(INVITE_STORAGE_KEY);
+	}
+}
+
+export function storeInvite(invite: Invite) {
+	localStorage.setItem(INVITE_STORAGE_KEY, JSON.stringify(invite));
+}
+
+const storedInvite = getStoredInvite();
+
 export const db = new Tablinum({
 	schema,
-	relays: ['wss://relay.tablinum.dev/'],
-	dbName: 'gym-recording-app',
+	relays: storedInvite?.relays ?? ['wss://relay.tablinum.dev/'],
+	dbName: storedInvite?.dbName ?? 'gym-recording-app',
+	epochKeys: storedInvite?.epochKeys,
 });
 
 // Helper: look up an exercise by name from the DB

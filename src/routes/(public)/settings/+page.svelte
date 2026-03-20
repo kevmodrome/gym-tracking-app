@@ -2,7 +2,9 @@
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
 	import type { AppSettings } from '$lib/types';
+	import type { MemberRecord } from 'tablinum/svelte';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
+	import InviteModal from '$lib/components/InviteModal.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
 	import { db } from '$lib/db';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
@@ -16,6 +18,7 @@
 		vibrationEnabled: true
 	});
 
+	let showInviteModal = $state(false);
 	let showImportModal = $state(false);
 	let showExportProgress = $state(false);
 	let exportProgress = $state({ current: 0, total: 0, stage: '' });
@@ -27,6 +30,7 @@
 	let syncStatus = $state(db.syncStatus);
 	let pendingCount = $state(db.pendingCount);
 	let relayStatus = $state(db.relayStatus);
+	let members = $state<ReadonlyArray<MemberRecord>>([]);
 
 	// Auto-save settings when they change (with debounce)
 	$effect(() => {
@@ -43,9 +47,10 @@
 		}, 300);
 	});
 
-	onMount(() => {
+	onMount(async () => {
 		loadSettings();
 		hasLoaded = true;
+		members = await db.getMembers();
 	});
 
 	function loadSettings() {
@@ -147,11 +152,37 @@
 					</div>
 
 					<div class="bg-surface-elevated border border-border rounded-lg p-4">
+						<h3 class="font-medium text-text-primary mb-2">Devices</h3>
+						<div class="space-y-2">
+							<div class="flex items-center gap-2 text-sm">
+								<span class="w-2 h-2 rounded-full bg-success flex-shrink-0"></span>
+								<span class="text-text-secondary font-mono text-xs truncate">{db.publicKey}</span>
+								<span class="text-text-muted text-xs flex-shrink-0">(this device)</span>
+							</div>
+							{#each members as member}
+								{#if member.id !== db.publicKey && !member.removedAt}
+									<div class="flex items-center gap-2 text-sm">
+										<span class="w-2 h-2 rounded-full bg-accent flex-shrink-0"></span>
+										<span class="text-text-secondary font-mono text-xs truncate">{member.name || member.id}</span>
+									</div>
+								{/if}
+							{/each}
+							{#if members.filter(m => m.id !== db.publicKey && !m.removedAt).length === 0}
+								<p class="text-xs text-text-muted">No other devices connected</p>
+							{/if}
+						</div>
+					</div>
+
+					<Button onclick={() => showInviteModal = true} class="w-full">
+						Connect Another Device
+					</Button>
+
+					<div class="bg-surface-elevated border border-border rounded-lg p-4">
 						<h3 class="font-medium text-text-primary mb-2">About Sync</h3>
 						<ul class="text-sm text-text-secondary space-y-1">
 							<li>Your data is encrypted end-to-end</li>
 							<li>Changes sync automatically via Nostr relays</li>
-							<li>Use invites to share across devices</li>
+							<li>Copy the invite link to connect another device</li>
 						</ul>
 					</div>
 				</div>
@@ -313,6 +344,10 @@
 
 		{#if showImportModal}
 			<ImportBackupModal onClose={handleImportModalClose} />
+		{/if}
+
+		{#if showInviteModal}
+			<InviteModal onclose={() => showInviteModal = false} />
 		{/if}
 	</div>
 </div>
