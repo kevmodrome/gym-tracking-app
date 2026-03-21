@@ -29,9 +29,31 @@
 		}
 	}
 
-	let exercises = $derived(await exercisesCol.get() as Exercise[]);
-	let existingSession = $derived(await tryGetSession(sessionId));
-	let sourceSession = $derived(fromSessionId ? await tryGetSession(fromSessionId) : null);
+	let exercises = $state<Exercise[]>([]);
+	let existingSession = $state<Session | null>(null);
+	let sourceSession = $state<Session | null>(null);
+
+	$effect(() => {
+		exercisesCol.get().then((data) => {
+			exercises = data as Exercise[];
+		});
+	});
+
+	$effect(() => {
+		tryGetSession(sessionId).then((data) => {
+			existingSession = data;
+		});
+	});
+
+	$effect(() => {
+		if (fromSessionId) {
+			tryGetSession(fromSessionId).then((data) => {
+				sourceSession = data;
+			});
+		} else {
+			sourceSession = null;
+		}
+	});
 
 	// Session state
 	let sessionExercises = $state<SessionExercise[]>([]);

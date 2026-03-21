@@ -7,8 +7,20 @@
 
 	const exercisesCol = db.collection('exercises');
 	const personalRecordsCol = db.collection('personalRecords');
-	let exercises = $derived(await exercisesCol.get() as Exercise[]);
-	let allPRs = $derived(await personalRecordsCol.get() as PersonalRecord[]);
+	let exercises = $state<Exercise[]>([]);
+	let allPRs = $state<PersonalRecord[]>([]);
+
+	$effect(() => {
+		exercisesCol.get().then((data) => {
+			exercises = data as Exercise[];
+		});
+	});
+
+	$effect(() => {
+		personalRecordsCol.get().then((data) => {
+			allPRs = data as PersonalRecord[];
+		});
+	});
 
 	// UI state
 	let selectedExerciseId = $state<string | null>(null);

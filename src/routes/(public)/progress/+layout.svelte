@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { ButtonGroup, PageHeader } from '$lib/ui';
 
@@ -11,8 +11,8 @@
 		{ value: 'records', label: 'Records' }
 	];
 
-	const currentTab = $derived(() => {
-		const path = $page.url.pathname;
+	const currentTab = $derived.by(() => {
+		const path = page.url.pathname;
 		if (path.includes('/sessions')) return 'sessions';
 		if (path.includes('/charts')) return 'charts';
 		if (path.includes('/records')) return 'records';
@@ -30,7 +30,7 @@
 			{#snippet actions()}
 				<ButtonGroup
 					options={tabOptions}
-					value={currentTab()}
+					value={currentTab}
 					onchange={(v) => {
 						goto(`/progress/${v}`);
 					}}

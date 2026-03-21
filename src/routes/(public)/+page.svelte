@@ -21,8 +21,20 @@
 
 	const sessionsCol = db.collection('sessions');
 	const exercisesCol = db.collection('exercises');
-	let sessions = $derived(await sessionsCol.orderBy('date').reverse().get() as Session[]);
-	let allExercises = $derived(await exercisesCol.get() as Exercise[]);
+	let sessions = $state<Session[]>([]);
+	let allExercises = $state<Exercise[]>([]);
+
+	$effect(() => {
+		sessionsCol.orderBy('date').reverse().get().then((data) => {
+			sessions = data as Session[];
+		});
+	});
+
+	$effect(() => {
+		exercisesCol.get().then((data) => {
+			allExercises = data as Exercise[];
+		});
+	});
 
 	// UI state
 	let dateFilter = $state<DateFilter>('month');
@@ -31,6 +43,7 @@
 	let selectedPeriod = $state<'week' | 'month'>('week');
 	let volumeScale = $state<VolumeScale>('week');
 	let isMobile = $state(false);
+	let chartReady = $state(false);
 
 	$effect(() => {
 		const mql = window.matchMedia('(max-width: 640px)');
@@ -80,6 +93,11 @@
 	const volumeTrendLine = $derived.by(() => {
 		if (volumeChartData.length < 2) return null;
 		return calculateLinearRegression(volumeChartData);
+	});
+
+	$effect(() => {
+		// Defer chart rendering so Plot mounts only after reactive data has settled
+		chartReady = volumeChartData.length > 0;
 	});
 
 	const weeklyComparison = $derived.by(() => calculateWeeklyComparison(sessions));
@@ -542,10 +560,10 @@
 							onchange={(v) => volumeScale = v as VolumeScale}
 						/>
 					</div>
-					{#if volumeChartData.length > 0}
+					{#if chartReady}
 						<div class="h-48 sm:h-64">
 							<Plot height={256} marginLeft={50} marginBottom={40} grid>
-								<AxisX tickFormat={formatChartDate} ticks={volumeChartData.map(d => d.date)} removeDuplicateTicks />
+								<AxisX tickFormat={formatChartDate} />
 								<AxisY tickFormat={(v: any) => formatVolume(v)} />
 								{#if volumeTrendLine}
 									<Line data={volumeTrendLine} x="date" y="value" stroke="#7c5cff" strokeWidth={2} strokeDasharray="5,5" />

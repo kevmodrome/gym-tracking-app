@@ -13,8 +13,21 @@
 
 	const sessionsCol = db.collection('sessions');
 	const workoutsCol = db.collection('workouts');
-	let sessions = $derived(await sessionsCol.orderBy('date').reverse().get() as Session[]);
-	let allWorkouts = $derived((await workoutsCol.get() as Workout[]).map((w) => ({ id: w.id, name: w.name })));
+	let sessions = $state<Session[]>([]);
+	let allWorkoutsRaw = $state<Workout[]>([]);
+	let allWorkouts = $derived(allWorkoutsRaw.map((w) => ({ id: w.id, name: w.name })));
+
+	$effect(() => {
+		sessionsCol.orderBy('date').reverse().get().then((data) => {
+			sessions = data as Session[];
+		});
+	});
+
+	$effect(() => {
+		workoutsCol.get().then((data) => {
+			allWorkoutsRaw = data as Workout[];
+		});
+	});
 
 	// Helper to get muscle groups from a session
 	function getSessionMuscleGroups(session: Session): string[] {

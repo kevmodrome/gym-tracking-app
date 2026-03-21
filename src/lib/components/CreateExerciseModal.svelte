@@ -38,7 +38,7 @@
 		return '';
 	});
 
-	const isFormValid = $derived(() => {
+	const isFormValid = $derived.by(() => {
 		return !!name.trim() && !!category && !!primaryMuscle;
 	});
 

@@ -15,10 +15,28 @@
 	const exerciseId = $derived(data.exerciseId);
 	const exercisesCol = db.collection('exercises');
 	const sessionsCol = db.collection('sessions');
-	let exercise = $derived(await exercisesCol.get(exerciseId) as Exercise);
-	let allSessions = $derived(await sessionsCol.orderBy('date').reverse().get() as Session[]);
+	let exercise = $state<Exercise | null>(null);
+	let allSessions = $state<Session[]>([]);
 	let sessions = $derived(allSessions.filter((s) => s.exercises.some((e) => e.exerciseId === exerciseId)));
-	let personalRecords = $derived(await getPersonalRecordsForExercise(exerciseId));
+	let personalRecords = $state<PersonalRecord[]>([]);
+
+	$effect(() => {
+		exercisesCol.get(exerciseId).then((data) => {
+			exercise = data as Exercise;
+		});
+	});
+
+	$effect(() => {
+		sessionsCol.orderBy('date').reverse().get().then((data) => {
+			allSessions = data as Session[];
+		});
+	});
+
+	$effect(() => {
+		getPersonalRecordsForExercise(exerciseId).then((data) => {
+			personalRecords = data;
+		});
+	});
 
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
 	let selectedPR = $state<PersonalRecord | null>(null);

@@ -8,8 +8,20 @@
 	import { formatMuscle } from '$lib/formatUtils';
 
 	const exercisesCol = db.collection('exercises');
-	let exercises = $derived(await exercisesCol.get() as Exercise[]);
-	let allPRs = $derived(await getAllPersonalRecords());
+	let exercises = $state<Exercise[]>([]);
+	let allPRs = $state<PersonalRecord[]>([]);
+
+	$effect(() => {
+		exercisesCol.get().then((data) => {
+			exercises = data as Exercise[];
+		});
+	});
+
+	$effect(() => {
+		getAllPersonalRecords().then((data) => {
+			allPRs = data;
+		});
+	});
 
 	let exercisePRs = $derived.by(() => {
 		const map: Record<string, PersonalRecord[]> = {};
