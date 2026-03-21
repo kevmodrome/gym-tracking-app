@@ -9,6 +9,7 @@ if (inviteParam) {
 	try {
 		const invite = decodeInvite(inviteParam);
 		localStorage.setItem(INVITE_STORAGE_KEY, JSON.stringify(invite));
+		localStorage.setItem('gym-app-joined-via-invite', 'true');
 	} catch (e) {
 		console.error('Invalid invite in URL:', e);
 	}

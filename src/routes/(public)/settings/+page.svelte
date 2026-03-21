@@ -42,6 +42,25 @@
 	let savedDeviceName = $state('');
 	let isEditingName = $state(false);
 
+	// Data counts for sync diagnostics
+	let sessionCount = $state(0);
+	let exerciseCount = $state(0);
+	let workoutCount = $state(0);
+	let prCount = $state(0);
+
+	$effect(() => {
+		db.collection('sessions').count().then((n: number) => sessionCount = n);
+	});
+	$effect(() => {
+		db.collection('exercises').count().then((n: number) => exerciseCount = n);
+	});
+	$effect(() => {
+		db.collection('workouts').count().then((n: number) => workoutCount = n);
+	});
+	$effect(() => {
+		db.collection('personalRecords').count().then((n: number) => prCount = n);
+	});
+
 	// Auto-save settings when they change (with debounce)
 	$effect(() => {
 		// Read all settings to create dependencies
@@ -212,6 +231,29 @@
 								<p class="text-sm text-text-muted min-h-[44px] flex items-center">No other devices connected</p>
 							{/if}
 						</div>
+					</div>
+
+					<div class="bg-surface-elevated border border-border rounded-lg p-4">
+						<h3 class="font-medium text-text-primary mb-2">Data Counts</h3>
+						<div class="grid grid-cols-2 gap-2">
+							<div class="flex items-center justify-between py-1">
+								<span class="text-sm text-text-secondary">Sessions</span>
+								<span class="text-sm font-medium text-text-primary">{sessionCount}</span>
+							</div>
+							<div class="flex items-center justify-between py-1">
+								<span class="text-sm text-text-secondary">Exercises</span>
+								<span class="text-sm font-medium text-text-primary">{exerciseCount}</span>
+							</div>
+							<div class="flex items-center justify-between py-1">
+								<span class="text-sm text-text-secondary">Workouts</span>
+								<span class="text-sm font-medium text-text-primary">{workoutCount}</span>
+							</div>
+							<div class="flex items-center justify-between py-1">
+								<span class="text-sm text-text-secondary">Personal Records</span>
+								<span class="text-sm font-medium text-text-primary">{prCount}</span>
+							</div>
+						</div>
+						<p class="text-xs text-text-muted mt-2">Compare these counts across devices to verify sync completeness.</p>
 					</div>
 
 					<Button onclick={() => showInviteModal = true} class="w-full">

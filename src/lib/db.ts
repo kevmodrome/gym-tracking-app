@@ -262,6 +262,12 @@ export async function seedDemoData(): Promise<void> {
 }
 
 export async function initializeExercises(): Promise<void> {
+	// Skip seeding default exercises if this device joined via invite —
+	// exercises will arrive via sync from the source device.
+	if (typeof localStorage !== 'undefined' && localStorage.getItem('gym-app-joined-via-invite')) {
+		return;
+	}
+
 	const count = await db.collection('exercises').count();
 	if (count === 0) {
 		const initialExercises: Omit<Exercise, 'id'>[] = [

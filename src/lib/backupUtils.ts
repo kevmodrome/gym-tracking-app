@@ -1,5 +1,6 @@
 import type { Exercise, Workout, Session, PersonalRecord } from './types';
 import { db } from './db';
+import { calculatePersonalRecords } from './prUtils';
 
 export interface BackupData {
 	version: string;
@@ -255,16 +256,62 @@ export async function importBackupData(
 	backup = JSON.parse(JSON.stringify(backup));
 
 	try {
+		// Deduplicate within the backup itself (e.g. duplicate exercises from multi-device sync)
+		const deduplicatedExercises: Exercise[] = [];
+		const backupExerciseIdMap = new Map<string, string>(); // maps duplicate backup IDs to the kept ID
+		const seenExerciseNames = new Set<string>();
+		for (const exercise of backup.exercises) {
+			if (seenExerciseNames.has(exercise.name)) {
+				// Find the first occurrence's ID to remap references
+				const keptExercise = deduplicatedExercises.find((e) => e.name === exercise.name)!;
+				backupExerciseIdMap.set(exercise.id, keptExercise.id);
+				result.skippedItems++;
+			} else {
+				seenExerciseNames.add(exercise.name);
+				deduplicatedExercises.push(exercise);
+			}
+		}
+
+		const deduplicatedWorkouts: Workout[] = [];
+		const seenWorkoutNames = new Set<string>();
+		for (const workout of backup.workouts) {
+			if (seenWorkoutNames.has(workout.name)) {
+				result.skippedItems++;
+			} else {
+				seenWorkoutNames.add(workout.name);
+				deduplicatedWorkouts.push(workout);
+			}
+		}
+
+		const deduplicatedSessions: Session[] = [];
+		const seenSessionDates = new Set<string>();
+		for (const session of backup.sessions) {
+			if (seenSessionDates.has(session.date)) {
+				result.skippedItems++;
+			} else {
+				seenSessionDates.add(session.date);
+				deduplicatedSessions.push(session);
+			}
+		}
+
+		// Remap exercise IDs in deduplicated data to point to the kept exercises
+		for (const session of deduplicatedSessions) {
+			for (const ex of session.exercises) {
+				ex.exerciseId = backupExerciseIdMap.get(ex.exerciseId) ?? ex.exerciseId;
+			}
+		}
+		for (const workout of deduplicatedWorkouts) {
+			for (const ex of workout.exercises) {
+				ex.exerciseId = backupExerciseIdMap.get(ex.exerciseId) ?? ex.exerciseId;
+			}
+		}
 		// Build maps of existing records by natural key
 		const existingExercises = await db.collection('exercises').get() as Exercise[];
 		const existingWorkouts = await db.collection('workouts').get() as Workout[];
 		const existingSessions = await db.collection('sessions').get() as Session[];
-		const existingPRs = await db.collection('personalRecords').get() as PersonalRecord[];
-
 		const exerciseByName = new Map(existingExercises.map((e) => [e.name, e]));
 		const workoutByName = new Map(existingWorkouts.map((w) => [w.name, w]));
 		const sessionByDate = new Map(existingSessions.map((s) => [s.date, s]));
-		const prByKey = new Map(existingPRs.map((pr) => [`${pr.exerciseId}-${pr.reps}`, pr]));
 
 		result.totalItems =
 			backup.exercises.length +
@@ -277,8 +324,8 @@ export async function importBackupData(
 
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 
-		// Import exercises
-		for (const exercise of backup.exercises) {
+		// Import exercises (already deduplicated)
+		for (const exercise of deduplicatedExercises) {
 			if (signal?.aborted) throw new Error('Import cancelled by user');
 			const existing = exerciseByName.get(exercise.name);
 			const cleanData = pickExerciseFields(exercise);
@@ -300,8 +347,8 @@ export async function importBackupData(
 
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 
-		// Import workouts (rewrite exerciseId references)
-		for (const workout of backup.workouts) {
+		// Import workouts (already deduplicated, rewrite exerciseId references)
+		for (const workout of deduplicatedWorkouts) {
 			if (signal?.aborted) throw new Error('Import cancelled by user');
 			const remappedWorkout = {
 				...workout,
@@ -328,8 +375,8 @@ export async function importBackupData(
 
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 
-		// Import sessions (rewrite exerciseId references, strip legacy fields)
-		for (const rawSession of backup.sessions) {
+		// Import sessions (already deduplicated, rewrite exerciseId references)
+		for (const rawSession of deduplicatedSessions) {
 			if (signal?.aborted) throw new Error('Import cancelled by user');
 			const remappedSession = {
 				...rawSession,
@@ -356,36 +403,11 @@ export async function importBackupData(
 
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 
-		// Import personal records (rewrite exerciseId references)
-		for (const pr of backup.personalRecords) {
-			if (signal?.aborted) throw new Error('Import cancelled by user');
-			const remappedPR = {
-				...pr,
-				exerciseId: exerciseIdMap.get(pr.exerciseId) ?? pr.exerciseId
-			};
-			const cleanData = pickPRFields(remappedPR);
-			const prKey = `${cleanData.exerciseId}-${cleanData.reps}`;
-			const existing = prByKey.get(prKey);
-			if (existing) {
-				result.duplicates.personalRecords.push(pr.exerciseName);
-				if (resolution.personalRecords === 'skip') {
-					result.skippedItems++;
-				} else if (resolution.personalRecords === 'merge') {
-					if (new Date(pr.achievedDate) > new Date(existing.achievedDate)) {
-						await db.collection('personalRecords').update(existing.id, cleanData);
-						result.replacedItems++;
-					} else {
-						result.skippedItems++;
-					}
-				} else {
-					await db.collection('personalRecords').update(existing.id, cleanData);
-					result.replacedItems++;
-				}
-			} else {
-				await db.collection('personalRecords').add(cleanData);
-				result.importedItems++;
-			}
-		}
+		// Recalculate personal records from imported sessions instead of importing
+		// backup PRs — sessions get new IDs on import, so backup PR sessionId
+		// references would be stale.
+		if (signal?.aborted) throw new Error('Import cancelled by user');
+		await calculatePersonalRecords();
 
 		return result;
 	} catch (error) {
