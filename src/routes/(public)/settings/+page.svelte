@@ -10,7 +10,8 @@
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
 	import { Pencil } from 'lucide-svelte';
-	import { seedDemoData } from '$lib/db';
+	import { seedDemoData, resetAllData } from '$lib/db';
+	import { Modal } from '$lib/ui';
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
@@ -25,6 +26,8 @@
 	let exportResult = $state<{ success: boolean; message: string } | null>(null);
 	let hasLoaded = $state(false);
 	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+	let showResetModal = $state(false);
+	let resetConfirmText = $state('');
 
 	// Sync status from Tablinum
 	let syncStatus = $state(db.syncStatus);
@@ -382,6 +385,57 @@
 				</div>
 			{/snippet}
 		</Card>
+
+		<Card class="mb-6 border-danger/50">
+			{#snippet children()}
+				<h2 class="text-xl font-bold text-danger mb-4">Danger Zone</h2>
+
+				<div class="space-y-4">
+					<p class="text-sm text-text-secondary">
+						Permanently delete all your data including exercises, workouts, sessions, and personal records. This action cannot be undone.
+					</p>
+					<Button variant="danger" onclick={() => { showResetModal = true; resetConfirmText = ''; }}>
+						Reset All Data
+					</Button>
+				</div>
+			{/snippet}
+		</Card>
+
+		<Modal
+			open={showResetModal}
+			title="Reset All Data"
+			size="sm"
+			onclose={() => showResetModal = false}
+		>
+			{#snippet children()}
+				<div class="space-y-4">
+					<p class="text-text-secondary">
+						This will permanently delete <strong class="text-text-primary">all</strong> your workout data, exercises, sessions, and settings. Your app will restart as if freshly installed.
+					</p>
+					<p class="text-sm text-danger font-medium">This action cannot be undone.</p>
+					<div>
+						<label for="reset-confirm" class="block text-sm text-text-secondary mb-2">
+							Type <strong class="text-text-primary">RESET</strong> to confirm
+						</label>
+						<input
+							id="reset-confirm"
+							type="text"
+							bind:value={resetConfirmText}
+							placeholder="RESET"
+							class="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-danger focus:border-danger"
+						/>
+					</div>
+				</div>
+			{/snippet}
+			{#snippet footer()}
+				<Button variant="secondary" onclick={() => showResetModal = false}>
+					Cancel
+				</Button>
+				<Button variant="danger" disabled={resetConfirmText !== 'RESET'} onclick={resetAllData}>
+					Delete Everything
+				</Button>
+			{/snippet}
+		</Modal>
 
 		{#if showExportProgress}
 			<div class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50" role="presentation">
