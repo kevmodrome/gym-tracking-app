@@ -261,6 +261,34 @@ export async function seedDemoData(): Promise<void> {
 	console.log('Demo data seeded successfully!');
 }
 
+export async function resetAllData(): Promise<void> {
+	// Read dbName before clearing localStorage
+	const dbName = getStoredInvite()?.dbName ?? 'gym-recording-app';
+
+	// Clear all gym-app localStorage keys
+	const keysToRemove: string[] = [];
+	for (let i = 0; i < localStorage.length; i++) {
+		const key = localStorage.key(i);
+		if (key?.startsWith('gym-app')) {
+			keysToRemove.push(key);
+		}
+	}
+	for (const key of keysToRemove) {
+		localStorage.removeItem(key);
+	}
+
+	// Delete the IndexedDB database directly to avoid triggering
+	// Tablinum's reactive updates which cause Svelte render errors
+	await new Promise<void>((resolve, reject) => {
+		const req = indexedDB.deleteDatabase(dbName);
+		req.onsuccess = () => resolve();
+		req.onerror = () => reject(req.error);
+		req.onblocked = () => resolve();
+	});
+
+	window.location.href = '/';
+}
+
 export async function initializeExercises(): Promise<void> {
 	// Skip seeding default exercises if this device joined via invite —
 	// exercises will arrive via sync from the source device.
