@@ -8,8 +8,20 @@
 
 	const exercisesCol = db.collection('exercises');
 	const sessionsCol = db.collection('sessions');
-	let exercises = $derived(await exercisesCol.get() as Exercise[]);
-	let sessions = $derived(await sessionsCol.orderBy('date').reverse().get() as Session[]);
+	let exercises = $state<Exercise[]>([]);
+	let sessions = $state<Session[]>([]);
+
+	$effect(() => {
+		exercisesCol.get().then((data) => {
+			exercises = data as Exercise[];
+		});
+	});
+
+	$effect(() => {
+		sessionsCol.orderBy('date').reverse().get().then((data) => {
+			sessions = data as Session[];
+		});
+	});
 	let selectedExercise = $state<Exercise | undefined>(undefined);
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
 

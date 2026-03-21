@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { fly } from 'svelte/transition';
 	import {
 		Home,
@@ -16,7 +16,8 @@
 	];
 
 	function isActive(path: string): boolean {
-		const currentPath = $page.url.pathname;
+		const currentPath = page.url?.pathname;
+		if (!currentPath) return false;
 		if (path === '/') {
 			return currentPath === '/';
 		}

@@ -9,6 +9,7 @@
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
+	import { Pencil } from 'lucide-svelte';
 	import { seedDemoData } from '$lib/db';
 
 	let settings = $state<AppSettings>({
@@ -30,8 +31,15 @@
 	let pendingCount = $state(db.pendingCount);
 	let relayStatus = $state(db.relayStatus);
 	const membersCol = db.members;
-	let members = $derived(await membersCol.get());
+	let members = $state<readonly { readonly [x: string]: unknown; readonly id: string }[]>([]);
+
+	$effect(() => {
+		membersCol.get().then((data) => {
+			members = data;
+		});
+	});
 	let deviceName = $state('');
+	let savedDeviceName = $state('');
 	let isEditingName = $state(false);
 
 	// Auto-save settings when they change (with debounce)
@@ -54,11 +62,15 @@
 		hasLoaded = true;
 		const profile = await db.getProfile();
 		deviceName = profile.name ?? '';
+		savedDeviceName = deviceName;
 	});
 
 	async function saveDeviceName() {
 		isEditingName = false;
 		const trimmed = deviceName.trim();
+		deviceName = trimmed;
+		if (trimmed === savedDeviceName) return;
+		savedDeviceName = trimmed;
 		await db.setProfile({ name: trimmed || undefined });
 		toastStore.showSuccess('Device name updated');
 	}
@@ -163,40 +175,41 @@
 
 					<div class="bg-surface-elevated border border-border rounded-lg p-4">
 						<h3 class="font-medium text-text-primary mb-2">Devices</h3>
-						<div class="space-y-2">
-							<div class="flex items-center gap-2 text-sm">
-								<span class="w-2 h-2 rounded-full bg-success flex-shrink-0"></span>
+						<div class="space-y-1">
+							<div class="flex items-center gap-3 min-h-[44px] bg-success/10 border border-success/20 rounded-lg px-3 -mx-1">
+								<span class="w-3 h-3 rounded-full bg-success flex-shrink-0"></span>
 								{#if isEditingName}
 									<input
 										type="text"
 										bind:value={deviceName}
 										onkeydown={(e) => { if (e.key === 'Enter') saveDeviceName(); if (e.key === 'Escape') isEditingName = false; }}
 										onblur={saveDeviceName}
-										class="flex-1 min-w-0 px-2 py-1 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-accent text-text-primary"
+										class="flex-1 min-w-0 px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-text-primary placeholder:text-text-muted min-h-[36px]"
 										placeholder="Device name"
 										autofocus
 									/>
 								{:else}
 									<button
 										onclick={() => isEditingName = true}
-										class="text-text-secondary text-xs truncate hover:text-text-primary transition-colors"
+										class="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 text-sm text-text-secondary bg-surface border border-transparent rounded-lg hover:border-border hover:text-text-primary transition-colors text-left truncate min-h-[36px]"
 										title="Click to rename this device"
 									>
-										{deviceName || db.publicKey.slice(0, 12) + '...'}
+										<span class="truncate">{deviceName || db.publicKey.slice(0, 12) + '...'}</span>
+										<Pencil class="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
 									</button>
-									<span class="text-text-muted text-xs flex-shrink-0">(this device)</span>
 								{/if}
+								<span class="text-success text-xs font-medium flex-shrink-0 whitespace-nowrap">(this device)</span>
 							</div>
 							{#each members as member}
 								{#if member.id !== db.publicKey && !member.removedAt}
-									<div class="flex items-center gap-2 text-sm">
-										<span class="w-2 h-2 rounded-full bg-accent flex-shrink-0"></span>
-										<span class="text-text-secondary font-mono text-xs truncate">{member.name || member.id}</span>
+									<div class="flex items-center gap-3 min-h-[44px]">
+										<span class="w-3 h-3 rounded-full bg-accent flex-shrink-0"></span>
+										<span class="text-text-secondary text-sm truncate">{member.name || member.id}</span>
 									</div>
 								{/if}
 							{/each}
 							{#if members.filter(m => m.id !== db.publicKey && !m.removedAt).length === 0}
-								<p class="text-xs text-text-muted">No other devices connected</p>
+								<p class="text-sm text-text-muted min-h-[44px] flex items-center">No other devices connected</p>
 							{/if}
 						</div>
 					</div>
