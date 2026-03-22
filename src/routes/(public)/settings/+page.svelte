@@ -4,6 +4,7 @@
 	import type { AppSettings } from '$lib/types';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import InviteModal from '$lib/components/InviteModal.svelte';
+	import JoinInviteModal from '$lib/components/JoinInviteModal.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
 	import { db, leaveDevice, seedDemoData, resetAllData } from '$lib/db';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
@@ -28,6 +29,7 @@
 	});
 
 	let showInviteModal = $state(false);
+	let showJoinInviteModal = $state(false);
 	let showImportModal = $state(false);
 	let showExportProgress = $state(false);
 	let exportProgress = $state({ current: 0, total: 0, stage: '' });
@@ -312,16 +314,25 @@
 						<p class="text-xs text-text-muted mt-2">Compare these counts across devices to verify sync completeness.</p>
 					</div>
 
-					<Button onclick={() => showInviteModal = true} class="w-full">
-						Connect Another Device
-					</Button>
+					<div class="grid gap-3 sm:grid-cols-2">
+						<Button onclick={() => showInviteModal = true} class="w-full">
+							Connect Another Device
+						</Button>
+						<Button
+							variant="secondary"
+							onclick={() => showJoinInviteModal = true}
+							class="w-full"
+						>
+							Join with Invite Code
+						</Button>
+					</div>
 
 					<div class="bg-surface-elevated border border-border rounded-lg p-4">
 						<h3 class="font-medium text-text-primary mb-2">About Sync</h3>
 						<ul class="text-sm text-text-secondary space-y-1">
 							<li>Your data is encrypted end-to-end</li>
 							<li>Changes sync automatically via Nostr relays</li>
-							<li>Copy the invite link to connect another device</li>
+							<li>Share either the invite link or the invite code to connect another device</li>
 						</ul>
 					</div>
 				</div>
@@ -591,6 +602,10 @@
 
 		{#if showInviteModal}
 			<InviteModal onclose={() => showInviteModal = false} />
+		{/if}
+
+		{#if showJoinInviteModal}
+			<JoinInviteModal onclose={() => showJoinInviteModal = false} />
 		{/if}
 	</div>
 </div>
