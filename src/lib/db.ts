@@ -2,6 +2,12 @@ import { field, collection } from 'tablinum';
 import { Tablinum } from 'tablinum/svelte';
 import type { Invite } from 'tablinum/svelte';
 import type { Exercise, Workout, Session, PersonalRecord, UserPreferences } from './types';
+import {
+	clearAppLocalState,
+	clearServiceWorkerState,
+	getInviteDbName,
+	markPendingReset,
+} from './reset';
 
 const INVITE_STORAGE_KEY = 'gym-app-invite';
 
@@ -79,6 +85,8 @@ const schema = {
 	personalRecords: personalRecordsDef,
 	preferences: preferencesDef,
 };
+
+const LEAVE_TIMEOUT_MS = 3000;
 
 function getStoredInvite(): Invite | null {
 	if (typeof localStorage === 'undefined') return null;
@@ -262,31 +270,38 @@ export async function seedDemoData(): Promise<void> {
 }
 
 export async function resetAllData(): Promise<void> {
-	// Read dbName before clearing localStorage
-	const dbName = getStoredInvite()?.dbName ?? 'gym-recording-app';
+	const dbName = getInviteDbName();
+	markPendingReset(dbName);
+	clearAppLocalState();
+	await clearServiceWorkerState();
+	window.location.assign('/');
+}
 
-	// Clear all gym-app localStorage keys
-	const keysToRemove: string[] = [];
-	for (let i = 0; i < localStorage.length; i++) {
-		const key = localStorage.key(i);
-		if (key?.startsWith('gym-app')) {
-			keysToRemove.push(key);
-		}
+export async function leaveDevice(): Promise<void> {
+	const dbName = getInviteDbName();
+	markPendingReset(dbName);
+	clearAppLocalState();
+
+	const leaveResult = await Promise.race([
+		db.leave()
+			.then(() => 'completed' as const)
+			.catch((error) => {
+				console.error('Failed to complete db.leave() during leaveDevice:', error);
+				return 'failed' as const;
+			}),
+		new Promise<'timed_out'>((resolve) => {
+			setTimeout(() => resolve('timed_out'), LEAVE_TIMEOUT_MS);
+		}),
+	]);
+
+	if (leaveResult === 'timed_out') {
+		console.warn(
+			`db.leave() did not finish within ${LEAVE_TIMEOUT_MS}ms; continuing with deferred cleanup`
+		);
 	}
-	for (const key of keysToRemove) {
-		localStorage.removeItem(key);
-	}
 
-	// Delete the IndexedDB database directly to avoid triggering
-	// Tablinum's reactive updates which cause Svelte render errors
-	await new Promise<void>((resolve, reject) => {
-		const req = indexedDB.deleteDatabase(dbName);
-		req.onsuccess = () => resolve();
-		req.onerror = () => reject(req.error);
-		req.onblocked = () => resolve();
-	});
-
-	window.location.href = '/';
+	await clearServiceWorkerState();
+	window.location.assign('/');
 }
 
 export async function initializeExercises(): Promise<void> {
