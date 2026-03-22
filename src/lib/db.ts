@@ -86,6 +86,8 @@ const schema = {
 	preferences: preferencesDef,
 };
 
+const LEAVE_TIMEOUT_MS = 3000;
+
 function getStoredInvite(): Invite | null {
 	if (typeof localStorage === 'undefined') return null;
 	const raw = localStorage.getItem(INVITE_STORAGE_KEY);
@@ -276,8 +278,28 @@ export async function resetAllData(): Promise<void> {
 }
 
 export async function leaveDevice(): Promise<void> {
-	await db.leave();
+	const dbName = getInviteDbName();
+	markPendingReset(dbName);
 	clearAppLocalState();
+
+	const leaveResult = await Promise.race([
+		db.leave()
+			.then(() => 'completed' as const)
+			.catch((error) => {
+				console.error('Failed to complete db.leave() during leaveDevice:', error);
+				return 'failed' as const;
+			}),
+		new Promise<'timed_out'>((resolve) => {
+			setTimeout(() => resolve('timed_out'), LEAVE_TIMEOUT_MS);
+		}),
+	]);
+
+	if (leaveResult === 'timed_out') {
+		console.warn(
+			`db.leave() did not finish within ${LEAVE_TIMEOUT_MS}ms; continuing with deferred cleanup`
+		);
+	}
+
 	await clearServiceWorkerState();
 	window.location.assign('/');
 }
