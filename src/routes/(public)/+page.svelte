@@ -562,8 +562,8 @@
 					</div>
 					{#if chartReady}
 						<div class="h-48 sm:h-64">
-							<Plot height={256} marginLeft={50} marginBottom={40} grid>
-								<AxisX tickFormat={formatChartDate} />
+								<Plot height={256} marginLeft={50} marginBottom={40} grid>
+									<AxisX tickFormat={formatChartDate} removeDuplicateTicks={true} />
 								<AxisY tickFormat={(v: any) => formatVolume(v)} />
 								{#if volumeTrendLine}
 									<Line data={volumeTrendLine} x="date" y="value" stroke="#7c5cff" strokeWidth={2} strokeDasharray="5,5" />

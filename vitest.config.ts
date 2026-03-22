@@ -6,7 +6,8 @@ export default defineConfig({
 	plugins: [svelte({ hot: false })],
 	resolve: {
 		alias: {
-			$lib: path.resolve(__dirname, './src/lib')
+			$lib: path.resolve(__dirname, './src/lib'),
+			'$app/environment': path.resolve(__dirname, './tests/mocks/app-environment.ts')
 		}
 	},
 	test: {

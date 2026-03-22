@@ -5,13 +5,21 @@
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import InviteModal from '$lib/components/InviteModal.svelte';
 	import { exportBackupData } from '$lib/backupUtils';
-	import { db } from '$lib/db';
+	import { db, leaveDevice, seedDemoData, resetAllData } from '$lib/db';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
 	import { Pencil } from 'lucide-svelte';
-	import { seedDemoData, resetAllData } from '$lib/db';
 	import { Modal } from '$lib/ui';
+
+	type SyncMember = {
+		readonly [x: string]: unknown;
+		readonly id: string;
+		readonly name?: string;
+		readonly removedAt?: number;
+	};
+
+	type PendingDangerAction = 'leave' | 'reset' | null;
 
 	let settings = $state<AppSettings>({
 		defaultRestDuration: 90,
@@ -27,18 +35,28 @@
 	let hasLoaded = $state(false);
 	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	let showResetModal = $state(false);
+	let showLeaveModal = $state(false);
 	let resetConfirmText = $state('');
+	let leaveConfirmText = $state('');
+	let pendingDangerAction = $state<PendingDangerAction>(null);
+	let deviceNameInput = $state<HTMLInputElement | null>(null);
 
 	// Sync status from Tablinum
-	let syncStatus = $state(db.syncStatus);
-	let pendingCount = $state(db.pendingCount);
-	let relayStatus = $state(db.relayStatus);
+	let syncStatus = $derived(db.syncStatus);
+	let pendingCount = $derived(db.pendingCount);
+	let relayStatus = $derived(db.relayStatus);
 	const membersCol = db.members;
-	let members = $state<readonly { readonly [x: string]: unknown; readonly id: string }[]>([]);
+	let members = $state<readonly SyncMember[]>([]);
+	let otherMembers = $derived.by(() =>
+		members.filter((member) => member.id !== db.publicKey && !member.removedAt)
+	);
+	let isResetting = $derived(pendingDangerAction === 'reset');
+	let isLeaving = $derived(pendingDangerAction === 'leave');
+	let isDangerActionPending = $derived(pendingDangerAction !== null);
 
 	$effect(() => {
 		membersCol.get().then((data) => {
-			members = data;
+			members = data as readonly SyncMember[];
 		});
 	});
 	let deviceName = $state('');
@@ -85,6 +103,11 @@
 		const profile = await db.getProfile();
 		deviceName = profile.name ?? '';
 		savedDeviceName = deviceName;
+	});
+
+	$effect(() => {
+		if (!isEditingName) return;
+		queueMicrotask(() => deviceNameInput?.focus());
 	});
 
 	async function saveDeviceName() {
@@ -140,6 +163,38 @@
 		} catch (e) {
 			console.error('Failed to load demo data:', e);
 			toastStore.showError('Failed to load demo data');
+		}
+	}
+
+	function openResetModal() {
+		showResetModal = true;
+		resetConfirmText = '';
+	}
+
+	function openLeaveModal() {
+		showLeaveModal = true;
+		leaveConfirmText = '';
+	}
+
+	async function handleReset() {
+		pendingDangerAction = 'reset';
+		try {
+			await resetAllData();
+		} catch (e) {
+			console.error('Failed to reset app:', e);
+			toastStore.showError('Reset failed. Please try again.');
+			pendingDangerAction = null;
+		}
+	}
+
+	async function handleLeave() {
+		pendingDangerAction = 'leave';
+		try {
+			await leaveDevice();
+		} catch (e) {
+			console.error('Failed to leave sync group:', e);
+			toastStore.showError('Leaving sync failed. Please try again.');
+			pendingDangerAction = null;
 		}
 	}
 
@@ -202,13 +257,13 @@
 								<span class="w-3 h-3 rounded-full bg-success flex-shrink-0"></span>
 								{#if isEditingName}
 									<input
+										bind:this={deviceNameInput}
 										type="text"
 										bind:value={deviceName}
 										onkeydown={(e) => { if (e.key === 'Enter') saveDeviceName(); if (e.key === 'Escape') isEditingName = false; }}
 										onblur={saveDeviceName}
 										class="flex-1 min-w-0 px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-text-primary placeholder:text-text-muted min-h-[36px]"
 										placeholder="Device name"
-										autofocus
 									/>
 								{:else}
 									<button
@@ -222,15 +277,13 @@
 								{/if}
 								<span class="text-success text-xs font-medium flex-shrink-0 whitespace-nowrap">(this device)</span>
 							</div>
-							{#each members as member}
-								{#if member.id !== db.publicKey && !member.removedAt}
-									<div class="flex items-center gap-3 min-h-[44px]">
-										<span class="w-3 h-3 rounded-full bg-accent flex-shrink-0"></span>
-										<span class="text-text-secondary text-sm truncate">{member.name || member.id}</span>
-									</div>
-								{/if}
+							{#each otherMembers as member}
+								<div class="flex items-center gap-3 min-h-[44px]">
+									<span class="w-3 h-3 rounded-full bg-accent flex-shrink-0"></span>
+									<span class="text-text-secondary text-sm truncate">{member.name || member.id}</span>
+								</div>
 							{/each}
-							{#if members.filter(m => m.id !== db.publicKey && !m.removedAt).length === 0}
+							{#if otherMembers.length === 0}
 								<p class="text-sm text-text-muted min-h-[44px] flex items-center">No other devices connected</p>
 							{/if}
 						</div>
@@ -391,15 +444,68 @@
 				<h2 class="text-xl font-bold text-danger mb-4">Danger Zone</h2>
 
 				<div class="space-y-4">
-					<p class="text-sm text-text-secondary">
-						Permanently delete all your data including exercises, workouts, sessions, and personal records. This action cannot be undone.
-					</p>
-					<Button variant="danger" onclick={() => { showResetModal = true; resetConfirmText = ''; }}>
-						Reset All Data
-					</Button>
+					<div class="bg-surface-elevated border border-border rounded-lg p-4 space-y-3">
+						<div>
+							<h3 class="font-medium text-text-primary">Leave Sync Group</h3>
+							<p class="text-sm text-text-secondary mt-1">
+								Notify other devices that this device has left, then clear its local synced data and restart the app.
+							</p>
+						</div>
+						<Button variant="secondary" onclick={openLeaveModal} disabled={isDangerActionPending}>
+							Leave This Device
+						</Button>
+					</div>
+
+					<div class="bg-surface-elevated border border-danger/40 rounded-lg p-4 space-y-3">
+						<div>
+							<h3 class="font-medium text-text-primary">Reset App</h3>
+							<p class="text-sm text-text-secondary mt-1">
+								Delete local app data and restart fresh without sending a leave event to other devices.
+							</p>
+						</div>
+						<Button variant="danger" onclick={openResetModal} disabled={isDangerActionPending}>
+							Reset All Data
+						</Button>
+					</div>
 				</div>
 			{/snippet}
 		</Card>
+
+		<Modal
+			open={showLeaveModal}
+			title="Leave Sync Group"
+			size="sm"
+			onclose={() => showLeaveModal = false}
+		>
+			{#snippet children()}
+				<div class="space-y-4">
+					<p class="text-text-secondary">
+						This device will publish a leave event so other connected devices stop showing it in their device list. Local synced data on this device will also be cleared.
+					</p>
+					<p class="text-sm text-danger font-medium">This action cannot be undone.</p>
+					<div>
+						<label for="leave-confirm" class="block text-sm text-text-secondary mb-2">
+							Type <strong class="text-text-primary">LEAVE</strong> to confirm
+						</label>
+						<input
+							id="leave-confirm"
+							type="text"
+							bind:value={leaveConfirmText}
+							placeholder="LEAVE"
+							class="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-danger focus:border-danger"
+						/>
+					</div>
+				</div>
+			{/snippet}
+			{#snippet footer()}
+				<Button variant="secondary" onclick={() => showLeaveModal = false} disabled={isDangerActionPending}>
+					Cancel
+				</Button>
+				<Button variant="danger" disabled={leaveConfirmText !== 'LEAVE' || isDangerActionPending} onclick={handleLeave}>
+					{isLeaving ? 'Leaving...' : 'Leave Device'}
+				</Button>
+			{/snippet}
+		</Modal>
 
 		<Modal
 			open={showResetModal}
@@ -410,7 +516,7 @@
 			{#snippet children()}
 				<div class="space-y-4">
 					<p class="text-text-secondary">
-						This will permanently delete <strong class="text-text-primary">all</strong> your workout data, exercises, sessions, and settings. Your app will restart as if freshly installed.
+						This will permanently delete <strong class="text-text-primary">all local</strong> workout data, exercises, sessions, and settings on this device. Other devices will not be notified that this device left.
 					</p>
 					<p class="text-sm text-danger font-medium">This action cannot be undone.</p>
 					<div>
@@ -428,11 +534,11 @@
 				</div>
 			{/snippet}
 			{#snippet footer()}
-				<Button variant="secondary" onclick={() => showResetModal = false}>
+				<Button variant="secondary" onclick={() => showResetModal = false} disabled={isDangerActionPending}>
 					Cancel
 				</Button>
-				<Button variant="danger" disabled={resetConfirmText !== 'RESET'} onclick={resetAllData}>
-					Delete Everything
+				<Button variant="danger" disabled={resetConfirmText !== 'RESET' || isDangerActionPending} onclick={handleReset}>
+					{isResetting ? 'Resetting...' : 'Delete Everything'}
 				</Button>
 			{/snippet}
 		</Modal>
