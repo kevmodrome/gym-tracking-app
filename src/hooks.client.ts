@@ -1,4 +1,4 @@
-import { decodeInvite } from 'tablinum/svelte';
+import { consumeInviteFromUrl } from '$lib/invite';
 import {
 	clearPendingReset,
 	deleteIndexedDbDatabase,
@@ -7,14 +7,11 @@ import {
 
 // Parse ?invite= from URL BEFORE any db module import.
 // We write directly to localStorage so db.ts picks it up when it initializes.
-const INVITE_STORAGE_KEY = 'gym-app-invite';
 const url = new URL(window.location.href);
-const inviteParam = url.searchParams.get('invite');
-if (inviteParam) {
+const hasInviteParam = url.searchParams.has('invite');
+if (hasInviteParam) {
 	try {
-		const invite = decodeInvite(inviteParam);
-		localStorage.setItem(INVITE_STORAGE_KEY, JSON.stringify(invite));
-		localStorage.setItem('gym-app-joined-via-invite', 'true');
+		consumeInviteFromUrl(url);
 	} catch (e) {
 		console.error('Invalid invite in URL:', e);
 	}
