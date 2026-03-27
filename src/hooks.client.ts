@@ -30,7 +30,7 @@ export async function init() {
 		}
 	}
 
-	const { db, clearStoredInvite, initializeExercises } = await import('$lib/db');
+	const { db, clearStoredInvite, initializeExercises, deduplicateExercises } = await import('$lib/db');
 	const { migrateFromDexieIfNeeded } = await import('$lib/migrateDexieToTablinum');
 	const { preferencesStore } = await import('$lib/stores/preferences.svelte');
 
@@ -38,5 +38,6 @@ export async function init() {
 	clearStoredInvite();
 	await migrateFromDexieIfNeeded(db);
 	await initializeExercises();
+	await deduplicateExercises();
 	await preferencesStore.load();
 }
