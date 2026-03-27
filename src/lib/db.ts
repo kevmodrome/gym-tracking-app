@@ -304,44 +304,190 @@ export async function leaveDevice(): Promise<void> {
 	window.location.assign('/');
 }
 
+const defaultExercises: Omit<Exercise, 'id'>[] = [
+	{ name: 'Bench Press', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['triceps', 'shoulders'], equipment: 'Barbell', is_custom: false },
+	{ name: 'Incline Dumbbell Press', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['shoulders', 'triceps'], equipment: 'Dumbbells', is_custom: false },
+	{ name: 'Chest Fly', category: 'isolation', primary_muscle: 'chest', secondary_muscles: [], equipment: 'Dumbbells or Machine', is_custom: false },
+	{ name: 'Push-ups', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['triceps', 'shoulders', 'core'], equipment: 'Bodyweight', is_custom: false },
+	{ name: 'Squat', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['core', 'back'], equipment: 'Barbell', is_custom: false },
+	{ name: 'Deadlift', category: 'compound', primary_muscle: 'back', secondary_muscles: ['legs', 'core'], equipment: 'Barbell', is_custom: false },
+	{ name: 'Pull-ups', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps', 'shoulders'], equipment: 'Pull-up Bar', is_custom: false },
+	{ name: 'Barbell Row', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps', 'shoulders'], equipment: 'Barbell', is_custom: false },
+	{ name: 'Lat Pulldown', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps'], equipment: 'Cable Machine', is_custom: false },
+	{ name: 'Overhead Press', category: 'compound', primary_muscle: 'shoulders', secondary_muscles: ['triceps', 'core'], equipment: 'Barbell or Dumbbells', is_custom: false },
+	{ name: 'Lateral Raises', category: 'isolation', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'Dumbbells', is_custom: false },
+	{ name: 'Face Pulls', category: 'isolation', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'Cable Machine or Band', is_custom: false },
+	{ name: 'Bicep Curls', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Barbell or Dumbbells', is_custom: false },
+	{ name: 'Tricep Pushdowns', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Cable Machine', is_custom: false },
+	{ name: 'Hammer Curls', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Dumbbells', is_custom: false },
+	{ name: 'Plank', category: 'isolation', primary_muscle: 'core', secondary_muscles: [], equipment: 'Bodyweight', is_custom: false },
+	{ name: 'Russian Twists', category: 'isolation', primary_muscle: 'core', secondary_muscles: [], equipment: 'Bodyweight or Medicine Ball', is_custom: false },
+	{ name: 'Running', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'None or Treadmill', is_custom: false },
+	{ name: 'Cycling', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'Bike or Stationary Bike', is_custom: false },
+	{ name: 'Jump Rope', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core', 'arms', 'shoulders'], equipment: 'Jump Rope', is_custom: false },
+	{ name: 'Hip Flexor Stretch', category: 'mobility', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'None', is_custom: false },
+	{ name: 'Shoulder Circles', category: 'mobility', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'None', is_custom: false },
+	{ name: 'Cat-Cow Stretch', category: 'mobility', primary_muscle: 'back', secondary_muscles: ['core'], equipment: 'None', is_custom: false },
+	{ name: 'Leg Press', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['glutes'], equipment: 'Leg Press Machine', is_custom: false },
+	{ name: 'Walking Lunges', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['glutes', 'core'], equipment: 'Bodyweight or Dumbbells', is_custom: false },
+];
+
+export async function seedDefaultExercises(): Promise<number> {
+	const count = await db.collection('exercises').count();
+	if (count > 0) {
+		return 0;
+	}
+	for (const exercise of defaultExercises) {
+		await db.collection('exercises').add(exercise);
+	}
+	return defaultExercises.length;
+}
+
 export async function initializeExercises(): Promise<void> {
 	// Skip seeding default exercises if this device joined via invite —
 	// exercises will arrive via sync from the source device.
 	if (typeof localStorage !== 'undefined' && localStorage.getItem('gym-app-joined-via-invite')) {
 		return;
 	}
+	await seedDefaultExercises();
+}
 
-	const count = await db.collection('exercises').count();
-	if (count === 0) {
-		const initialExercises: Omit<Exercise, 'id'>[] = [
-			{ name: 'Bench Press', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['triceps', 'shoulders'], equipment: 'Barbell', is_custom: false },
-			{ name: 'Incline Dumbbell Press', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['shoulders', 'triceps'], equipment: 'Dumbbells', is_custom: false },
-			{ name: 'Chest Fly', category: 'isolation', primary_muscle: 'chest', secondary_muscles: [], equipment: 'Dumbbells or Machine', is_custom: false },
-			{ name: 'Push-ups', category: 'compound', primary_muscle: 'chest', secondary_muscles: ['triceps', 'shoulders', 'core'], equipment: 'Bodyweight', is_custom: false },
-			{ name: 'Squat', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['core', 'back'], equipment: 'Barbell', is_custom: false },
-			{ name: 'Deadlift', category: 'compound', primary_muscle: 'back', secondary_muscles: ['legs', 'core'], equipment: 'Barbell', is_custom: false },
-			{ name: 'Pull-ups', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps', 'shoulders'], equipment: 'Pull-up Bar', is_custom: false },
-			{ name: 'Barbell Row', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps', 'shoulders'], equipment: 'Barbell', is_custom: false },
-			{ name: 'Lat Pulldown', category: 'compound', primary_muscle: 'back', secondary_muscles: ['biceps'], equipment: 'Cable Machine', is_custom: false },
-			{ name: 'Overhead Press', category: 'compound', primary_muscle: 'shoulders', secondary_muscles: ['triceps', 'core'], equipment: 'Barbell or Dumbbells', is_custom: false },
-			{ name: 'Lateral Raises', category: 'isolation', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'Dumbbells', is_custom: false },
-			{ name: 'Face Pulls', category: 'isolation', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'Cable Machine or Band', is_custom: false },
-			{ name: 'Bicep Curls', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Barbell or Dumbbells', is_custom: false },
-			{ name: 'Tricep Pushdowns', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Cable Machine', is_custom: false },
-			{ name: 'Hammer Curls', category: 'isolation', primary_muscle: 'arms', secondary_muscles: [], equipment: 'Dumbbells', is_custom: false },
-			{ name: 'Plank', category: 'isolation', primary_muscle: 'core', secondary_muscles: [], equipment: 'Bodyweight', is_custom: false },
-			{ name: 'Russian Twists', category: 'isolation', primary_muscle: 'core', secondary_muscles: [], equipment: 'Bodyweight or Medicine Ball', is_custom: false },
-			{ name: 'Running', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'None or Treadmill', is_custom: false },
-			{ name: 'Cycling', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'Bike or Stationary Bike', is_custom: false },
-			{ name: 'Jump Rope', category: 'cardio', primary_muscle: 'legs', secondary_muscles: ['core', 'arms', 'shoulders'], equipment: 'Jump Rope', is_custom: false },
-			{ name: 'Hip Flexor Stretch', category: 'mobility', primary_muscle: 'legs', secondary_muscles: ['core'], equipment: 'None', is_custom: false },
-			{ name: 'Shoulder Circles', category: 'mobility', primary_muscle: 'shoulders', secondary_muscles: [], equipment: 'None', is_custom: false },
-			{ name: 'Cat-Cow Stretch', category: 'mobility', primary_muscle: 'back', secondary_muscles: ['core'], equipment: 'None', is_custom: false },
-			{ name: 'Leg Press', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['glutes'], equipment: 'Leg Press Machine', is_custom: false },
-			{ name: 'Walking Lunges', category: 'compound', primary_muscle: 'legs', secondary_muscles: ['glutes', 'core'], equipment: 'Bodyweight or Dumbbells', is_custom: false },
-		];
-		for (const exercise of initialExercises) {
-			await db.collection('exercises').add(exercise);
+const DEDUP_FLAG = 'gym-app-exercises-deduplicated';
+
+export async function deduplicateExercises(): Promise<void> {
+	if (typeof localStorage !== 'undefined' && localStorage.getItem(DEDUP_FLAG)) {
+		return;
+	}
+
+	const allExercises = await db.collection('exercises').get() as Exercise[];
+
+	// Group built-in exercises by name to find duplicates
+	const byName = new Map<string, Exercise[]>();
+	for (const ex of allExercises) {
+		if (ex.is_custom) continue;
+		const group = byName.get(ex.name) ?? [];
+		group.push(ex);
+		byName.set(ex.name, group);
+	}
+
+	const duplicateGroups = [...byName.values()].filter((g) => g.length > 1);
+	if (duplicateGroups.length === 0) {
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem(DEDUP_FLAG, 'true');
+		}
+		return;
+	}
+
+	// Load all collections that reference exercises
+	const allWorkouts = await db.collection('workouts').get() as Workout[];
+	const allSessions = await db.collection('sessions').get() as Session[];
+	const allPRs = await db.collection('personalRecords').get() as PersonalRecord[];
+
+	// Count references per exercise ID
+	const refCount = new Map<string, number>();
+	for (const w of allWorkouts) {
+		for (const ex of w.exercises) {
+			refCount.set(ex.exerciseId, (refCount.get(ex.exerciseId) ?? 0) + 1);
 		}
 	}
+	for (const s of allSessions) {
+		for (const ex of s.exercises) {
+			refCount.set(ex.exerciseId, (refCount.get(ex.exerciseId) ?? 0) + 1);
+		}
+	}
+	for (const pr of allPRs) {
+		refCount.set(pr.exerciseId, (refCount.get(pr.exerciseId) ?? 0) + 1);
+	}
+
+	// For each duplicate group, pick the keeper and build a remap
+	const remap = new Map<string, string>();
+	for (const group of duplicateGroups) {
+		group.sort((a, b) => {
+			const refsA = refCount.get(a.id) ?? 0;
+			const refsB = refCount.get(b.id) ?? 0;
+			if (refsB !== refsA) return refsB - refsA;
+			if (a.favorited && !b.favorited) return -1;
+			if (!a.favorited && b.favorited) return 1;
+			return 0;
+		});
+		const keeper = group[0];
+		for (let i = 1; i < group.length; i++) {
+			remap.set(group[i].id, keeper.id);
+		}
+	}
+
+	// Update workout references
+	for (const workout of allWorkouts) {
+		let changed = false;
+		const updatedExercises = workout.exercises.map((ex) => {
+			const newId = remap.get(ex.exerciseId);
+			if (newId) {
+				changed = true;
+				return { ...ex, exerciseId: newId };
+			}
+			return ex;
+		});
+		if (changed) {
+			await db.collection('workouts').update(workout.id, { exercises: updatedExercises });
+		}
+	}
+
+	// Update session references
+	for (const session of allSessions) {
+		let changed = false;
+		const updatedExercises = session.exercises.map((ex) => {
+			const newId = remap.get(ex.exerciseId);
+			if (newId) {
+				changed = true;
+				return { ...ex, exerciseId: newId };
+			}
+			return ex;
+		});
+		if (changed) {
+			await db.collection('sessions').update(session.id, { exercises: updatedExercises });
+		}
+	}
+
+	// Update personal record references, deduplicating by (exerciseId, reps)
+	const bestPRByKey = new Map<string, PersonalRecord>();
+	const prIdsToDelete = new Set<string>();
+
+	for (const pr of allPRs) {
+		const effectiveId = remap.get(pr.exerciseId) ?? pr.exerciseId;
+		const key = `${effectiveId}:${pr.reps}`;
+		const existing = bestPRByKey.get(key);
+
+		if (existing) {
+			if (pr.weight > existing.weight) {
+				prIdsToDelete.add(existing.id);
+				bestPRByKey.set(key, { ...pr, exerciseId: effectiveId });
+			} else {
+				prIdsToDelete.add(pr.id);
+			}
+		} else {
+			bestPRByKey.set(key, { ...pr, exerciseId: effectiveId });
+		}
+	}
+
+	for (const pr of allPRs) {
+		if (prIdsToDelete.has(pr.id)) {
+			await db.collection('personalRecords').delete(pr.id);
+		} else {
+			const newId = remap.get(pr.exerciseId);
+			if (newId) {
+				await db.collection('personalRecords').update(pr.id, { exerciseId: newId });
+			}
+		}
+	}
+
+	// Delete duplicate exercises
+	for (const duplicateId of remap.keys()) {
+		await db.collection('exercises').delete(duplicateId);
+	}
+
+	if (typeof localStorage !== 'undefined') {
+		localStorage.setItem(DEDUP_FLAG, 'true');
+	}
+
+	console.log(`[Dedup] Removed ${remap.size} duplicate exercises, updated references in workouts/sessions/PRs`);
 }

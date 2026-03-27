@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db } from '$lib/db';
+	import { db, seedDefaultExercises } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup, PersonalRecord } from '$lib/types';
 	import { getAllPersonalRecords, getRepRangeLabel } from '$lib/prUtils';
 	import { Search, X, Plus } from 'lucide-svelte';
@@ -72,6 +72,19 @@
 		selectedMuscle = '';
 	}
 
+	let seeding = $state(false);
+
+	async function handleSeedExercises() {
+		if (seeding) return;
+		seeding = true;
+		try {
+			await seedDefaultExercises();
+			exercises = await exercisesCol.get() as Exercise[];
+		} finally {
+			seeding = false;
+		}
+	}
+
 </script>
 
 <div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
@@ -139,6 +152,11 @@
 							No exercises available yet
 						{/if}
 					</p>
+					{#if exercises.length === 0}
+						<Button onclick={handleSeedExercises} class="mt-4" disabled={seeding}>
+							{seeding ? 'Loading...' : 'Load Default Exercises'}
+						</Button>
+					{/if}
 				{/snippet}
 			</Card>
 		{:else}
