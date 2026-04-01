@@ -62,7 +62,7 @@
 			name: name.trim(),
 			category: category as ExerciseCategory,
 			primary_muscle: primaryMuscle as MuscleGroup,
-			secondary_muscles: secondaryMuscles,
+			secondary_muscles: $state.snapshot(secondaryMuscles),
 			equipment: equipment.trim(),
 			is_custom: true
 		};
