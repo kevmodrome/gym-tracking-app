@@ -16,6 +16,7 @@
 		latestWeightKg,
 		listEntriesForDate,
 		touchFood,
+		updateEntry,
 	} from '$lib/nutrition/db';
 	import { computeTargets } from '$lib/nutrition/targets';
 	import { nutritionProfileStore } from '$lib/stores/nutritionProfile.svelte';
@@ -42,6 +43,34 @@
 	let saveToLibrary = $state<boolean>(true);
 
 	let pendingOffBarcode = $state<string | undefined>(undefined);
+
+	let editEntry = $state<FoodEntry | null>(null);
+
+	function startEdit(e: FoodEntry) {
+		editEntry = e;
+	}
+
+	function editPer100g(e: FoodEntry): FoodMacros {
+		if (e.inlineFood) return e.inlineFood.per100g;
+		// Re-derive per100g by scaling the entry's macros snapshot back to 100g.
+		// Loses some precision due to integer rounding but is acceptable for an edit form.
+		if (e.grams <= 0) return { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+		const factor = 100 / e.grams;
+		return {
+			kcal: Math.round(e.macros.kcal * factor),
+			protein: Math.round(e.macros.protein * factor * 10) / 10,
+			carbs: Math.round(e.macros.carbs * factor * 10) / 10,
+			fat: Math.round(e.macros.fat * factor * 10) / 10,
+		};
+	}
+
+	async function saveEdit({ grams, note, macros }: { grams: number; note?: string; macros: FoodMacros }) {
+		if (!editEntry) return;
+		await updateEntry(editEntry.id, { grams, macros, note });
+		editEntry = null;
+		await refresh();
+		toastStore.showSuccess('Entry updated');
+	}
 
 	const HANDOFF_KEY = 'gym-app-scan-handoff';
 
@@ -259,13 +288,13 @@
 					<ul class="divide-y divide-border">
 						{#each entries as entry (entry.id)}
 							<li class="flex items-center justify-between py-3">
-								<div>
+								<button type="button" class="flex-1 text-left" onclick={() => startEdit(entry)}>
 									<div class="text-text-primary font-medium">{entryName(entry)}</div>
 									<div class="text-xs text-text-secondary">
 										{entry.grams}g · {entry.macros.kcal}kcal · {entry.macros.protein}g P
 										{#if entry.note}· {entry.note}{/if}
 									</div>
-								</div>
+								</button>
 								<button
 									type="button"
 									class="p-2 rounded-lg hover:bg-surface-hover text-text-secondary"
@@ -342,5 +371,25 @@
 				/>
 			{/if}
 		</div>
+	{/snippet}
+</Modal>
+
+<Modal
+	open={editEntry !== null}
+	title="Edit entry"
+	onclose={() => editEntry = null}
+>
+	{#snippet children()}
+		{#if editEntry}
+			<FoodEntryForm
+				name={entryName(editEntry)}
+				per100g={editPer100g(editEntry)}
+				initialGrams={editEntry.grams}
+				initialNote={editEntry.note ?? ''}
+				submitLabel="Save"
+				onSubmit={saveEdit}
+				onCancel={() => editEntry = null}
+			/>
+		{/if}
 	{/snippet}
 </Modal>
