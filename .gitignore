@@ -31,4 +31,11 @@ vite.config.ts.timestamp-*
 /playwright/.cache/
 
 # Sync data (SQLite databases)
-/data/
+/data/*.db
+/data/*.sqlite
+/data/*.sqlite3
+
+# Livsmedelsverket source data — not committed, see data/livs-source/README.md
+data/livs-source/*
+!data/livs-source/.gitkeep
+!data/livs-source/README.md
