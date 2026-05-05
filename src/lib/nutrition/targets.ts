@@ -48,57 +48,14 @@ export function computeTargets(profile: NutritionProfile, kg: number): FoodMacro
 	const protein = profile.manualOverrides.protein ?? computedProtein;
 
 	const proteinKcal = protein * 4;
-	const fatKcalTarget = kcal * FAT_KCAL_RATIO;
+	const fatKcal = profile.manualOverrides.fat !== undefined
+		? profile.manualOverrides.fat * 9
+		: Math.round(kcal * FAT_KCAL_RATIO);
+	const remainingKcal = Math.max(0, kcal - proteinKcal - fatKcal);
+	const fat = profile.manualOverrides.fat ?? Math.round(fatKcal / 9);
+	const carbs = profile.manualOverrides.carbs ?? Math.round(remainingKcal / 4);
 
-	// If both fat and carbs are manually overridden, use as-is
-	if (profile.manualOverrides.fat !== undefined && profile.manualOverrides.carbs !== undefined) {
-		return {
-			kcal,
-			protein,
-			fat: profile.manualOverrides.fat,
-			carbs: profile.manualOverrides.carbs,
-		};
-	}
-
-	// If fat is manually overridden, use it and calculate carbs
-	if (profile.manualOverrides.fat !== undefined) {
-		const fat = profile.manualOverrides.fat;
-		const fatKcal = fat * 9;
-		const remainingKcal = Math.max(0, kcal - proteinKcal - fatKcal);
-		const carbs = profile.manualOverrides.carbs ?? Math.round(remainingKcal / 4);
-		return { kcal, protein, carbs, fat };
-	}
-
-	// If carbs is manually overridden, use it and calculate fat
-	if (profile.manualOverrides.carbs !== undefined) {
-		const carbs = profile.manualOverrides.carbs;
-		const carbsKcal = carbs * 4;
-		const fatKcal = Math.max(0, kcal - proteinKcal - carbsKcal);
-		const fat = Math.round(fatKcal / 9);
-		return { kcal, protein, carbs, fat };
-	}
-
-	// Neither manual: find fat and carbs that sum to kcal with fat ~25%
-	const targetFatGrams = fatKcalTarget / 9;
-	const searchRange = 3;
-	let bestFat = Math.round(targetFatGrams);
-	let bestCarbs = 0;
-	let bestError = Infinity;
-
-	for (let f = Math.max(0, Math.round(targetFatGrams) - searchRange); f <= Math.round(targetFatGrams) + searchRange; f++) {
-		const remaining = kcal - proteinKcal - f * 9;
-		if (remaining < 0) continue;
-		const c = Math.round(remaining / 4);
-		const total = proteinKcal + f * 9 + c * 4;
-		const error = Math.abs(total - kcal);
-		if (error < bestError) {
-			bestError = error;
-			bestFat = f;
-			bestCarbs = c;
-		}
-	}
-
-	return { kcal, protein, carbs: bestCarbs, fat: bestFat };
+	return { kcal, protein, carbs, fat };
 }
 
 export function macrosFromGrams(per100g: FoodMacros, grams: number): FoodMacros {

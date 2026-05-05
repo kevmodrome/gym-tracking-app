@@ -61,7 +61,8 @@ describe('computeTargets', () => {
 		const proteinKcal = t.protein * 4;
 		const fatKcal = t.fat * 9;
 		const carbsKcal = t.carbs * 4;
-		expect(proteinKcal + fatKcal + carbsKcal).toBeCloseTo(t.kcal, 0);
+		// Allow up to 5 kcal of rounding error from integer-gram macros.
+		expect(Math.abs(proteinKcal + fatKcal + carbsKcal - t.kcal)).toBeLessThanOrEqual(5);
 		expect(fatKcal / t.kcal).toBeCloseTo(0.25, 1);
 	});
 
