@@ -43,6 +43,7 @@
 		"vitest": "^4.0.17"
 	},
 	"dependencies": {
+		"@zxing/browser": "^0.2.0",
 		"lucide-svelte": "^0.562.0",
 		"svelteplot": "^0.9.1",
 		"tablinum": "^0.7.0",
