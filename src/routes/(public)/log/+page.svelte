@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, Trash2 } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
+	import { Camera, Plus, Trash2 } from 'lucide-svelte';
 	import { Button, Card, Modal, NumberSpinner, PageHeader, TextInput, Toggle } from '$lib/ui';
 	import DateNavigator from '$lib/components/DateNavigator.svelte';
 	import MacroRings from '$lib/components/MacroRings.svelte';
@@ -40,6 +41,10 @@
 	let pickedLivsId = $state<string | undefined>(undefined);
 	let saveToLibrary = $state<boolean>(true);
 
+	let pendingOffBarcode = $state<string | undefined>(undefined);
+
+	const HANDOFF_KEY = 'gym-app-scan-handoff';
+
 	const targets = $derived(computeTargets(nutritionProfileStore.snapshot(), kg));
 
 	async function refresh() {
@@ -63,10 +68,52 @@
 		refresh();
 	});
 
+	type Handoff =
+		| { kind: 'saved'; foodId: string; name: string; per100g: FoodMacros }
+		| { kind: 'off'; barcode: string; name: string; brand?: string; per100g: FoodMacros }
+		| { kind: 'manual'; barcode: string };
+
+	function openFromHandoff(data: Handoff) {
+		addOpen = true;
+		if (data.kind === 'saved') {
+			mode = 'search';
+			pickedName = data.name;
+			pickedPer100g = data.per100g;
+			pickedFoodId = data.foodId;
+			pickedLivsId = undefined;
+			pendingOffBarcode = undefined;
+		} else if (data.kind === 'off') {
+			mode = 'search';
+			pickedName = data.name;
+			pickedPer100g = data.per100g;
+			pickedFoodId = undefined;
+			pickedLivsId = undefined;
+			pendingOffBarcode = data.barcode;
+		} else {
+			mode = 'manual';
+			pickedName = `Barcode ${data.barcode}`;
+			pickedPer100g = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+			pickedFoodId = undefined;
+			pickedLivsId = undefined;
+			pendingOffBarcode = data.barcode;
+		}
+	}
+
 	onMount(async () => {
 		await nutritionProfileStore.load();
 		const w = await latestWeightKg();
 		if (w !== null) kg = w;
+
+		const handoff = sessionStorage.getItem(HANDOFF_KEY);
+		if (handoff) {
+			sessionStorage.removeItem(HANDOFF_KEY);
+			try {
+				const data = JSON.parse(handoff) as Handoff;
+				openFromHandoff(data);
+			} catch {
+				// ignore malformed handoff
+			}
+		}
 	});
 
 	function resetPick() {
@@ -74,6 +121,7 @@
 		pickedPer100g = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
 		pickedFoodId = undefined;
 		pickedLivsId = undefined;
+		pendingOffBarcode = undefined;
 	}
 
 	function openAdd() {
@@ -100,7 +148,16 @@
 
 	async function onSearchSubmit({ grams, note, macros }: { grams: number; note?: string; macros: FoodMacros }) {
 		let foodId = pickedFoodId;
-		if (!foodId && pickedLivsId) {
+		if (!foodId && pendingOffBarcode) {
+			foodId = await addFood({
+				source: 'off',
+				barcode: pendingOffBarcode,
+				name: pickedName,
+				per100g: pickedPer100g,
+				lastUsedAt: new Date().toISOString(),
+				createdAt: new Date().toISOString(),
+			});
+		} else if (!foodId && pickedLivsId) {
 			foodId = await addFood({
 				source: 'livs',
 				externalId: pickedLivsId,
@@ -134,6 +191,7 @@
 		if (saveToLibrary) {
 			foodId = await addFood({
 				source: 'custom',
+				barcode: pendingOffBarcode,
 				name: pickedName.trim(),
 				per100g: pickedPer100g,
 				lastUsedAt: new Date().toISOString(),
@@ -184,7 +242,10 @@
 			{/snippet}
 		</Card>
 
-		<div class="flex justify-end">
+		<div class="flex justify-end gap-2">
+			<Button variant="ghost" onclick={() => goto('/log/scan')}>
+				<Camera class="w-4 h-4" /> Scan
+			</Button>
 			<Button onclick={openAdd}>
 				<Plus class="w-4 h-4" /> Add entry
 			</Button>
