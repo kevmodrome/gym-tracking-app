@@ -99,3 +99,64 @@ export interface UserPreferences {
 	updatedAt: string;
 }
 
+export type FoodSource = 'livs' | 'off' | 'custom';
+
+export interface FoodMacros {
+	kcal: number;
+	protein: number;
+	carbs: number;
+	fat: number;
+}
+
+export interface FoodServingSize {
+	grams: number;
+	label: string;
+}
+
+export interface Food {
+	id: string;
+	source: FoodSource;
+	externalId?: string;
+	barcode?: string;
+	name: string;
+	brand?: string;
+	per100g: FoodMacros;
+	servingSize?: FoodServingSize;
+	lastUsedAt: string;
+	createdAt: string;
+}
+
+export interface FoodEntry {
+	id: string;
+	date: string;          // YYYY-MM-DD, device-local
+	loggedAt: string;      // ISO timestamp
+	foodId?: string;
+	inlineFood?: { name: string; per100g: FoodMacros };
+	grams: number;
+	macros: FoodMacros;    // snapshot
+	note?: string;
+}
+
+export interface Weight {
+	id: string;
+	date: string;          // YYYY-MM-DD, unique
+	kg: number;
+	loggedAt: string;
+}
+
+export type Sex = 'male' | 'female';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+export type NutritionGoal = 'cut' | 'maintain' | 'bulk';
+
+export interface NutritionProfile {
+	id: string;
+	heightCm: number;
+	age: number;
+	sex: Sex;
+	activityLevel: ActivityLevel;
+	goal: NutritionGoal;
+	proteinPerKg: number;          // default 2.0
+	manualOverrides: Partial<FoodMacros>;
+	updatedAt: string;
+}
+
