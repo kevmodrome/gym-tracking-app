@@ -1,39 +1,61 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Plus, Trash2 } from 'lucide-svelte';
-	import { Button, Card, Modal, NumberSpinner, PageHeader, TextInput } from '$lib/ui';
+	import { Button, Card, Modal, NumberSpinner, PageHeader, TextInput, Toggle } from '$lib/ui';
 	import DateNavigator from '$lib/components/DateNavigator.svelte';
 	import MacroRings from '$lib/components/MacroRings.svelte';
 	import FoodEntryForm from '$lib/components/FoodEntryForm.svelte';
+	import FoodSearch from '$lib/components/FoodSearch.svelte';
 	import {
 		addEntry,
+		addFood,
 		dailyTotals,
 		deleteEntry,
+		getFoodById,
 		latestWeightKg,
 		listEntriesForDate,
+		touchFood,
 	} from '$lib/nutrition/db';
 	import { computeTargets } from '$lib/nutrition/targets';
 	import { nutritionProfileStore } from '$lib/stores/nutritionProfile.svelte';
 	import { todayString } from '$lib/nutrition/dates';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import type { PickedFood } from '$lib/nutrition/picked';
 	import type { FoodEntry, FoodMacros } from '$lib/types';
 
 	type MacroKey = 'kcal' | 'protein' | 'carbs' | 'fat';
+	type AddMode = 'search' | 'manual';
 
 	let date = $state<string>(todayString());
 	let entries = $state<FoodEntry[]>([]);
 	let totals = $state<FoodMacros>({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
 	let kg = $state<number>(80);
+	let nameById = $state<Map<string, string>>(new Map());
 
-	let manualOpen = $state(false);
-	let manualName = $state('');
-	let manualPer100g = $state<FoodMacros>({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
+	let addOpen = $state(false);
+	let mode = $state<AddMode>('search');
+	let pickedName = $state('');
+	let pickedPer100g = $state<FoodMacros>({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
+	let pickedFoodId = $state<string | undefined>(undefined);
+	let pickedLivsId = $state<string | undefined>(undefined);
+	let saveToLibrary = $state<boolean>(true);
 
 	const targets = $derived(computeTargets(nutritionProfileStore.snapshot(), kg));
 
 	async function refresh() {
-		entries = await listEntriesForDate(date);
-		totals = await dailyTotals(date);
+		const [list, dailySum] = await Promise.all([
+			listEntriesForDate(date),
+			dailyTotals(date),
+		]);
+		entries = list;
+		totals = dailySum;
+		const ids = [...new Set(list.map((e) => e.foodId).filter((x): x is string => Boolean(x)))];
+		const map = new Map<string, string>();
+		for (const id of ids) {
+			const f = await getFoodById(id);
+			if (f) map.set(id, f.name);
+		}
+		nameById = map;
 	}
 
 	$effect(() => {
@@ -47,30 +69,87 @@
 		if (w !== null) kg = w;
 	});
 
+	function resetPick() {
+		pickedName = '';
+		pickedPer100g = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+		pickedFoodId = undefined;
+		pickedLivsId = undefined;
+	}
+
+	function openAdd() {
+		addOpen = true;
+		mode = 'search';
+		resetPick();
+	}
+
+	function closeAdd() {
+		addOpen = false;
+		resetPick();
+	}
+
 	function setManualMacro(key: MacroKey, value: number) {
-		manualPer100g = { ...manualPer100g, [key]: value };
+		pickedPer100g = { ...pickedPer100g, [key]: value };
 	}
 
-	function resetManual() {
-		manualName = '';
-		manualPer100g = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+	function onSearchPick(picked: PickedFood) {
+		pickedName = picked.name;
+		pickedPer100g = picked.per100g;
+		pickedFoodId = picked.savedFoodId;
+		pickedLivsId = picked.livsId;
 	}
 
-	async function saveManual({ grams, note, macros }: { grams: number; note?: string; macros: FoodMacros }) {
-		if (!manualName.trim()) {
-			toastStore.showError('Enter a food name');
-			return;
+	async function onSearchSubmit({ grams, note, macros }: { grams: number; note?: string; macros: FoodMacros }) {
+		let foodId = pickedFoodId;
+		if (!foodId && pickedLivsId) {
+			foodId = await addFood({
+				source: 'livs',
+				externalId: pickedLivsId,
+				name: pickedName,
+				per100g: pickedPer100g,
+				lastUsedAt: new Date().toISOString(),
+				createdAt: new Date().toISOString(),
+			});
+		} else if (foodId) {
+			await touchFood(foodId);
 		}
 		await addEntry({
 			date,
 			loggedAt: new Date().toISOString(),
-			inlineFood: { name: manualName.trim(), per100g: manualPer100g },
+			foodId,
 			grams,
 			macros,
 			note,
 		});
-		manualOpen = false;
-		resetManual();
+		closeAdd();
+		await refresh();
+		toastStore.showSuccess('Entry added');
+	}
+
+	async function onManualSubmit({ grams, note, macros }: { grams: number; note?: string; macros: FoodMacros }) {
+		if (!pickedName.trim()) {
+			toastStore.showError('Enter a food name');
+			return;
+		}
+		let foodId: string | undefined;
+		if (saveToLibrary) {
+			foodId = await addFood({
+				source: 'custom',
+				name: pickedName.trim(),
+				per100g: pickedPer100g,
+				lastUsedAt: new Date().toISOString(),
+				createdAt: new Date().toISOString(),
+			});
+		}
+		await addEntry({
+			date,
+			loggedAt: new Date().toISOString(),
+			foodId,
+			inlineFood: foodId ? undefined : { name: pickedName.trim(), per100g: pickedPer100g },
+			grams,
+			macros,
+			note,
+		});
+		closeAdd();
 		await refresh();
 		toastStore.showSuccess('Entry added');
 	}
@@ -81,7 +160,8 @@
 	}
 
 	function entryName(e: FoodEntry): string {
-		return e.inlineFood?.name ?? 'Saved food';
+		if (e.foodId) return nameById.get(e.foodId) ?? 'Saved food';
+		return e.inlineFood?.name ?? 'Entry';
 	}
 
 	const macroFields: { key: MacroKey; label: string }[] = [
@@ -105,7 +185,7 @@
 		</Card>
 
 		<div class="flex justify-end">
-			<Button onclick={() => { manualOpen = true; }}>
+			<Button onclick={openAdd}>
 				<Plus class="w-4 h-4" /> Add entry
 			</Button>
 		</div>
@@ -142,36 +222,64 @@
 	</div>
 </div>
 
-<Modal
-	open={manualOpen}
-	title="Add food (manual)"
-	onclose={() => { manualOpen = false; }}
->
+<Modal open={addOpen} title="Add food" onclose={closeAdd}>
 	{#snippet children()}
 		<div class="space-y-4">
-			<label class="block">
-				<span class="block text-sm text-text-secondary mb-1">Name</span>
-				<TextInput bind:value={manualName} />
-			</label>
-			<div class="grid grid-cols-4 gap-2">
-				{#each macroFields as f}
-					<NumberSpinner
-						value={manualPer100g[f.key]}
-						onchange={(v) => setManualMacro(f.key, v)}
-						label="{f.label}/100g"
-						min={0}
-						step={1}
-						size="sm"
-					/>
-				{/each}
+			<div class="flex gap-2 text-sm">
+				<button
+					type="button"
+					class="px-3 py-1 rounded-lg {mode === 'search' ? 'bg-accent text-bg' : 'bg-surface'}"
+					onclick={() => { mode = 'search'; resetPick(); }}
+				>
+					Search
+				</button>
+				<button
+					type="button"
+					class="px-3 py-1 rounded-lg {mode === 'manual' ? 'bg-accent text-bg' : 'bg-surface'}"
+					onclick={() => { mode = 'manual'; resetPick(); }}
+				>
+					Manual
+				</button>
 			</div>
-			<FoodEntryForm
-				name={manualName || 'New food'}
-				per100g={manualPer100g}
-				submitLabel="Add"
-				onSubmit={saveManual}
-				onCancel={() => { manualOpen = false; resetManual(); }}
-			/>
+
+			{#if mode === 'search'}
+				{#if !pickedName}
+					<FoodSearch onPick={onSearchPick} />
+				{:else}
+					<FoodEntryForm
+						name={pickedName}
+						per100g={pickedPer100g}
+						submitLabel="Add"
+						onSubmit={onSearchSubmit}
+						onCancel={resetPick}
+					/>
+				{/if}
+			{:else}
+				<label class="block">
+					<span class="block text-sm text-text-secondary mb-1">Name</span>
+					<TextInput bind:value={pickedName} />
+				</label>
+				<div class="grid grid-cols-4 gap-2">
+					{#each macroFields as f}
+						<NumberSpinner
+							value={pickedPer100g[f.key]}
+							onchange={(v) => setManualMacro(f.key, v)}
+							label="{f.label}/100g"
+							min={0}
+							step={1}
+							size="sm"
+						/>
+					{/each}
+				</div>
+				<Toggle bind:checked={saveToLibrary} label="Save to library" />
+				<FoodEntryForm
+					name={pickedName || 'New food'}
+					per100g={pickedPer100g}
+					submitLabel="Add"
+					onSubmit={onManualSubmit}
+					onCancel={closeAdd}
+				/>
+			{/if}
 		</div>
 	{/snippet}
 </Modal>
