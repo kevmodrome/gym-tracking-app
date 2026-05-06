@@ -58,7 +58,15 @@
 
 	{#if livs.length > 0}
 		<div>
-			<div class="text-xs uppercase tracking-wide text-text-secondary mb-1">Livsmedelsverket</div>
+			<div class="flex items-baseline justify-between mb-1">
+				<div class="text-xs uppercase tracking-wide text-text-secondary">Livsmedelsverket</div>
+				<a
+					href="https://creativecommons.org/licenses/by/4.0/"
+					target="_blank"
+					rel="noreferrer"
+					class="text-[10px] text-text-muted hover:text-text-secondary"
+				>CC BY 4.0</a>
+			</div>
 			<ul class="divide-y divide-border rounded-lg bg-surface">
 				{#each livs as f (f.id)}
 					<li>

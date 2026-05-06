@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { Camera, Plus, Trash2 } from 'lucide-svelte';
+	import { Camera, Droplet, Drumstick, Flame, Plus, Trash2, Wheat } from 'lucide-svelte';
 	import { Button, Card, Modal, NumberSpinner, PageHeader, TextInput, Toggle } from '$lib/ui';
 	import DateNavigator from '$lib/components/DateNavigator.svelte';
 	import MacroRings from '$lib/components/MacroRings.svelte';
@@ -251,11 +251,11 @@
 		return e.inlineFood?.name ?? 'Entry';
 	}
 
-	const macroFields: { key: MacroKey; label: string }[] = [
-		{ key: 'kcal', label: 'kcal' },
-		{ key: 'protein', label: 'P' },
-		{ key: 'carbs', label: 'C' },
-		{ key: 'fat', label: 'F' },
+	const macroFields = [
+		{ key: 'kcal' as const, label: 'Calories (kcal/100g)', icon: Flame },
+		{ key: 'protein' as const, label: 'Protein (g/100g)', icon: Drumstick },
+		{ key: 'carbs' as const, label: 'Carbs (g/100g)', icon: Wheat },
+		{ key: 'fat' as const, label: 'Fat (g/100g)', icon: Droplet },
 	];
 </script>
 
@@ -349,16 +349,21 @@
 					<span class="block text-sm text-text-secondary mb-1">Name</span>
 					<TextInput bind:value={pickedName} />
 				</label>
-				<div class="grid grid-cols-4 gap-2">
+				<div class="grid grid-cols-2 gap-3">
 					{#each macroFields as f}
-						<NumberSpinner
-							value={pickedPer100g[f.key]}
-							onchange={(v) => setManualMacro(f.key, v)}
-							label="{f.label}/100g"
-							min={0}
-							step={1}
-							size="sm"
-						/>
+						<div>
+							<div class="flex items-center gap-2 text-sm text-text-secondary mb-1">
+								<f.icon class="w-4 h-4 text-accent" />
+								<span>{f.label}</span>
+							</div>
+							<NumberSpinner
+								value={pickedPer100g[f.key]}
+								onchange={(v) => setManualMacro(f.key, v)}
+								min={0}
+								step={1}
+								size="sm"
+							/>
+						</div>
 					{/each}
 				</div>
 				<Toggle bind:checked={saveToLibrary} label="Save to library" />
