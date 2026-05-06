@@ -50,6 +50,7 @@ const exercisesDef = collection('exercises', {
 	equipment: field.string(),
 	is_custom: field.boolean(),
 	favorited: field.optional(field.boolean()),
+	restSeconds: field.optional(field.number()),
 }, { indices: ['name', 'category', 'primary_muscle', 'is_custom'] });
 
 const workoutsDef = collection('workouts', {

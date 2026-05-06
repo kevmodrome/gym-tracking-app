@@ -67,8 +67,14 @@
 	let loading = $state(true);
 	let defaultRestDuration = $state(90);
 
-	// View state: 'set' | 'timer' | 'complete' | 'picker'
-	let currentView = $state<'set' | 'timer' | 'complete' | 'picker'>('picker');
+	// View state: 'set' | 'complete' | 'picker'
+	// Timer is now an overlay (sticky-bar by default, expanded when timerExpanded).
+	let currentView = $state<'set' | 'complete' | 'picker'>('picker');
+
+	// Timer overlay state — runs alongside SetPage, never replaces it.
+	let timerRunning = $state(false);
+	let timerExpanded = $state(false);
+	let activeTimerDuration = $state(90);
 
 	// Exercise picker state
 	let showExercisePicker = $state(false);
@@ -127,7 +133,7 @@
 
 	// Next set info for timer
 	const nextSetInfo = $derived.by(() => {
-		if (currentView !== 'timer') return null;
+		if (!timerRunning) return null;
 		const exercise = sessionExercises[currentExerciseIndex];
 		if (!exercise) return null;
 
@@ -139,6 +145,19 @@
 			targetWeight: exercise.sets[currentSetIndex]?.weight ?? 0
 		};
 	});
+
+	// Resolve the rest duration: prefer per-exercise restSeconds (Task 6),
+	// else fall back to user's global default.
+	function resolveRestDuration(): number {
+		const ex = sessionExercises[currentExerciseIndex];
+		if (ex) {
+			const lib = exercises.find((e) => e.id === ex.exerciseId);
+			if (lib?.restSeconds && lib.restSeconds > 0) {
+				return lib.restSeconds;
+			}
+		}
+		return defaultRestDuration;
+	}
 
 	onMount(() => {
 		// Load settings
@@ -259,14 +278,16 @@
 			if (isLastExercise) {
 				currentView = 'complete';
 				stopDurationTracking();
+				timerRunning = false;
+				timerExpanded = false;
 			} else {
 				currentExerciseIndex++;
 				currentSetIndex = 0;
-				currentView = 'timer';
+				startTimer();
 			}
 		} else {
 			currentSetIndex++;
-			currentView = 'timer';
+			startTimer();
 		}
 	}
 
@@ -280,40 +301,52 @@
 			if (isLastExercise) {
 				currentView = 'complete';
 				stopDurationTracking();
+				timerRunning = false;
+				timerExpanded = false;
 			} else {
 				currentExerciseIndex++;
 				currentSetIndex = 0;
-				currentView = 'timer';
+				startTimer();
 			}
 		} else {
 			currentSetIndex++;
-			currentView = 'timer';
+			startTimer();
 		}
 	}
 
 	function startTimer() {
-		currentView = 'timer';
+		activeTimerDuration = resolveRestDuration();
+		timerRunning = true;
+		timerExpanded = false;
 	}
 
 	function onTimerComplete() {
-		currentView = 'set';
+		// Auto-collapse the sticky bar when the timer hits zero. Audio +
+		// vibration are handled inside the Timer class.
+		timerRunning = false;
+		timerExpanded = false;
 		lastCompletedSet = null;
 	}
 
 	function onTimerSkip() {
-		currentView = 'set';
+		timerRunning = false;
+		timerExpanded = false;
 		lastCompletedSet = null;
 	}
 
-	function onTimerBack() {
-		currentView = 'set';
+	function expandTimer() {
+		timerExpanded = true;
+	}
+
+	function collapseTimer() {
+		timerExpanded = false;
 	}
 
 	// Navigation
 	function goBack() {
-		if (currentView === 'timer') {
-			// From timer, go back to current set
-			currentView = 'set';
+		// If timer is expanded, collapse it instead of navigating away.
+		if (timerExpanded) {
+			timerExpanded = false;
 			return;
 		}
 
@@ -800,22 +833,7 @@
 
 		<!-- Main Content -->
 		<div class="flex-1 flex flex-col">
-			{#if currentView === 'timer' && nextSetInfo}
-				<TimerPage
-					duration={defaultRestDuration}
-					nextExerciseName={nextSetInfo.exerciseName}
-					nextSetNumber={nextSetInfo.setNumber}
-					nextTotalSets={nextSetInfo.totalSets}
-					nextTargetReps={nextSetInfo.targetReps}
-					nextTargetWeight={nextSetInfo.targetWeight}
-					lastCompletedReps={lastCompletedSet?.reps}
-					lastCompletedWeight={lastCompletedSet?.weight}
-					lastCompletedSetNumber={lastCompletedSet?.setNumber}
-					onComplete={onTimerComplete}
-					onSkip={onTimerSkip}
-					onBack={onTimerBack}
-				/>
-			{:else if currentExercise}
+			{#if currentExercise}
 				<SetPage
 					exercise={currentExercise}
 					setIndex={currentSetIndex}
@@ -827,6 +845,27 @@
 				/>
 			{/if}
 		</div>
+
+		<!-- Rest timer overlay: sticky bar by default, full-screen when expanded.
+		     SetPage stays interactive underneath. -->
+		{#if timerRunning && nextSetInfo}
+			<TimerPage
+				duration={activeTimerDuration}
+				mode={timerExpanded ? 'expanded' : 'compact'}
+				nextExerciseName={nextSetInfo.exerciseName}
+				nextSetNumber={nextSetInfo.setNumber}
+				nextTotalSets={nextSetInfo.totalSets}
+				nextTargetReps={nextSetInfo.targetReps}
+				nextTargetWeight={nextSetInfo.targetWeight}
+				lastCompletedReps={lastCompletedSet?.reps}
+				lastCompletedWeight={lastCompletedSet?.weight}
+				lastCompletedSetNumber={lastCompletedSet?.setNumber}
+				onComplete={onTimerComplete}
+				onSkip={onTimerSkip}
+				onExpand={expandTimer}
+				onCollapse={collapseTimer}
+			/>
+		{/if}
 	{/if}
 
 	<!-- Exit Confirm Dialog -->

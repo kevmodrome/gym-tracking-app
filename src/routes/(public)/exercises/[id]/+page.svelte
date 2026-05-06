@@ -4,10 +4,11 @@
 	import type { PersonalRecord, Exercise, Session } from '$lib/types';
 	import { volumeWeight } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
-	import { Button, Card, Modal, Select } from '$lib/ui';
-	import { ArrowLeft, Trophy } from 'lucide-svelte';
+	import { Button, Card, Modal, Select, NumberSpinner } from '$lib/ui';
+	import { ArrowLeft, Trophy, Timer } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle, formatSetWeight, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
+	import { toastStore } from '$lib/stores/toast.svelte';
 	import { db } from '$lib/db';
 	import { redirect } from '@sveltejs/kit';
 
@@ -42,6 +43,31 @@
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
 	let selectedPR = $state<PersonalRecord | null>(null);
 	let prHistory = $state<any[]>([]);
+
+	// Per-exercise rest default (Task 6). Mirrors Exercise.restSeconds; 0 means
+	// "use the global default".
+	let restSecondsDraft = $state(0);
+	let savingRest = $state(false);
+
+	$effect(() => {
+		restSecondsDraft = exercise?.restSeconds ?? 0;
+	});
+
+	async function saveRestSeconds() {
+		if (!exercise) return;
+		savingRest = true;
+		try {
+			const value = restSecondsDraft > 0 ? restSecondsDraft : undefined;
+			await exercisesCol.update(exercise.id, { restSeconds: value });
+			exercise = { ...exercise, restSeconds: value };
+			toastStore.showSuccess(value ? `Default rest set to ${value}s` : 'Default rest cleared');
+		} catch (e) {
+			console.error('Failed to save rest seconds', e);
+			toastStore.showError('Could not save rest default');
+		} finally {
+			savingRest = false;
+		}
+	}
 
 	const exerciseSessions = $derived.by(() => {
 		return [...sessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -200,6 +226,42 @@
 							</div>
 						{/if}
 					{/if}
+				{/snippet}
+			</Card>
+
+			<!-- Default rest (Task 6) -->
+			<Card class="mb-6">
+				{#snippet children()}
+					<div class="flex items-start justify-between gap-4 flex-wrap">
+						<div class="min-w-0">
+							<h2 class="text-base font-semibold text-text-primary flex items-center gap-2">
+								<Timer class="w-4 h-4 text-text-secondary" />
+								Default rest
+							</h2>
+							<p class="text-xs text-text-muted mt-1">
+								Used when starting a rest timer for this exercise. Leave at 0 to use your
+								global default.
+							</p>
+						</div>
+						<div class="flex items-center gap-2">
+							<NumberSpinner
+								bind:value={restSecondsDraft}
+								min={0}
+								max={600}
+								step={15}
+								label="Seconds"
+								size="sm"
+							/>
+							<Button
+								variant="secondary"
+								size="md"
+								onclick={saveRestSeconds}
+								disabled={savingRest || restSecondsDraft === (exercise?.restSeconds ?? 0)}
+							>
+								Save
+							</Button>
+						</div>
+					</div>
 				{/snippet}
 			</Card>
 

@@ -15,7 +15,7 @@
 		EmptyState
 	} from '$lib/ui';
 	import ExercisePicker from '$lib/components/ExercisePicker.svelte';
-	import { ArrowLeft, ArrowUp, ArrowDown, Plus, Trash2, X } from 'lucide-svelte';
+	import { ArrowLeft, ArrowUp, ArrowDown, Plus, Trash2, Timer, X } from 'lucide-svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 
 	const workoutsCol = db.collection('workouts');
@@ -217,12 +217,24 @@
 						{#each exerciseList as ex, i (i + ':' + ex.exerciseId)}
 							<Card padding="md">
 								{#snippet children()}
+									{@const lib = exercises.find((e) => e.id === ex.exerciseId)}
 									<div class="flex items-start justify-between gap-3 mb-3">
 										<div class="min-w-0">
 											<h3 class="font-display font-semibold text-text-primary truncate">
 												{ex.exerciseName}
 											</h3>
-											<p class="text-xs text-text-muted">Position {i + 1}</p>
+											<div class="flex items-center gap-2 mt-0.5">
+												<p class="text-xs text-text-muted">Position {i + 1}</p>
+												{#if lib?.restSeconds && lib.restSeconds > 0}
+													<span
+														class="inline-flex items-center gap-1 text-xs text-text-secondary"
+														title="Default rest for this exercise"
+													>
+														<Timer class="w-3 h-3" />
+														<span class="tabular-nums">{lib.restSeconds}s</span>
+													</span>
+												{/if}
+											</div>
 										</div>
 										<div class="flex items-center gap-1 flex-shrink-0">
 											<Button
