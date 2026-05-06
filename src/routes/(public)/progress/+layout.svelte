@@ -6,21 +6,16 @@
 	let { children } = $props();
 
 	const tabOptions = [
-		{ value: 'sessions', label: 'Sessions' },
-		{ value: 'charts', label: 'Charts' },
+		{ value: 'activity', label: 'Activity' },
 		{ value: 'records', label: 'Records' },
-		{ value: 'nutrition', label: 'Nutrition' },
-		{ value: 'weight', label: 'Weight' }
+		{ value: 'body', label: 'Body' }
 	];
 
 	const currentTab = $derived.by(() => {
 		const path = page.url.pathname;
-		if (path.includes('/sessions')) return 'sessions';
-		if (path.includes('/charts')) return 'charts';
 		if (path.includes('/records')) return 'records';
-		if (path.includes('/nutrition')) return 'nutrition';
-		if (path.includes('/weight')) return 'weight';
-		return 'sessions';
+		if (path.includes('/body')) return 'body';
+		return 'activity';
 	});
 </script>
 

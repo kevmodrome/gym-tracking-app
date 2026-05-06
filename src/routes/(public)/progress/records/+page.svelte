@@ -1,15 +1,19 @@
 <script lang="ts">
-	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
 	import { db } from '$lib/db';
-	import type { Exercise, PersonalRecord } from '$lib/types';
-	import { Card, Modal, Button } from '$lib/ui';
+	import type { Exercise, PersonalRecord, PRHistory } from '$lib/types';
+	import { Card, SearchInput, Select, Numeric, EmptyState } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { formatMuscle } from '$lib/formatUtils';
+	import { getRepRangeLabel } from '$lib/prUtils';
 	import { Trophy } from 'lucide-svelte';
 
 	const exercisesCol = db.collection('exercises');
 	const personalRecordsCol = db.collection('personalRecords');
+	const sessionsCol = db.collection('sessions');
+
 	let exercises = $state<Exercise[]>([]);
 	let allPRs = $state<PersonalRecord[]>([]);
+	let allHistory = $state<Map<string, PRHistory[]>>(new Map());
 
 	$effect(() => {
 		exercisesCol.get().then((data) => {
@@ -18,137 +22,243 @@
 	});
 
 	$effect(() => {
-		personalRecordsCol.get().then((data) => {
-			allPRs = data as PersonalRecord[];
-		});
+		(async () => {
+			const prs = (await personalRecordsCol.get()) as PersonalRecord[];
+			allPRs = prs;
+
+			// Build full per-exercise PR timeline (PRs by reps, in chronological order)
+			const sessions = await sessionsCol.get();
+			const map = new Map<string, PRHistory[]>();
+
+			for (const pr of prs) {
+				if (map.has(pr.exerciseId)) continue;
+				const history: PRHistory[] = [];
+				for (const session of sessions) {
+					const ex = (session as any).exercises.find(
+						(e: any) => e.exerciseId === pr.exerciseId
+					);
+					if (!ex) continue;
+					for (const set of ex.sets) {
+						if (
+							set.completed &&
+							!set.warmup &&
+							typeof set.weight === 'number' &&
+							Number.isFinite(set.weight)
+						) {
+							history.push({
+								reps: set.reps,
+								weight: set.weight,
+								achievedDate: (session as any).date,
+								sessionId: (session as any).id
+							});
+						}
+					}
+				}
+				history.sort(
+					(a, b) => new Date(a.achievedDate).getTime() - new Date(b.achievedDate).getTime()
+				);
+				// Compute the timeline of "best at the time" PRs (per rep range)
+				const bestByReps = new Map<number, number>();
+				const timeline: PRHistory[] = [];
+				for (const h of history) {
+					const prev = bestByReps.get(h.reps) ?? 0;
+					if (h.weight > prev) {
+						bestByReps.set(h.reps, h.weight);
+						timeline.push(h);
+					}
+				}
+				// Most recent first
+				timeline.reverse();
+				map.set(pr.exerciseId, timeline);
+			}
+			allHistory = map;
+		})();
 	});
 
-	// UI state
-	let selectedExerciseId = $state<string | null>(null);
-	let prHistory = $state<any[]>([]);
+	// Filters
+	let searchQuery = $state('');
+	let muscleFilter = $state<string>('all');
 
-	async function showHistory(pr: PersonalRecord) {
-		selectedExerciseId = pr.exerciseId;
-		prHistory = await getPRHistoryForExercise(pr.exerciseId, pr.reps);
-	}
-
-	function closeHistory() {
-		selectedExerciseId = null;
-		prHistory = [];
+	function getExercise(exerciseId: string): Exercise | undefined {
+		return exercises.find((e) => e.id === exerciseId);
 	}
 
 	function getExerciseName(exerciseId: string): string {
-		const exercise = exercises.find((e) => e.id === exerciseId);
-		return exercise?.name || 'Unknown Exercise';
+		return getExercise(exerciseId)?.name ?? 'Unknown Exercise';
 	}
 
-	const groupedPRs = $derived.by(() => {
-		const groups: Record<string, PersonalRecord[]> = {};
+	function getExerciseMuscle(exerciseId: string): string {
+		return getExercise(exerciseId)?.primary_muscle ?? '';
+	}
 
-		allPRs.forEach((pr) => {
-			if (!groups[pr.exerciseId]) {
-				groups[pr.exerciseId] = [];
-			}
-			groups[pr.exerciseId].push(pr);
-		});
-
-		return Object.entries(groups).map(([exerciseId, prs]) => ({
-			exerciseId,
-			exerciseName: getExerciseName(exerciseId),
-			prs: prs.sort((a, b) => a.reps - b.reps)
-		}));
+	const muscleOptions = $derived.by(() => {
+		const muscles = new Set<string>();
+		for (const pr of allPRs) {
+			const m = getExerciseMuscle(pr.exerciseId);
+			if (m) muscles.add(m);
+		}
+		return [
+			{ value: 'all', label: 'All muscles' },
+			...Array.from(muscles)
+				.sort()
+				.map((m) => ({ value: m, label: formatMuscle(m) }))
+		];
 	});
 
+	const groupedPRs = $derived.by(() => {
+		const groups = new Map<string, PersonalRecord[]>();
+		for (const pr of allPRs) {
+			const list = groups.get(pr.exerciseId) ?? [];
+			list.push(pr);
+			groups.set(pr.exerciseId, list);
+		}
+
+		const q = searchQuery.trim().toLowerCase();
+
+		return Array.from(groups.entries())
+			.map(([exerciseId, prs]) => ({
+				exerciseId,
+				exerciseName: getExerciseName(exerciseId),
+				muscle: getExerciseMuscle(exerciseId),
+				prs: [...prs].sort((a, b) => a.reps - b.reps),
+				timeline: allHistory.get(exerciseId) ?? []
+			}))
+			.filter((g) => {
+				if (muscleFilter !== 'all' && g.muscle !== muscleFilter) return false;
+				if (!q) return true;
+				return (
+					g.exerciseName.toLowerCase().includes(q) || g.muscle.toLowerCase().includes(q)
+				);
+			})
+			.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
+	});
+
+	function formatShortDate(iso: string): string {
+		return new Date(iso).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
+	}
 </script>
 
 {#if allPRs.length === 0}
-	<Card class="text-center" padding="lg">
+	<Card padding="lg">
 		{#snippet children()}
-			<Trophy class="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-pr drop-shadow-[0_0_20px_rgba(255,209,102,0.5)]" />
-			<h2 class="text-xl sm:text-2xl font-bold text-text-primary mb-2">No Personal Records Yet</h2>
-			<p class="text-sm sm:text-base text-text-secondary">
-				Start logging your workouts to track your personal records!
-			</p>
+			<EmptyState
+				title="No personal records yet"
+				description="Log a set with weight to start tracking PRs by rep range."
+				actionLabel="Start a session"
+				actionHref="/train"
+			>
+				{#snippet icon()}<Trophy />{/snippet}
+			</EmptyState>
 		{/snippet}
 	</Card>
 {:else}
-	<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-		{#each groupedPRs as group}
-			<Card>
-				{#snippet children()}
-					<h2 class="text-lg sm:text-xl font-bold text-text-primary mb-3 sm:mb-4">{group.exerciseName}</h2>
-					<div class="space-y-2 sm:space-y-3">
-						{#each group.prs as pr}
-							<div
-								class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-3 bg-gradient-to-r from-warning/10 to-warning/5 rounded-lg border border-warning/30"
-							>
-								<div class="flex items-center gap-2 sm:gap-3">
-									<div class="w-9 h-9 sm:w-10 sm:h-10 bg-warning text-bg rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-[0_0_15px_rgba(255,149,0,0.4)]">
-										<Trophy class="w-5 h-5" />
-									</div>
-									<div>
-										<p class="font-semibold text-text-primary text-sm sm:text-base">
-											{getRepRangeLabel(pr.reps)}: {pr.weight} {preferencesStore.weightLabel}
-										</p>
-										<p class="text-xs sm:text-sm text-text-muted">
-											{new Date(pr.achievedDate).toLocaleDateString()}
-										</p>
-									</div>
-								</div>
-								<Button
-									variant="ghost"
-									size="sm"
-									onclick={() => showHistory(pr)}
-									class="self-start sm:self-auto bg-secondary/20 text-secondary hover:bg-secondary/30"
-								>
-									View History
-								</Button>
-							</div>
-						{/each}
-					</div>
-				{/snippet}
-			</Card>
-		{/each}
-	</div>
-{/if}
-
-<!-- PR History Modal -->
-<Modal
-	open={selectedExerciseId !== null && prHistory.length > 0}
-	title="PR History - {selectedExerciseId ? getExerciseName(selectedExerciseId) : ''}"
-	size="sm"
-	onclose={closeHistory}
->
-	{#snippet children()}
-		{#if prHistory.length > 0}
-			<div class="space-y-2 sm:space-y-3">
-				{#each prHistory as entry, i}
-					<div
-						class="flex items-center justify-between p-3 {i === 0
-							? 'bg-warning/10 border-2 border-warning'
-							: 'bg-surface-elevated'} rounded-lg"
-					>
-						<div>
-							<p class="font-semibold text-text-primary text-sm sm:text-base">
-								{entry.weight} {preferencesStore.weightLabel} @ {entry.reps} reps
-							</p>
-							<p class="text-xs sm:text-sm text-text-muted">
-								{new Date(entry.achievedDate).toLocaleDateString()}
-							</p>
-						</div>
-						{#if i === 0}
-							<Trophy class="w-5 h-5 sm:w-6 sm:h-6 text-pr drop-shadow-[0_0_10px_rgba(255,209,102,0.5)]" />
-						{/if}
-					</div>
-				{/each}
+	<Card class="mb-4">
+		{#snippet children()}
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+				<SearchInput
+					label="Search"
+					bind:value={searchQuery}
+					placeholder="Search exercise or muscle..."
+				/>
+				<Select label="Muscle group" bind:value={muscleFilter} options={muscleOptions} />
 			</div>
-		{:else}
-			<p class="text-text-muted text-center py-8 text-sm sm:text-base">No history available for this rep range</p>
-		{/if}
-	{/snippet}
-	{#snippet footer()}
-		<Button variant="ghost" fullWidth onclick={closeHistory}>
-			Close
-		</Button>
-	{/snippet}
-</Modal>
+		{/snippet}
+	</Card>
+
+	{#if groupedPRs.length === 0}
+		<Card padding="lg">
+			{#snippet children()}
+				<EmptyState
+					title="No matches"
+					description="Try clearing the filters or searching for a different exercise."
+				>
+					{#snippet icon()}<Trophy />{/snippet}
+				</EmptyState>
+			{/snippet}
+		</Card>
+	{:else}
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+			{#each groupedPRs as group (group.exerciseId)}
+				<Card>
+					{#snippet children()}
+						<div class="mb-4">
+							<h2 class="text-lg sm:text-xl font-display font-bold text-text-primary">
+								{group.exerciseName}
+							</h2>
+							{#if group.muscle}
+								<p class="text-xs text-text-muted">{formatMuscle(group.muscle)}</p>
+							{/if}
+						</div>
+
+						<!-- Current best PRs by rep range -->
+						<div class="space-y-2 mb-5">
+							<p class="text-xs uppercase tracking-wider text-text-muted font-semibold">
+								Current best
+							</p>
+							{#each group.prs as pr (pr.id)}
+								<div
+									class="flex items-center justify-between gap-2 p-3 rounded-lg border border-pr/30 bg-pr/5"
+								>
+									<div class="flex items-center gap-3">
+										<div
+											class="w-9 h-9 rounded-full bg-pr/15 flex items-center justify-center flex-shrink-0"
+										>
+											<Trophy class="w-4 h-4 text-pr" />
+										</div>
+										<div>
+											<p class="text-xs text-text-muted">
+												{getRepRangeLabel(pr.reps)} · {pr.reps} rep{pr.reps !== 1 ? 's' : ''}
+											</p>
+											<p>
+												<Numeric
+													value={pr.weight}
+													size="inline"
+													tone="pr"
+													unit={preferencesStore.weightLabel}
+												/>
+											</p>
+										</div>
+									</div>
+									<p class="text-xs text-text-muted">{formatShortDate(pr.achievedDate)}</p>
+								</div>
+							{/each}
+						</div>
+
+						<!-- PR timeline -->
+						{#if group.timeline.length > 0}
+							<div>
+								<p class="text-xs uppercase tracking-wider text-text-muted font-semibold mb-2">
+									PR timeline
+								</p>
+								<ol class="relative border-l border-border ml-2 space-y-2">
+									{#each group.timeline as entry, i}
+										<li class="ml-4 pl-1">
+											<span
+												class="absolute -left-1.5 mt-1.5 w-3 h-3 rounded-full {i === 0
+													? 'bg-pr ring-2 ring-pr/30'
+													: 'bg-border'}"
+											></span>
+											<div class="flex items-baseline justify-between gap-2">
+												<p class="text-sm text-text-primary font-medium">
+													{entry.weight}
+													{preferencesStore.weightLabel} × {entry.reps} reps
+												</p>
+												<p class="text-xs text-text-muted">
+													{formatShortDate(entry.achievedDate)}
+												</p>
+											</div>
+										</li>
+									{/each}
+								</ol>
+							</div>
+						{/if}
+					{/snippet}
+				</Card>
+			{/each}
+		</div>
+	{/if}
+{/if}

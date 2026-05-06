@@ -172,6 +172,14 @@ export interface Weight {
 	loggedAt: string;
 }
 
+export interface BodyMetric {
+	id: string;
+	date: string;          // YYYY-MM-DD
+	waistCm?: number;
+	bodyFatPct?: number;
+	loggedAt: string;
+}
+
 export type Sex = 'male' | 'female';
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 export type NutritionGoal = 'cut' | 'maintain' | 'bulk';

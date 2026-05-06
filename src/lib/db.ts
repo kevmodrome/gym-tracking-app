@@ -128,6 +128,13 @@ const weightsDef = collection('weights', {
 	loggedAt: field.string(),
 }, { indices: ['date'] });
 
+const bodyMetricsDef = collection('bodyMetrics', {
+	date: field.string(),
+	waistCm: field.optional(field.number()),
+	bodyFatPct: field.optional(field.number()),
+	loggedAt: field.string(),
+}, { indices: ['date'] });
+
 const nutritionProfileDef = collection('nutritionProfile', {
 	heightCm: field.number(),
 	age: field.number(),
@@ -154,6 +161,7 @@ const schema = {
 	foodEntries: foodEntriesDef,
 	weights: weightsDef,
 	nutritionProfile: nutritionProfileDef,
+	bodyMetrics: bodyMetricsDef,
 };
 
 const LEAVE_TIMEOUT_MS = 3000;
