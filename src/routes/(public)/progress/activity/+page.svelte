@@ -114,7 +114,7 @@
 	// ---------- Volume trend chart ----------
 	let volumeScale = $state<VolumeScale>('week');
 	const volumePoints = $derived.by(() => {
-		const maxPoints = volumeScale === 'day' ? 30 : volumeScale === 'week' ? 12 : 12;
+		const maxPoints = volumeScale === 'day' ? 30 : 12;
 		const trends = calculateVolumeTrendsForChart(sessions, volumeScale, maxPoints);
 		return trends.map((t) => ({ date: t.rawDate, value: t.volume }));
 	});

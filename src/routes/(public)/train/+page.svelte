@@ -251,7 +251,7 @@
 			<h2 class="font-display font-bold text-xl text-text-primary">Recent sessions</h2>
 			{#if recentSessions.length > 0}
 				<a
-					href="/progress/sessions"
+					href="/progress/activity"
 					class="text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors"
 				>
 					View all
@@ -275,7 +275,7 @@
 			<div class="rounded-xl border border-border bg-surface overflow-hidden divide-y divide-border">
 				{#each recentSessions as session (session.id)}
 					<a
-						href="/progress/sessions"
+						href="/progress/activity"
 						class="flex items-center justify-between gap-3 p-4 hover:bg-surface-elevated transition-colors"
 					>
 						<div class="min-w-0 flex-1">
