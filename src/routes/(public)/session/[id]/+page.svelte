@@ -2,7 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
-	import type { Session, SessionExercise, ExerciseSet, Exercise } from '$lib/types';
+	import type { Session, SessionExercise, ExerciseSet, Exercise, SetWeight } from '$lib/types';
+	import { volumeWeight } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
 	import WorkoutProgressBar from '$lib/components/WorkoutProgressBar.svelte';
 	import SetPage from '$lib/components/SetPage.svelte';
@@ -11,7 +12,7 @@
 	import SessionOverflowMenu from '$lib/components/SessionOverflowMenu.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { ArrowLeft, Undo, Plus, Search, Star, Check, Timer } from 'lucide-svelte';
-	import { Button, Modal, ConfirmDialog, Textarea, NumberSpinner, TextInput } from '$lib/ui';
+	import { Button, Modal, ConfirmDialog, TextInput } from '$lib/ui';
 
 	let { data } = $props();
 
@@ -76,21 +77,17 @@
 	let selectedExerciseIds = $state<Set<string>>(new Set());
 
 	// Last completed set info (for timer display)
-	let lastCompletedSet = $state<{ reps: number; weight: number; setNumber: number; exerciseName: string } | null>(null);
+	let lastCompletedSet = $state<{ reps: number; weight: SetWeight; setNumber: number; exerciseName: string } | null>(null);
 
 	// Modal states
 	let showExitConfirm = $state(false);
 
 	// Overflow menu action modals
-	let showNoteModal = $state(false);
-	let showRPEModal = $state(false);
 	let showDeleteSetConfirm = $state(false);
 	let showEditExerciseModal = $state(false);
 	let showDeleteExerciseConfirm = $state(false);
 
 	// Editing state for modals
-	let editingNote = $state('');
-	let editingRPE = $state<number>(5);
 	let editingExerciseName = $state('');
 
 	// Undo state
@@ -347,6 +344,11 @@
 		saveSessionProgress();
 	}
 
+	function finishWorkout() {
+		currentView = 'complete';
+		stopDurationTracking();
+	}
+
 	// Session completion
 	async function completeSession() {
 		const session: Session = {
@@ -416,7 +418,7 @@
 		selectedExerciseIds = newSet;
 	}
 
-	async function getLastWeightForExercise(exerciseId: string): Promise<number> {
+	async function getLastWeightForExercise(exerciseId: string): Promise<SetWeight> {
 		// Get all sessions sorted by date descending (most recent first)
 		const sessions = await db.collection('sessions').orderBy('date').reverse().get() as Session[];
 
@@ -496,36 +498,6 @@
 	function isLibraryExercise(exerciseId: string): boolean {
 		const exercise = exercises.find((e) => e.id === exerciseId);
 		return exercise ? !exercise.is_custom : false;
-	}
-
-	function openNoteModal() {
-		editingNote = currentSet?.notes || '';
-		showNoteModal = true;
-	}
-
-	function saveNote() {
-		if (currentSet) {
-			currentSet.notes = editingNote.trim() || undefined;
-			sessionExercises = [...sessionExercises];
-			saveSessionProgress();
-			toastStore.showSuccess('Note saved');
-		}
-		showNoteModal = false;
-	}
-
-	function openRPEModal() {
-		editingRPE = currentSet?.rpe || 5;
-		showRPEModal = true;
-	}
-
-	function saveRPE() {
-		if (currentSet) {
-			currentSet.rpe = editingRPE;
-			sessionExercises = [...sessionExercises];
-			saveSessionProgress();
-			toastStore.showSuccess('RPE saved');
-		}
-		showRPEModal = false;
 	}
 
 	function confirmDeleteSet() {
@@ -807,11 +779,10 @@
 			</div>
 
 			<SessionOverflowMenu
-				onAddNote={openNoteModal}
-				onSetRPE={openRPEModal}
 				onDeleteSet={confirmDeleteSet}
 				onEditExercise={openEditExerciseModal}
 				onDeleteExercise={confirmDeleteExercise}
+				onCancelWorkout={() => (showExitConfirm = true)}
 				isLibraryExercise={currentExercise ? isLibraryExercise(currentExercise.exerciseId) : false}
 			/>
 		</div>
@@ -851,8 +822,8 @@
 					onComplete={completeSet}
 					onSkip={skipSet}
 					onStartTimer={startTimer}
-					onOpenMenu={() => {}}
 					onSetChange={onSetChange}
+					onFinishWorkout={finishWorkout}
 				/>
 			{/if}
 		</div>
@@ -867,61 +838,6 @@
 		onconfirm={() => goto('/')}
 		oncancel={() => (showExitConfirm = false)}
 	/>
-
-	<!-- Note Modal -->
-	<Modal
-		open={showNoteModal}
-		title="Add Note"
-		onclose={() => (showNoteModal = false)}
-	>
-		{#snippet children()}
-			<Textarea
-				label="Note for this set"
-				bind:value={editingNote}
-				placeholder="Add notes about this set..."
-				rows={3}
-			/>
-		{/snippet}
-		{#snippet footer()}
-			<Button variant="ghost" onclick={() => (showNoteModal = false)}>
-				Cancel
-			</Button>
-			<Button variant="primary" onclick={saveNote}>
-				Save Note
-			</Button>
-		{/snippet}
-	</Modal>
-
-	<!-- RPE Modal -->
-	<Modal
-		open={showRPEModal}
-		title="Set RPE"
-		onclose={() => (showRPEModal = false)}
-	>
-		{#snippet children()}
-			<div class="py-4">
-				<p class="text-sm text-text-secondary mb-4">Rate of Perceived Exertion (1-10)</p>
-				<NumberSpinner
-					bind:value={editingRPE}
-					min={1}
-					max={10}
-					step={0.5}
-					size="lg"
-				/>
-				<p class="text-xs text-text-muted mt-2 text-center">
-					1 = Very easy • 10 = Maximum effort
-				</p>
-			</div>
-		{/snippet}
-		{#snippet footer()}
-			<Button variant="ghost" onclick={() => (showRPEModal = false)}>
-				Cancel
-			</Button>
-			<Button variant="primary" onclick={saveRPE}>
-				Save RPE
-			</Button>
-		{/snippet}
-	</Modal>
 
 	<!-- Edit Exercise Modal -->
 	<Modal

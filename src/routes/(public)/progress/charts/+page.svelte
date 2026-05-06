@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { db } from '$lib/db';
 	import type { Exercise, Session } from '$lib/types';
+	import { volumeWeight } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Select } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
@@ -45,16 +46,24 @@
 				if (!exerciseInSession || exerciseInSession.sets.length === 0) return null;
 
 				if (selectedMetric === 'weight') {
-					const maxWeight = Math.max(...exerciseInSession.sets.map((set) => set.weight));
+					const numericWeights = exerciseInSession.sets
+						.filter((set) => !set.warmup)
+						.map((set) => volumeWeight(set.weight));
+					const maxWeight = numericWeights.length > 0 ? Math.max(...numericWeights) : 0;
 					return { date: new Date(session.date), value: maxWeight };
 				} else if (selectedMetric === 'volume') {
 					const totalVolume = exerciseInSession.sets.reduce(
-						(sum, set) => sum + (set.completed ? set.weight * set.reps : 0),
+						(sum, set) =>
+							sum +
+							(set.completed && !set.warmup ? volumeWeight(set.weight) * set.reps : 0),
 						0
 					);
 					return { date: new Date(session.date), value: totalVolume };
 				} else {
-					const maxReps = Math.max(...exerciseInSession.sets.map((set) => set.reps));
+					const repCounts = exerciseInSession.sets
+						.filter((set) => !set.warmup)
+						.map((set) => set.reps);
+					const maxReps = repCounts.length > 0 ? Math.max(...repCounts) : 0;
 					return { date: new Date(session.date), value: maxReps };
 				}
 			})

@@ -15,6 +15,9 @@ export async function calculatePersonalRecords(): Promise<void> {
 
 			exercise.sets.forEach((set) => {
 				if (!set.completed) return;
+				if (set.warmup) return;
+				// PRs are weight-based; bodyweight sets cannot establish a numeric PR.
+				if (typeof set.weight !== 'number' || !Number.isFinite(set.weight)) return;
 
 				const currentPR = prMap.get(set.reps);
 
@@ -69,7 +72,13 @@ export async function getPRHistoryForExercise(
 		if (!exercise) return;
 
 		exercise.sets.forEach((set) => {
-			if (set.completed && set.reps === reps) {
+			if (
+				set.completed &&
+				!set.warmup &&
+				set.reps === reps &&
+				typeof set.weight === 'number' &&
+				Number.isFinite(set.weight)
+			) {
 				history.push({
 					reps: set.reps,
 					weight: set.weight,
@@ -97,6 +106,8 @@ export async function checkForNewPRs(
 
 	exercise.sets.forEach((set) => {
 		if (!set.completed) return;
+		if (set.warmup) return;
+		if (typeof set.weight !== 'number' || !Number.isFinite(set.weight)) return;
 
 		const existingPR = existingPRs.find((pr) => pr.reps === set.reps);
 

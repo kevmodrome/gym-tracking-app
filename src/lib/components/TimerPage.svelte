@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Button } from '$lib/ui';
 	import { ArrowLeft, Check } from 'lucide-svelte';
-	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { Timer } from '$lib/timer.svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import type { SetWeight } from '$lib/types';
+	import { formatSetWeight } from '$lib/formatUtils';
 
 	interface TimerPageProps {
 		duration: number;
@@ -11,9 +12,9 @@
 		nextSetNumber: number;
 		nextTotalSets: number;
 		nextTargetReps: number;
-		nextTargetWeight: number;
+		nextTargetWeight: SetWeight;
 		lastCompletedReps?: number;
-		lastCompletedWeight?: number;
+		lastCompletedWeight?: SetWeight;
 		lastCompletedSetNumber?: number;
 		onComplete: () => void;
 		onSkip: () => void;
@@ -76,7 +77,7 @@
 					</div>
 					{#if lastCompletedReps !== undefined && lastCompletedWeight !== undefined}
 						<p class="text-sm text-text-secondary">
-							{lastCompletedReps} reps @ {lastCompletedWeight} {preferencesStore.weightLabel}
+							{lastCompletedReps} reps @ {formatSetWeight(lastCompletedWeight)}
 						</p>
 					{/if}
 				</div>

@@ -8,6 +8,8 @@
 	import { Search, X, ChevronDown, Calendar, Timer, Dumbbell, Check } from 'lucide-svelte';
 	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox, SearchInput, NumberSpinner } from '$lib/ui';
 	import type { SessionExercise, ExerciseSet } from '$lib/types';
+	import { volumeWeight } from '$lib/types';
+	import { formatSetWeight } from '$lib/formatUtils';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { getDateRange } from '$lib/dateUtils';
 
@@ -496,7 +498,7 @@
 											<NumberSpinner
 												label="Weight ({preferencesStore.weightLabel})"
 												size="sm"
-												value={set.weight}
+												value={volumeWeight(set.weight)}
 												min={0}
 												max={9999}
 												step={5}
@@ -563,7 +565,7 @@
 												<tr class={set.completed ? 'bg-success/5' : ''}>
 													<td class="py-2 text-sm text-text-secondary">{idx + 1}</td>
 													<td class="py-2 text-sm text-text-secondary">{set.reps}</td>
-													<td class="py-2 text-sm text-text-secondary">{set.weight} {preferencesStore.weightLabel}</td>
+													<td class="py-2 text-sm text-text-secondary">{formatSetWeight(set.weight)}</td>
 													<td class="py-2 text-sm">
 														<span
 															class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium {set.completed
@@ -597,7 +599,7 @@
 												<div class="flex items-center gap-3">
 													<span class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium {set.completed ? 'bg-success text-bg' : 'bg-surface text-text-muted'}">{idx + 1}</span>
 													<div>
-														<p class="text-sm font-medium text-text-primary">{set.reps} reps × {set.weight} {preferencesStore.weightLabel}</p>
+														<p class="text-sm font-medium text-text-primary">{set.reps} reps × {formatSetWeight(set.weight)}</p>
 													</div>
 												</div>
 												<span class="text-xs font-medium px-2 py-1 rounded-full {set.completed ? 'bg-success/20 text-success' : 'bg-surface text-text-muted'}">

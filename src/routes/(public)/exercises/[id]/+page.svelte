@@ -2,11 +2,12 @@
 	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
 	import { getPersonalRecordsForExercise } from '$lib/prUtils';
 	import type { PersonalRecord, Exercise, Session } from '$lib/types';
+	import { volumeWeight } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Button, Card, Modal, Select } from '$lib/ui';
 	import { ArrowLeft, Trophy } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
-	import { formatMuscle, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
+	import { formatMuscle, formatSetWeight, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
 	import { db } from '$lib/db';
 	import { redirect } from '@sveltejs/kit';
 
@@ -55,16 +56,24 @@
 				if (!exerciseInSession || exerciseInSession.sets.length === 0) return null;
 
 				if (selectedMetric === 'weight') {
-					const maxWeight = Math.max(...exerciseInSession.sets.map((set) => set.weight));
+					const numericWeights = exerciseInSession.sets
+						.filter((set) => !set.warmup)
+						.map((set) => volumeWeight(set.weight));
+					const maxWeight = numericWeights.length > 0 ? Math.max(...numericWeights) : 0;
 					return { date: new Date(session.date), value: maxWeight };
 				} else if (selectedMetric === 'volume') {
 					const totalVolume = exerciseInSession.sets.reduce(
-						(sum, set) => sum + (set.completed ? set.weight * set.reps : 0),
+						(sum, set) =>
+							sum +
+							(set.completed && !set.warmup ? volumeWeight(set.weight) * set.reps : 0),
 						0
 					);
 					return { date: new Date(session.date), value: totalVolume };
 				} else {
-					const maxReps = Math.max(...exerciseInSession.sets.map((set) => set.reps));
+					const repCounts = exerciseInSession.sets
+						.filter((set) => !set.warmup)
+						.map((set) => set.reps);
+					const maxReps = repCounts.length > 0 ? Math.max(...repCounts) : 0;
 					return { date: new Date(session.date), value: maxReps };
 				}
 			})
@@ -315,7 +324,7 @@
 														? 'bg-success/20 text-success'
 														: 'bg-surface text-text-muted'}"
 												>
-													{set.reps} × {set.weight}{preferencesStore.weightLabel}
+													{set.reps} × {formatSetWeight(set.weight)}
 												</span>
 											{/each}
 										</div>

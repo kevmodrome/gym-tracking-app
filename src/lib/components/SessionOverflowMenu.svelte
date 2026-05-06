@@ -1,21 +1,19 @@
 <script lang="ts">
-	import { MoreVertical, StickyNote, Gauge, Trash2, Pencil, X } from 'lucide-svelte';
+	import { MoreVertical, Trash2, Pencil, X } from 'lucide-svelte';
 
 	interface SessionOverflowMenuProps {
-		onAddNote: () => void;
-		onSetRPE: () => void;
 		onDeleteSet: () => void;
 		onEditExercise: () => void;
 		onDeleteExercise: () => void;
+		onCancelWorkout?: () => void;
 		isLibraryExercise?: boolean;
 	}
 
 	let {
-		onAddNote,
-		onSetRPE,
 		onDeleteSet,
 		onEditExercise,
 		onDeleteExercise,
+		onCancelWorkout,
 		isLibraryExercise = false
 	}: SessionOverflowMenuProps = $props();
 
@@ -74,26 +72,6 @@
 
 			<button
 				type="button"
-				onclick={() => handleAction(onAddNote)}
-				class="w-full flex items-center gap-3 px-4 py-3 text-left text-text-primary hover:bg-surface-elevated transition-colors"
-				role="menuitem"
-			>
-				<StickyNote class="w-4 h-4 text-text-secondary" />
-				<span>Add Note to Set</span>
-			</button>
-
-			<button
-				type="button"
-				onclick={() => handleAction(onSetRPE)}
-				class="w-full flex items-center gap-3 px-4 py-3 text-left text-text-primary hover:bg-surface-elevated transition-colors"
-				role="menuitem"
-			>
-				<Gauge class="w-4 h-4 text-text-secondary" />
-				<span>Set RPE</span>
-			</button>
-
-			<button
-				type="button"
 				onclick={() => handleAction(onDeleteSet)}
 				class="w-full flex items-center gap-3 px-4 py-3 text-left text-danger hover:bg-danger/10 transition-colors"
 				role="menuitem"
@@ -135,6 +113,19 @@
 				<X class="w-4 h-4" />
 				<span>Delete Exercise</span>
 			</button>
+
+			{#if onCancelWorkout}
+				<div class="border-t border-border my-1"></div>
+				<button
+					type="button"
+					onclick={() => handleAction(onCancelWorkout)}
+					class="w-full flex items-center gap-3 px-4 py-3 text-left text-danger hover:bg-danger/10 transition-colors"
+					role="menuitem"
+				>
+					<X class="w-4 h-4" />
+					<span>Cancel Workout</span>
+				</button>
+			{/if}
 		</div>
 	{/if}
 </div>

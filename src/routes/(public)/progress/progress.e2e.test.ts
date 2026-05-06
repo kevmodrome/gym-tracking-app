@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { db } from '$lib/db';
 import type { Exercise, Session } from '$lib/types';
+import { volumeWeight } from '$lib/types';
 
 vi.mock('$lib/db');
 
@@ -438,7 +439,7 @@ describe('Progress Page - E2E Verification', () => {
 			};
 
 			const exerciseInSession = session.exercises.find((ex) => ex.exerciseId === 'exercise-1');
-			const maxWeight = exerciseInSession?.sets.reduce((max, set) => Math.max(max, set.weight), 0);
+			const maxWeight = exerciseInSession?.sets.reduce((max, set) => Math.max(max, volumeWeight(set.weight)), 0);
 			expect(maxWeight).toBe(195);
 		});
 
@@ -464,7 +465,7 @@ describe('Progress Page - E2E Verification', () => {
 
 			const exerciseInSession = session.exercises.find((ex) => ex.exerciseId === 'exercise-1');
 			const totalVolume = exerciseInSession?.sets.reduce(
-				(sum, set) => sum + (set.completed ? set.weight * set.reps : 0),
+				(sum, set) => sum + (set.completed ? volumeWeight(set.weight) * set.reps : 0),
 				0
 			);
 			expect(totalVolume).toBe(5 * 185 + 5 * 190 + 5 * 195);
@@ -517,7 +518,7 @@ describe('Progress Page - E2E Verification', () => {
 
 			const exerciseInSession = session.exercises.find((ex) => ex.exerciseId === 'exercise-1');
 			const totalVolume = exerciseInSession?.sets.reduce(
-				(sum, set) => sum + (set.completed ? set.weight * set.reps : 0),
+				(sum, set) => sum + (set.completed ? volumeWeight(set.weight) * set.reps : 0),
 				0
 			);
 			expect(totalVolume).toBe(5 * 185 + 5 * 195);
@@ -729,7 +730,7 @@ describe('Progress Page - E2E Verification', () => {
 					(ex) => ex.exerciseId === 'exercise-1'
 				);
 				const maxWeight = exerciseInSession?.sets.reduce(
-					(max, set) => Math.max(max, set.weight),
+					(max, set) => Math.max(max, volumeWeight(set.weight)),
 					0
 				);
 				return { date: session.date, value: maxWeight };
@@ -752,7 +753,7 @@ describe('Progress Page - E2E Verification', () => {
 					(ex) => ex.exerciseId === 'exercise-1'
 				);
 				const totalVolume = exerciseInSession?.sets.reduce(
-					(sum, set) => sum + (set.completed ? set.weight * set.reps : 0),
+					(sum, set) => sum + (set.completed ? volumeWeight(set.weight) * set.reps : 0),
 					0
 				);
 				return { date: session.date, value: totalVolume };
@@ -770,7 +771,7 @@ describe('Progress Page - E2E Verification', () => {
 				if (!exerciseInSession) return null;
 
 				const maxWeight = exerciseInSession.sets.reduce(
-					(max, set) => Math.max(max, set.weight),
+					(max, set) => Math.max(max, volumeWeight(set.weight)),
 					0
 				);
 				return { date: session.date, value: maxWeight };

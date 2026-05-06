@@ -1,4 +1,5 @@
 import type { Session } from './types';
+import { volumeWeight } from './types';
 
 function toLocalDateString(date: Date): string {
 	const y = date.getFullYear();
@@ -59,7 +60,9 @@ export function calculateSessionVolume(session: Pick<Session, 'exercises'>): num
 		return (
 			exerciseTotal +
 			exercise.sets.reduce(
-				(setTotal, set) => setTotal + (set.completed ? set.reps * set.weight : 0),
+				(setTotal, set) =>
+					setTotal +
+					(set.completed && !set.warmup ? set.reps * volumeWeight(set.weight) : 0),
 				0
 			)
 		);

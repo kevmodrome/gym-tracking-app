@@ -11,6 +11,8 @@ export interface Exercise {
 	equipment: string;
 	is_custom: boolean;
 	favorited?: boolean;
+	/** Default rest seconds for this exercise. Wired by Task 6. */
+	restSeconds?: number;
 }
 
 export interface ExerciseFilters {
@@ -37,12 +39,32 @@ export interface Workout {
 	updatedAt: string;
 }
 
+/**
+ * Weight value for a set. Either a number (kg/lb depending on user prefs)
+ * or the string "BW" for bodyweight. Use {@link volumeWeight} to coerce
+ * to a number for math.
+ */
+export type SetWeight = number | 'BW';
+
 export interface ExerciseSet {
 	reps: number;
-	weight: number;
+	weight: SetWeight;
 	rpe?: number;
+	warmup?: boolean;
 	completed: boolean;
 	notes?: string;
+}
+
+/** Returns the numeric weight to use in volume math. BW counts as 0. */
+export function volumeWeight(weight: SetWeight): number {
+	if (weight === 'BW') return 0;
+	if (typeof weight !== 'number' || !Number.isFinite(weight)) return 0;
+	return weight;
+}
+
+/** True if the weight is the bodyweight sentinel. */
+export function isBodyweight(weight: SetWeight): boolean {
+	return weight === 'BW';
 }
 
 export interface SessionExercise {

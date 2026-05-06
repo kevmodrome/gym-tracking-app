@@ -1,7 +1,8 @@
 import { field, collection } from 'tablinum';
+import type { FieldDef } from 'tablinum';
 import { Tablinum } from 'tablinum/svelte';
 import type { Invite } from 'tablinum/svelte';
-import type { Exercise, Workout, Session, PersonalRecord, UserPreferences } from './types';
+import type { Exercise, Workout, Session, PersonalRecord, UserPreferences, SetWeight } from './types';
 import {
 	clearAppLocalState,
 	clearServiceWorkerState,
@@ -11,10 +12,15 @@ import {
 
 const INVITE_STORAGE_KEY = 'gym-app-invite';
 
+// Weight is `number | "BW"` (SetWeight). Persisted via json so the schema
+// accepts both shapes; runtime parsing happens in app code.
+const setWeightField = field.json() as FieldDef<SetWeight>;
+
 const exerciseSetDef = field.object({
 	reps: field.number(),
-	weight: field.number(),
+	weight: setWeightField,
 	rpe: field.optional(field.number()),
+	warmup: field.optional(field.boolean()),
 	completed: field.boolean(),
 	notes: field.optional(field.string()),
 });

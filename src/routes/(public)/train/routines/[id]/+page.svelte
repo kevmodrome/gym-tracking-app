@@ -10,12 +10,12 @@
 		Modal,
 		NumberSpinner,
 		PageHeader,
-		SearchInput,
 		TextInput,
 		Textarea,
 		EmptyState
 	} from '$lib/ui';
-	import { ArrowLeft, ArrowUp, ArrowDown, Plus, Star, Trash2, X } from 'lucide-svelte';
+	import ExercisePicker from '$lib/components/ExercisePicker.svelte';
+	import { ArrowLeft, ArrowUp, ArrowDown, Plus, Trash2, X } from 'lucide-svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 
 	const workoutsCol = db.collection('workouts');
@@ -38,7 +38,6 @@
 
 	// Picker
 	let pickerOpen = $state(false);
-	let pickerQuery = $state('');
 
 	$effect(() => {
 		exercisesCol.get().then((data) => {
@@ -69,25 +68,7 @@
 		})();
 	});
 
-	const filteredExercises = $derived.by(() => {
-		const q = pickerQuery.trim().toLowerCase();
-		let list = exercises;
-		if (q) {
-			list = list.filter(
-				(ex) =>
-					ex.name.toLowerCase().includes(q) ||
-					ex.primary_muscle.toLowerCase().includes(q)
-			);
-		}
-		return [...list].sort((a, b) => {
-			if (a.favorited && !b.favorited) return -1;
-			if (!a.favorited && b.favorited) return 1;
-			return a.name.localeCompare(b.name);
-		});
-	});
-
 	function openPicker() {
-		pickerQuery = '';
 		pickerOpen = true;
 	}
 
@@ -344,43 +325,11 @@
 	onclose={closePicker}
 >
 	{#snippet children()}
-		<div class="space-y-3">
-			<SearchInput bind:value={pickerQuery} placeholder="Search exercises..." />
-			<div class="max-h-[60vh] overflow-y-auto rounded-lg border border-border divide-y divide-border">
-				{#each filteredExercises as ex (ex.id)}
-					<div class="flex items-center gap-2 p-3 hover:bg-surface-elevated transition-colors">
-						<button
-							class="p-1 text-text-muted hover:text-accent transition-colors"
-							onclick={() => toggleFavorite(ex)}
-							aria-label={ex.favorited ? 'Unfavorite' : 'Favorite'}
-							type="button"
-						>
-							<Star
-								class="w-4 h-4 {ex.favorited ? 'fill-accent text-accent' : ''}"
-							/>
-						</button>
-						<button
-							class="flex-1 text-left min-w-0"
-							onclick={() => addExerciseToRoutine(ex)}
-							type="button"
-						>
-							<p class="font-medium text-sm text-text-primary truncate">{ex.name}</p>
-							<p class="text-xs text-text-muted truncate">
-								{ex.primary_muscle} · {ex.category}
-							</p>
-						</button>
-						<Button variant="ghost" size="sm" onclick={() => addExerciseToRoutine(ex)}>
-							<Plus class="w-4 h-4" />
-							Add
-						</Button>
-					</div>
-				{:else}
-					<div class="p-6 text-center text-sm text-text-muted">
-						No exercises match.
-					</div>
-				{/each}
-			</div>
-		</div>
+		<ExercisePicker
+			{exercises}
+			onSelect={addExerciseToRoutine}
+			onToggleFavorite={toggleFavorite}
+		/>
 	{/snippet}
 	{#snippet footer()}
 		<Button variant="secondary" onclick={closePicker} class="w-full sm:w-auto">
