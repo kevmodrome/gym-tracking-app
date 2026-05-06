@@ -53,9 +53,13 @@ export async function listEntriesForDate(date: string): Promise<FoodEntry[]> {
 	return all.sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
 }
 
+function round1(n: number): number {
+	return Math.round(n * 10) / 10;
+}
+
 export async function dailyTotals(date: string): Promise<FoodMacros> {
 	const entries = await listEntriesForDate(date);
-	return entries.reduce<FoodMacros>(
+	const sum = entries.reduce<FoodMacros>(
 		(acc, e) => ({
 			kcal: acc.kcal + e.macros.kcal,
 			protein: acc.protein + e.macros.protein,
@@ -64,6 +68,13 @@ export async function dailyTotals(date: string): Promise<FoodMacros> {
 		}),
 		{ kcal: 0, protein: 0, carbs: 0, fat: 0 },
 	);
+	// Floating-point sums can yield values like 10.200000000000001; clamp to display precision.
+	return {
+		kcal: Math.round(sum.kcal),
+		protein: round1(sum.protein),
+		carbs: round1(sum.carbs),
+		fat: round1(sum.fat),
+	};
 }
 
 export async function addEntry(entry: Omit<FoodEntry, 'id'>): Promise<string> {
