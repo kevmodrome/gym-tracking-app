@@ -1,16 +1,30 @@
 # Livsmedelsverket source
 
-This directory holds the upstream Livsmedelsverket food dataset. The dataset is **not committed** to the repo — it must be downloaded manually after verifying its license permits redistribution.
+The app's bundled food database (`static/livs-foods.json`) is generated from
+the Livsmedelsverket open API.
 
-## Setup
+- **Source:** [Livsmedelsdatabasen](https://dataportal.livsmedelsverket.se/livsmedel/swagger/index.html) — Livsmedelsverket (Swedish Food Agency)
+- **License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribution to Livsmedelsverket required when redistributing.
+- **Records:** ~2,575 foods, each with energy (kcal), protein, carbs (available), fat per 100g.
 
-1. Download the open dataset from livsmedelsverket.se (CSV format).
-2. Verify the license permits use in this app's distribution.
-3. Save it as `livsmedelsdatabasen.csv` in this directory.
-4. Run `npm run build:livs` to regenerate `static/livs-foods.json`.
+## Regenerate the bundle
 
-The CSV is expected to be `;`-delimited with columns including: Number, Namn, Energi (kcal/100g), Protein (g/100g), Kolhydrater (g/100g), Fett (g/100g). The build script does case-insensitive partial matching, so column header variations are tolerated.
+```bash
+npm run build:livs
+```
 
-## License
+The script (`scripts/build-livs.ts`) fetches the full food list and per-food
+nutrient values from the API, normalizes to `{ id, name, per100g }`, and writes
+`static/livs-foods.json` along with attribution metadata.
 
-License of the upstream dataset must be verified before committing it. If it cannot be redistributed, the app falls back to Open Food Facts for searches (planned).
+It runs concurrently (12 parallel requests), takes ~30–60s, and retries
+failed requests up to 3 times with backoff. If the API can't be reached, the
+existing bundle is left untouched (or an empty bundle is written on first run)
+and the build exits non-zero.
+
+## Notes
+
+- The CSV-based legacy flow has been removed. There is nothing to download
+  manually — the API is the source of truth.
+- This directory is otherwise empty; it's kept around so the build script can
+  be extended to write/cache intermediate artifacts here in the future.
