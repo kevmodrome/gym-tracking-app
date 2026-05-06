@@ -12,6 +12,7 @@
 		onStartTimer: () => void;
 		onSetChange: () => void;
 		onFinishWorkout: () => void;
+		timerActive?: boolean;
 	}
 
 	let {
@@ -21,7 +22,8 @@
 		onSkip,
 		onStartTimer,
 		onSetChange,
-		onFinishWorkout
+		onFinishWorkout,
+		timerActive = false
 	}: SetPageProps = $props();
 
 	const currentSet = $derived(exercise.sets[setIndex]);
@@ -341,8 +343,8 @@
 
 	<!-- Sticky bottom action stack -->
 	<div
-		class="sticky bottom-0 left-0 right-0 bg-surface border-t border-border px-4 pt-3 pb-3 z-30"
-		style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));"
+		class="sticky left-0 right-0 bg-surface border-t border-border px-4 pt-3 pb-3 z-30 transition-[bottom] duration-150"
+		style="bottom: {timerActive ? '4rem' : '0'}; padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));"
 	>
 		<div class="max-w-md mx-auto space-y-2">
 			<!-- Primary: Complete (sole lime moment) -->

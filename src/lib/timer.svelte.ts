@@ -6,7 +6,7 @@ export class Timer {
 	isPaused = $state(false);
 	private intervalId: number | null = null;
 	private _duration = $state(0);
-	private getOnComplete?: () => (() => void) | undefined;
+	private onComplete?: () => void;
 
 	formattedTime = $derived.by(() => {
 		const minutes = Math.floor(this.timeLeft / 60);
@@ -18,10 +18,10 @@ export class Timer {
 		return ((this._duration - this.timeLeft) / this._duration) * 100;
 	});
 
-	constructor(duration: number, getOnComplete?: () => (() => void) | undefined) {
+	constructor(duration: number, onComplete?: () => void) {
 		this._duration = duration;
 		this.timeLeft = duration;
-		this.getOnComplete = getOnComplete;
+		this.onComplete = onComplete;
 	}
 
 	setDuration(duration: number) {
@@ -81,7 +81,7 @@ export class Timer {
 		this.clearInterval();
 		playTimerSound();
 		vibrateTimer();
-		this.getOnComplete?.()?.();
+		this.onComplete?.();
 	}
 
 	private clearInterval() {

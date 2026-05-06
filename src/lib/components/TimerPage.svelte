@@ -44,7 +44,7 @@
 
 	// Initial duration via factory function avoids state_referenced_locally warning.
 	const initialDuration = (() => duration)();
-	const timer = new Timer(initialDuration, () => onComplete);
+	const timer = new Timer(initialDuration, () => onComplete?.());
 
 	// Auto-start the timer when this component mounts (timer is meant to begin
 	// immediately when the user taps Skip+Rest / completes a set).

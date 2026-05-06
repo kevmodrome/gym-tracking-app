@@ -842,6 +842,7 @@
 					onStartTimer={startTimer}
 					onSetChange={onSetChange}
 					onFinishWorkout={finishWorkout}
+					timerActive={timerRunning}
 				/>
 			{/if}
 		</div>
