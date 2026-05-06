@@ -4,6 +4,7 @@
 	import {
 		Home,
 		Dumbbell,
+		NotebookPen,
 		BarChart3,
 		Settings
 	} from 'lucide-svelte';
@@ -11,6 +12,7 @@
 	const navItems = [
 		{ path: '/', label: 'Home', icon: Home },
 		{ path: '/exercises', label: 'Exercises', icon: Dumbbell },
+		{ path: '/log', label: 'Log', icon: NotebookPen },
 		{ path: '/progress', label: 'Progress', icon: BarChart3 },
 		{ path: '/settings', label: 'Settings', icon: Settings }
 	];
@@ -24,6 +26,10 @@
 		// Match /exercises and /exercises/new
 		if (path === '/exercises') {
 			return currentPath === '/exercises' || currentPath.startsWith('/exercises/');
+		}
+		// Match /log and /log/
+		if (path === '/log') {
+			return currentPath === '/log' || currentPath.startsWith('/log/');
 		}
 		// Match /progress and all subroutes
 		if (path === '/progress') {

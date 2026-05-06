@@ -341,6 +341,16 @@
 
 		<Card class="mb-6">
 			{#snippet children()}
+				<h2 class="text-xl font-bold text-text-primary mb-4">Nutrition</h2>
+				<p class="text-sm text-text-secondary mb-4">
+					Set your body profile, daily protein target, and calorie/macro goals.
+				</p>
+				<Button href="/settings/profile" variant="secondary">Profile &amp; Targets</Button>
+			{/snippet}
+		</Card>
+
+		<Card class="mb-6">
+			{#snippet children()}
 				<h2 class="text-xl font-bold text-text-primary mb-4">Rest Timer</h2>
 
 				<div class="space-y-4">

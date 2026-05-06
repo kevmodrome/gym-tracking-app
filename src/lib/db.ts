@@ -78,12 +78,75 @@ const preferencesDef = collection('preferences', {
 	updatedAt: field.string(),
 });
 
+const foodMacrosDef = field.object({
+	kcal: field.number(),
+	protein: field.number(),
+	carbs: field.number(),
+	fat: field.number(),
+});
+
+const foodServingDef = field.object({
+	grams: field.number(),
+	label: field.string(),
+});
+
+const foodsDef = collection('foods', {
+	source: field.string(),
+	externalId: field.optional(field.string()),
+	barcode: field.optional(field.string()),
+	name: field.string(),
+	brand: field.optional(field.string()),
+	per100g: foodMacrosDef,
+	servingSize: field.optional(foodServingDef),
+	lastUsedAt: field.string(),
+	createdAt: field.string(),
+}, { indices: ['barcode', 'name', 'lastUsedAt'] });
+
+const foodEntriesDef = collection('foodEntries', {
+	date: field.string(),
+	loggedAt: field.string(),
+	foodId: field.optional(field.string()),
+	inlineFood: field.optional(field.object({
+		name: field.string(),
+		per100g: foodMacrosDef,
+	})),
+	grams: field.number(),
+	macros: foodMacrosDef,
+	note: field.optional(field.string()),
+}, { indices: ['date', 'loggedAt'] });
+
+const weightsDef = collection('weights', {
+	date: field.string(),
+	kg: field.number(),
+	loggedAt: field.string(),
+}, { indices: ['date'] });
+
+const nutritionProfileDef = collection('nutritionProfile', {
+	heightCm: field.number(),
+	age: field.number(),
+	sex: field.string(),
+	activityLevel: field.string(),
+	goal: field.string(),
+	proteinPerKg: field.number(),
+	manualOverrides: field.object({
+		kcal: field.optional(field.number()),
+		protein: field.optional(field.number()),
+		carbs: field.optional(field.number()),
+		fat: field.optional(field.number()),
+	}),
+	updatedAt: field.string(),
+});
+
 const schema = {
 	exercises: exercisesDef,
 	workouts: workoutsDef,
 	sessions: sessionsDef,
 	personalRecords: personalRecordsDef,
 	preferences: preferencesDef,
+	foods: foodsDef,
+	foodEntries: foodEntriesDef,
+	weights: weightsDef,
+	nutritionProfile: nutritionProfileDef,
 };
 
 const LEAVE_TIMEOUT_MS = 3000;

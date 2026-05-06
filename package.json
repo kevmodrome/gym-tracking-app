@@ -7,7 +7,8 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
+		"build:livs": "tsx scripts/build-livs.ts",
+		"prepare": "svelte-kit sync && npm run build:livs || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest",
@@ -36,11 +37,13 @@
 		"sharp": "^0.34.5",
 		"svelte": "^5.54.0",
 		"svelte-check": "^4.3.4",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.2.6",
 		"vitest": "^4.0.17"
 	},
 	"dependencies": {
+		"@zxing/browser": "^0.2.0",
 		"lucide-svelte": "^0.562.0",
 		"svelteplot": "^0.9.1",
 		"tablinum": "^0.7.0",

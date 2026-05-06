@@ -8,7 +8,9 @@
 	const tabOptions = [
 		{ value: 'sessions', label: 'Sessions' },
 		{ value: 'charts', label: 'Charts' },
-		{ value: 'records', label: 'Records' }
+		{ value: 'records', label: 'Records' },
+		{ value: 'nutrition', label: 'Nutrition' },
+		{ value: 'weight', label: 'Weight' }
 	];
 
 	const currentTab = $derived.by(() => {
@@ -16,6 +18,8 @@
 		if (path.includes('/sessions')) return 'sessions';
 		if (path.includes('/charts')) return 'charts';
 		if (path.includes('/records')) return 'records';
+		if (path.includes('/nutrition')) return 'nutrition';
+		if (path.includes('/weight')) return 'weight';
 		return 'sessions';
 	});
 </script>
