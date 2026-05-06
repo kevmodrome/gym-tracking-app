@@ -113,11 +113,17 @@ export type WeightUnit = 'kg' | 'lb';
 
 export type DistanceUnit = 'km' | 'miles';
 
+export type OnboardingGoal = 'build' | 'lose' | 'general';
+export type TrackingDepth = 'basic' | 'standard' | 'full';
+
 export interface UserPreferences {
 	id: string;
 	weightUnit: WeightUnit;
 	distanceUnit: DistanceUnit;
 	decimalPlaces: number;
+	goal?: OnboardingGoal;
+	trackingDepth?: TrackingDepth;
+	onboardingComplete?: boolean;
 	updatedAt: string;
 }
 

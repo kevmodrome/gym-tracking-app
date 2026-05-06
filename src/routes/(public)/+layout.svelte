@@ -1,11 +1,15 @@
 <script lang="ts">
 	import '../../app.css';
-	import { onNavigate } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { onNavigate, goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { Settings } from 'lucide-svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { db } from '$lib/db';
 
 	let { children } = $props();
 
@@ -20,6 +24,25 @@
 				await navigation.complete;
 			});
 		});
+	});
+
+	// First-launch onboarding redirect (client only)
+	onMount(async () => {
+		try {
+			const path = page.url.pathname;
+			if (path === '/onboarding') return;
+
+			await preferencesStore.load();
+			if (preferencesStore.onboardingComplete) return;
+
+			// If user already has sessions, treat as existing user — skip onboarding
+			const sessions = await db.collection('sessions').get();
+			if (Array.isArray(sessions) && sessions.length > 0) return;
+
+			goto('/onboarding');
+		} catch {
+			// If anything fails, don't block the app
+		}
 	});
 </script>
 
@@ -39,17 +62,26 @@
 
 <Toast />
 <PWAInstallPrompt />
-<a
-	href="/settings"
-	aria-label="Settings"
-	class="settings-fab md:hidden flex items-center justify-center bg-surface border border-border text-text-muted hover:text-text-primary rounded-full transition-colors duration-200"
+{#if page.url.pathname !== '/onboarding'}
+	<a
+		href="/settings"
+		aria-label="Settings"
+		class="settings-fab md:hidden flex items-center justify-center bg-surface border border-border text-text-muted hover:text-text-primary rounded-full transition-colors duration-200"
+	>
+		<Settings class="w-5 h-5" strokeWidth={2} />
+	</a>
+{/if}
+<div
+	class="w-full min-w-[320px] min-h-screen bg-bg"
+	class:pb-16={page.url.pathname !== '/onboarding'}
+	class:md:pb-0={page.url.pathname !== '/onboarding'}
+	class:md:pt-16={page.url.pathname !== '/onboarding'}
 >
-	<Settings class="w-5 h-5" strokeWidth={2} />
-</a>
-<div class="pb-16 md:pb-0 md:pt-16 w-full min-w-[320px] min-h-screen bg-bg">
 	{@render children()}
 </div>
-<Navigation />
+{#if page.url.pathname !== '/onboarding'}
+	<Navigation />
+{/if}
 
 <style>
 	.settings-fab {
