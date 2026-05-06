@@ -256,6 +256,29 @@ export function calculateDailyMetrics(
 		.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/**
+ * Count consecutive days with at least one session, starting from today
+ * (or yesterday if no session today). Mirrors the streak calc on the Today screen.
+ */
+export function calculateStreakDays(sessions: Session[], referenceDate: Date = new Date()): number {
+	if (sessions.length === 0) return 0;
+	const sessionDates = new Set(
+		sessions.map((s) => toLocalDateString(new Date(s.date)))
+	);
+	let streak = 0;
+	const cursor = new Date(referenceDate);
+	cursor.setHours(0, 0, 0, 0);
+	if (!sessionDates.has(toLocalDateString(cursor))) {
+		cursor.setDate(cursor.getDate() - 1);
+		if (!sessionDates.has(toLocalDateString(cursor))) return 0;
+	}
+	while (sessionDates.has(toLocalDateString(cursor))) {
+		streak++;
+		cursor.setDate(cursor.getDate() - 1);
+	}
+	return streak;
+}
+
 export function getLastWorkoutDate(sessions: Session[]): Date | null {
 	if (sessions.length === 0) return null;
 	

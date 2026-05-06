@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { calculateDailyWorkouts, getLastWorkoutDate } from '$lib/dashboardMetrics';
+	import { calculateDailyWorkouts, getLastWorkoutDate, calculateStreakDays } from '$lib/dashboardMetrics';
 	import { Numeric, EmptyState, Card } from '$lib/ui';
 	import { Check, Scale, UtensilsCrossed } from 'lucide-svelte';
 	import { DumbbellMark } from '$lib/icons';
@@ -115,25 +115,7 @@
 
 	// Streak: count consecutive days with at least one session, starting from today
 	// (or yesterday if no session today).
-	const streakDays = $derived.by(() => {
-		if (sessions.length === 0) return 0;
-		const sessionDates = new Set(
-			sessions.map((s) => toLocalDateString(new Date(s.date)))
-		);
-		let streak = 0;
-		const cursor = new Date(now);
-		cursor.setHours(0, 0, 0, 0);
-		// If no session today, start from yesterday
-		if (!sessionDates.has(toLocalDateString(cursor))) {
-			cursor.setDate(cursor.getDate() - 1);
-			if (!sessionDates.has(toLocalDateString(cursor))) return 0;
-		}
-		while (sessionDates.has(toLocalDateString(cursor))) {
-			streak++;
-			cursor.setDate(cursor.getDate() - 1);
-		}
-		return streak;
-	});
+	const streakDays = $derived(calculateStreakDays(sessions, new Date(now)));
 
 	const todayKcal = $derived(
 		todayFoodEntries.reduce((acc, e) => acc + (e.macros?.kcal ?? 0), 0)

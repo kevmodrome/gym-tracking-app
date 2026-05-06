@@ -4,11 +4,13 @@
 	import { db } from '$lib/db';
 	import type { Session, SessionExercise, ExerciseSet, Exercise, SetWeight } from '$lib/types';
 	import { volumeWeight } from '$lib/types';
-	import { calculatePersonalRecords } from '$lib/prUtils';
+	import { calculatePersonalRecords, getRepRangeLabel } from '$lib/prUtils';
+	import { calculateSessionVolume, calculateStreakDays } from '$lib/dashboardMetrics';
+	import type { PersonalRecord } from '$lib/types';
 	import WorkoutProgressBar from '$lib/components/WorkoutProgressBar.svelte';
 	import SetPage from '$lib/components/SetPage.svelte';
 	import TimerPage from '$lib/components/TimerPage.svelte';
-	import CompletionPage from '$lib/components/CompletionPage.svelte';
+	import WorkoutFinishCelebration from '$lib/components/WorkoutFinishCelebration.svelte';
 	import SessionOverflowMenu from '$lib/components/SessionOverflowMenu.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { ArrowLeft, Undo, Plus, Search, Star, Check, Timer } from 'lucide-svelte';
@@ -101,6 +103,33 @@
 	let showUndoToast = $state(false);
 	let undoTimeout: number | null = null;
 
+	// Celebration state — computed once at finish time
+	interface DetectedPR {
+		exerciseName: string;
+		repRange: string;
+		weight: number;
+		reps: number;
+		previousBest?: { weight: number; reps: number };
+	}
+	let celebrationVolumeDelta = $state(0);
+	let celebrationPRs = $state<DetectedPR[]>([]);
+	let celebrationStreakDays = $state(0);
+
+	// PRs by exerciseId, used by SetPage to show PRBadge inline
+	let prsByExerciseId = $state<Record<string, PersonalRecord[]>>({});
+
+	// Load all current PRs once for inline PRBadge detection
+	$effect(() => {
+		db.collection('personalRecords').get().then((records) => {
+			const map: Record<string, PersonalRecord[]> = {};
+			for (const r of records as PersonalRecord[]) {
+				if (!map[r.exerciseId]) map[r.exerciseId] = [];
+				map[r.exerciseId].push(r);
+			}
+			prsByExerciseId = map;
+		});
+	});
+
 	// Derived state
 	const currentExercise = $derived.by(() => {
 		if (sessionExercises.length === 0 || currentExerciseIndex >= sessionExercises.length) {
@@ -114,6 +143,11 @@
 			return null;
 		}
 		return currentExercise.sets[currentSetIndex];
+	});
+
+	const currentExercisePRs = $derived.by(() => {
+		if (!currentExercise) return [] as PersonalRecord[];
+		return prsByExerciseId[currentExercise.exerciseId] ?? [];
 	});
 
 	const isLastSetInExercise = $derived.by(() => {
@@ -276,10 +310,9 @@
 
 		if (isLastSetInExercise) {
 			if (isLastExercise) {
-				currentView = 'complete';
-				stopDurationTracking();
 				timerRunning = false;
 				timerExpanded = false;
+				finishWorkout();
 			} else {
 				currentExerciseIndex++;
 				currentSetIndex = 0;
@@ -299,10 +332,9 @@
 
 		if (isLastSetInExercise) {
 			if (isLastExercise) {
-				currentView = 'complete';
-				stopDurationTracking();
 				timerRunning = false;
 				timerExpanded = false;
+				finishWorkout();
 			} else {
 				currentExerciseIndex++;
 				currentSetIndex = 0;
@@ -377,9 +409,101 @@
 		saveSessionProgress();
 	}
 
-	function finishWorkout() {
+	async function finishWorkout() {
 		currentView = 'complete';
 		stopDurationTracking();
+		await computeCelebrationData();
+	}
+
+	async function computeCelebrationData() {
+		// Volume delta vs last completed session (excluding the current/in-progress one)
+		const allSessions = (await db
+			.collection('sessions')
+			.orderBy('date')
+			.reverse()
+			.get()) as Session[];
+
+		const priorSessions = allSessions.filter((s) => s.id !== sessionId);
+		const currentVolume = calculateSessionVolume({ exercises: sessionExercises });
+
+		if (priorSessions.length > 0) {
+			const lastVolume = calculateSessionVolume({ exercises: priorSessions[0].exercises });
+			celebrationVolumeDelta = currentVolume - lastVolume;
+		} else {
+			celebrationVolumeDelta = 0;
+		}
+
+		// Detect PRs by comparing current session sets against existing PRs (BEFORE save).
+		// Group new bests per exerciseId+reps so each unique rep/exercise appears only once.
+		const detected: DetectedPR[] = [];
+		const seen = new Set<string>();
+
+		for (const ex of sessionExercises) {
+			const existingPRs = prsByExerciseId[ex.exerciseId] ?? [];
+			// Find the best (heaviest) completed, non-warmup, numeric-weight set per reps
+			const bestPerReps = new Map<number, { weight: number; reps: number }>();
+			for (const set of ex.sets) {
+				if (!set.completed) continue;
+				if (set.warmup) continue;
+				if (typeof set.weight !== 'number' || !Number.isFinite(set.weight)) continue;
+				const cur = bestPerReps.get(set.reps);
+				if (!cur || set.weight > cur.weight) {
+					bestPerReps.set(set.reps, { weight: set.weight, reps: set.reps });
+				}
+			}
+
+			for (const [reps, best] of bestPerReps) {
+				const key = `${ex.exerciseId}-${reps}`;
+				if (seen.has(key)) continue;
+				const existing = existingPRs.find((pr) => pr.reps === reps);
+				if (!existing || best.weight > existing.weight) {
+					seen.add(key);
+					detected.push({
+						exerciseName: ex.exerciseName,
+						repRange: getRepRangeLabel(reps),
+						weight: best.weight,
+						reps: best.reps,
+						previousBest: existing
+							? { weight: existing.weight, reps: existing.reps }
+							: undefined
+					});
+				}
+			}
+		}
+
+		// Sort detected PRs: heaviest first
+		detected.sort((a, b) => b.weight - a.weight);
+		celebrationPRs = detected;
+
+		// Streak: include this session in the calc by appending a synthetic
+		// "today" session if no prior session occurred today.
+		const today = new Date();
+		const todayStr = (() => {
+			const y = today.getFullYear();
+			const m = String(today.getMonth() + 1).padStart(2, '0');
+			const d = String(today.getDate()).padStart(2, '0');
+			return `${y}-${m}-${d}`;
+		})();
+		const hasTodaySession = priorSessions.some((s) => {
+			const d = new Date(s.date);
+			const y = d.getFullYear();
+			const m = String(d.getMonth() + 1).padStart(2, '0');
+			const day = String(d.getDate()).padStart(2, '0');
+			return `${y}-${m}-${day}` === todayStr;
+		});
+		const sessionsForStreak = hasTodaySession
+			? priorSessions
+			: [
+					...priorSessions,
+					{
+						id: sessionId,
+						exercises: sessionExercises,
+						date: today.toISOString(),
+						duration: sessionDuration,
+						createdAt: today.toISOString()
+					} satisfies Session
+			  ];
+		celebrationStreakDays = calculateStreakDays(sessionsForStreak, today);
 	}
 
 	// Session completion
@@ -628,8 +752,7 @@
 		showDeleteExerciseConfirm = false;
 
 		if (sessionExercises.length === 0) {
-			currentView = 'complete';
-			stopDurationTracking();
+			finishWorkout();
 		}
 	}
 </script>
@@ -778,13 +901,13 @@
 			</div>
 		</div>
 	{:else if currentView === 'complete'}
-		<!-- Completion Page (Full Screen) -->
-		<CompletionPage
-			{sessionDuration}
-			{sessionExercises}
-			{sessionNotes}
-			onNotesChange={(notes) => (sessionNotes = notes)}
-			onBack={() => (currentView = 'set')}
+		<!-- Workout finish celebration (Full Screen) -->
+		<WorkoutFinishCelebration
+			session={{ exercises: sessionExercises, duration: sessionDuration }}
+			volumeDelta={celebrationVolumeDelta}
+			prs={celebrationPRs}
+			streakDays={celebrationStreakDays}
+			bind:notes={sessionNotes}
 			onSave={completeSession}
 		/>
 	{:else}
@@ -843,6 +966,7 @@
 					onSetChange={onSetChange}
 					onFinishWorkout={finishWorkout}
 					timerActive={timerRunning}
+					exercisePRs={currentExercisePRs}
 				/>
 			{/if}
 		</div>

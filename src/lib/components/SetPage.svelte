@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { SessionExercise } from '$lib/types';
+	import type { SessionExercise, PersonalRecord } from '$lib/types';
 	import { Button, Textarea } from '$lib/ui';
 	import { Timer, Check, StickyNote, Flame, Gauge } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import PRBadge from '$lib/components/PRBadge.svelte';
 
 	interface SetPageProps {
 		exercise: SessionExercise;
@@ -13,6 +14,7 @@
 		onSetChange: () => void;
 		onFinishWorkout: () => void;
 		timerActive?: boolean;
+		exercisePRs?: PersonalRecord[];
 	}
 
 	let {
@@ -23,7 +25,8 @@
 		onStartTimer,
 		onSetChange,
 		onFinishWorkout,
-		timerActive = false
+		timerActive = false,
+		exercisePRs = []
 	}: SetPageProps = $props();
 
 	const currentSet = $derived(exercise.sets[setIndex]);
@@ -122,6 +125,19 @@
 	}
 
 	const weightStep = 2.5;
+
+	// "Would be PR" — true when the current set's weight (numeric, non-warmup, non-bodyweight)
+	// beats the existing PR for this exercise at this rep count.
+	const wouldBePR = $derived.by(() => {
+		if (!currentSet) return false;
+		if (currentSet.warmup) return false;
+		if (typeof currentSet.weight !== 'number' || !Number.isFinite(currentSet.weight)) return false;
+		if (currentSet.weight <= 0) return false;
+		if (!Number.isFinite(currentSet.reps) || currentSet.reps <= 0) return false;
+		const existing = exercisePRs.find((pr) => pr.reps === currentSet.reps);
+		if (!existing) return true; // no PR at this rep count yet → any valid set is a new PR
+		return currentSet.weight > existing.weight;
+	});
 </script>
 
 <div class="flex flex-col h-full">
@@ -293,6 +309,10 @@
 						<Flame class="w-4 h-4" />
 						<span>Warmup</span>
 					</button>
+
+					{#if wouldBePR}
+						<PRBadge />
+					{/if}
 				</div>
 
 				<!-- Inline RPE scroller -->
