@@ -82,6 +82,12 @@ const preferencesDef = collection('preferences', {
 	weightUnit: field.string(),
 	distanceUnit: field.string(),
 	decimalPlaces: field.number(),
+	goal: field.optional(field.string()),
+	trackingDepth: field.optional(field.string()),
+	onboardingComplete: field.optional(field.boolean()),
+	defaultRestSeconds: field.optional(field.number()),
+	soundEnabled: field.optional(field.boolean()),
+	vibrationEnabled: field.optional(field.boolean()),
 	updatedAt: field.string(),
 });
 

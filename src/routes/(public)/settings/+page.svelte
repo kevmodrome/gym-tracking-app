@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
-	import type { AppSettings } from '$lib/types';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import InviteModal from '$lib/components/InviteModal.svelte';
 	import JoinInviteModal from '$lib/components/JoinInviteModal.svelte';
@@ -39,20 +38,12 @@
 
 	const APP_VERSION = '0.0.1';
 
-	let settings = $state<AppSettings>({
-		defaultRestDuration: 90,
-		soundEnabled: true,
-		vibrationEnabled: true
-	});
-
 	let showInviteModal = $state(false);
 	let showJoinInviteModal = $state(false);
 	let showImportModal = $state(false);
 	let showExportProgress = $state(false);
 	let exportProgress = $state({ current: 0, total: 0, stage: '' });
 	let exportResult = $state<{ success: boolean; message: string } | null>(null);
-	let hasLoaded = $state(false);
-	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	let showResetModal = $state(false);
 	let showLeaveModal = $state(false);
 	let resetConfirmText = $state('');
@@ -83,19 +74,7 @@
 	let savedDeviceName = $state('');
 	let isEditingName = $state(false);
 
-	// Auto-save settings when they change (with debounce)
-	$effect(() => {
-		const _ = JSON.stringify(settings);
-		if (!hasLoaded) return;
-		if (saveTimeout) clearTimeout(saveTimeout);
-		saveTimeout = setTimeout(() => {
-			localStorage.setItem('gym-app-settings', JSON.stringify(settings));
-		}, 300);
-	});
-
 	onMount(async () => {
-		loadSettings();
-		hasLoaded = true;
 		const profile = await db.getProfile();
 		deviceName = profile.name ?? '';
 		savedDeviceName = deviceName;
@@ -114,18 +93,6 @@
 		savedDeviceName = trimmed;
 		await db.setProfile({ name: trimmed || undefined });
 		toastStore.showSuccess('Device name updated');
-	}
-
-	function loadSettings() {
-		const saved = localStorage.getItem('gym-app-settings');
-		if (saved) {
-			try {
-				const parsed = JSON.parse(saved);
-				settings = { ...settings, ...parsed };
-			} catch (e) {
-				console.error('Failed to parse settings:', e);
-			}
-		}
 	}
 
 	async function handleExport() {
@@ -221,6 +188,18 @@
 
 	async function updateWeightUnit() {
 		await preferencesStore.update({ weightUnit: preferencesStore.weightUnit });
+	}
+
+	async function updateDefaultRestSeconds(value: number) {
+		await preferencesStore.update({ defaultRestSeconds: value });
+	}
+
+	async function updateSoundEnabled(value: boolean) {
+		await preferencesStore.update({ soundEnabled: value });
+	}
+
+	async function updateVibrationEnabled(value: boolean) {
+		await preferencesStore.update({ vibrationEnabled: value });
 	}
 
 	const isConnected = $derived((relayStatus.connectedUrls?.length ?? 0) > 0);
@@ -336,13 +315,14 @@
 				<div class="space-y-4">
 					<div>
 						<NumberSpinner
-							bind:value={settings.defaultRestDuration}
+							value={preferencesStore.defaultRestSeconds ?? 90}
 							label="Default rest duration (seconds)"
 							id="default-rest-duration"
 							min={10}
 							max={300}
 							step={5}
 							size="sm"
+							onchange={updateDefaultRestSeconds}
 						/>
 						<p class="mt-1 text-sm text-text-muted">
 							Used automatically when the rest timer starts.
@@ -351,17 +331,19 @@
 
 					<div class="border-t border-border pt-4">
 						<Toggle
-							bind:checked={settings.soundEnabled}
+							checked={preferencesStore.soundEnabled}
 							label="Sound notifications"
 							description="Play a sound when the rest timer completes."
+							onchange={updateSoundEnabled}
 						/>
 					</div>
 
 					<div class="border-t border-border pt-4">
 						<Toggle
-							bind:checked={settings.vibrationEnabled}
+							checked={preferencesStore.vibrationEnabled}
 							label="Vibration"
 							description="Vibrate when the rest timer completes."
+							onchange={updateVibrationEnabled}
 						/>
 					</div>
 				</div>

@@ -101,12 +101,6 @@ export interface PRHistory {
 	sessionId: string;
 }
 
-export interface AppSettings {
-	defaultRestDuration: number;
-	soundEnabled: boolean;
-	vibrationEnabled: boolean;
-}
-
 export type Theme = 'light' | 'dark' | 'system';
 
 export type WeightUnit = 'kg' | 'lb';
@@ -124,6 +118,9 @@ export interface UserPreferences {
 	goal?: OnboardingGoal;
 	trackingDepth?: TrackingDepth;
 	onboardingComplete?: boolean;
+	defaultRestSeconds?: number;
+	soundEnabled?: boolean;
+	vibrationEnabled?: boolean;
 	updatedAt: string;
 }
 

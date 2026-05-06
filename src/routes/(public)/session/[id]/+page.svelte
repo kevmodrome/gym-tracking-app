@@ -13,6 +13,7 @@
 	import WorkoutFinishCelebration from '$lib/components/WorkoutFinishCelebration.svelte';
 	import SessionOverflowMenu from '$lib/components/SessionOverflowMenu.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { ArrowLeft, Undo, Plus, Search, Star, Check, Timer } from 'lucide-svelte';
 	import { Button, Modal, ConfirmDialog, TextInput } from '$lib/ui';
 
@@ -67,7 +68,6 @@
 	let sessionDuration = $state(0);
 	let durationInterval: number | null = null;
 	let loading = $state(true);
-	let defaultRestDuration = $state(90);
 
 	// View state: 'set' | 'complete' | 'picker'
 	// Timer is now an overlay (sticky-bar by default, expanded when timerExpanded).
@@ -190,21 +190,10 @@
 				return lib.restSeconds;
 			}
 		}
-		return defaultRestDuration;
+		return preferencesStore.defaultRestSeconds || 90;
 	}
 
 	onMount(() => {
-		// Load settings
-		const saved = localStorage.getItem('gym-app-settings');
-		if (saved) {
-			try {
-				const settings = JSON.parse(saved);
-				defaultRestDuration = settings.defaultRestDuration || 90;
-			} catch (e) {
-				console.error('Failed to parse settings:', e);
-			}
-		}
-
 		// Initialize from source session if copying from an old session
 		if (sourceSession && sessionExercises.length === 0) {
 			sessionExercises = sourceSession.exercises.map((exercise) => ({

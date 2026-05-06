@@ -7,13 +7,18 @@ import type {
 	TrackingDepth
 } from '$lib/types';
 
+const DEFAULT_REST_SECONDS = 90;
+
 const DEFAULTS: Omit<UserPreferences, 'id' | 'updatedAt'> = {
 	weightUnit: 'kg',
 	distanceUnit: 'km',
 	decimalPlaces: 1,
 	goal: undefined,
 	trackingDepth: undefined,
-	onboardingComplete: false
+	onboardingComplete: false,
+	defaultRestSeconds: DEFAULT_REST_SECONDS,
+	soundEnabled: true,
+	vibrationEnabled: true
 };
 
 class PreferencesStore {
@@ -23,6 +28,9 @@ class PreferencesStore {
 	goal = $state<OnboardingGoal | undefined>(undefined);
 	trackingDepth = $state<TrackingDepth | undefined>(undefined);
 	onboardingComplete = $state<boolean>(false);
+	defaultRestSeconds = $state<number>(DEFAULT_REST_SECONDS);
+	soundEnabled = $state<boolean>(true);
+	vibrationEnabled = $state<boolean>(true);
 	private loaded = false;
 	private prefsId: string | null = null;
 
@@ -46,9 +54,13 @@ class PreferencesStore {
 				this.goal = saved.goal;
 				this.trackingDepth = saved.trackingDepth;
 				this.onboardingComplete = saved.onboardingComplete ?? false;
+				this.defaultRestSeconds = saved.defaultRestSeconds ?? DEFAULT_REST_SECONDS;
+				this.soundEnabled = saved.soundEnabled ?? true;
+				this.vibrationEnabled = saved.vibrationEnabled ?? true;
 			} else {
 				// Migrate from localStorage if available
 				const legacy = localStorage.getItem('gym-app-preferences');
+				const legacyAppSettings = localStorage.getItem('gym-app-settings');
 				if (legacy) {
 					try {
 						const parsed = JSON.parse(legacy);
@@ -59,11 +71,26 @@ class PreferencesStore {
 						if (parsed.trackingDepth) this.trackingDepth = parsed.trackingDepth;
 						if (parsed.onboardingComplete !== undefined)
 							this.onboardingComplete = parsed.onboardingComplete;
-						// Save to Tablinum
-						await this.persist();
 					} catch {
 						// ignore parse errors
 					}
+				}
+				if (legacyAppSettings) {
+					try {
+						const parsed = JSON.parse(legacyAppSettings);
+						if (typeof parsed.defaultRestDuration === 'number')
+							this.defaultRestSeconds = parsed.defaultRestDuration;
+						if (typeof parsed.soundEnabled === 'boolean')
+							this.soundEnabled = parsed.soundEnabled;
+						if (typeof parsed.vibrationEnabled === 'boolean')
+							this.vibrationEnabled = parsed.vibrationEnabled;
+					} catch {
+						// ignore parse errors
+					}
+				}
+				if (legacy || legacyAppSettings) {
+					// Save to Tablinum
+					await this.persist();
 				}
 			}
 		} catch {
@@ -82,6 +109,9 @@ class PreferencesStore {
 				| 'goal'
 				| 'trackingDepth'
 				| 'onboardingComplete'
+				| 'defaultRestSeconds'
+				| 'soundEnabled'
+				| 'vibrationEnabled'
 			>
 		>
 	): Promise<void> {
@@ -92,6 +122,10 @@ class PreferencesStore {
 		if (partial.trackingDepth !== undefined) this.trackingDepth = partial.trackingDepth;
 		if (partial.onboardingComplete !== undefined)
 			this.onboardingComplete = partial.onboardingComplete;
+		if (partial.defaultRestSeconds !== undefined)
+			this.defaultRestSeconds = partial.defaultRestSeconds;
+		if (partial.soundEnabled !== undefined) this.soundEnabled = partial.soundEnabled;
+		if (partial.vibrationEnabled !== undefined) this.vibrationEnabled = partial.vibrationEnabled;
 		await this.persist();
 	}
 
@@ -104,6 +138,9 @@ class PreferencesStore {
 				goal: this.goal,
 				trackingDepth: this.trackingDepth,
 				onboardingComplete: this.onboardingComplete,
+				defaultRestSeconds: this.defaultRestSeconds,
+				soundEnabled: this.soundEnabled,
+				vibrationEnabled: this.vibrationEnabled,
 				updatedAt: new Date().toISOString()
 			};
 			if (this.prefsId) {
@@ -128,6 +165,9 @@ class PreferencesStore {
 				this.goal = saved.goal;
 				this.trackingDepth = saved.trackingDepth;
 				this.onboardingComplete = saved.onboardingComplete ?? false;
+				this.defaultRestSeconds = saved.defaultRestSeconds ?? DEFAULT_REST_SECONDS;
+				this.soundEnabled = saved.soundEnabled ?? true;
+				this.vibrationEnabled = saved.vibrationEnabled ?? true;
 			}
 		} catch {
 			// ignore

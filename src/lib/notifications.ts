@@ -1,8 +1,7 @@
-export function playTimerSound() {
-	const saved = localStorage.getItem('gym-app-settings');
-	const settings = saved ? JSON.parse(saved) : { soundEnabled: true };
+import { preferencesStore } from '$lib/stores/preferences.svelte';
 
-	if (settings.soundEnabled) {
+export function playTimerSound() {
+	if (preferencesStore.soundEnabled) {
 		const audio = new Audio('/alarm.mp3');
 		audio.play().catch((err) => {
 			console.log('Audio play failed:', err);
@@ -11,10 +10,7 @@ export function playTimerSound() {
 }
 
 export function vibrateTimer() {
-	const saved = localStorage.getItem('gym-app-settings');
-	const settings = saved ? JSON.parse(saved) : { vibrationEnabled: true };
-
-	if (settings.vibrationEnabled && 'vibrate' in navigator) {
+	if (preferencesStore.vibrationEnabled && 'vibrate' in navigator) {
 		navigator.vibrate([200, 100, 200, 100, 200]);
 	}
 }
