@@ -370,7 +370,7 @@
 
 		<!-- Primary action row: Scan (left, big) + Add food (right, big) -->
 		<div class="grid grid-cols-2 gap-3">
-			<Button variant="primary" size="lg" fullWidth onclick={() => goto('/log/scan')}>
+			<Button variant="secondary" size="lg" fullWidth onclick={() => goto('/log/scan')}>
 				<ScannerMark size={22} />
 				<span>Scan</span>
 			</Button>
