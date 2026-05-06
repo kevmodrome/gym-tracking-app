@@ -23,7 +23,7 @@
 	import { todayString } from '$lib/nutrition/dates';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { PickedFood } from '$lib/nutrition/picked';
-	import type { FoodEntry, FoodMacros } from '$lib/types';
+	import type { Food, FoodEntry, FoodMacros } from '$lib/types';
 
 	type MacroKey = 'kcal' | 'protein' | 'carbs' | 'fat';
 	type AddMode = 'search' | 'manual';
@@ -66,7 +66,7 @@
 
 	async function saveEdit({ grams, note, macros }: { grams: number; note?: string; macros: FoodMacros }) {
 		if (!editEntry) return;
-		await updateEntry(editEntry.id, { grams, macros, note });
+		await updateEntry(editEntry.id, $state.snapshot({ grams, macros, note }) as Partial<FoodEntry>);
 		editEntry = null;
 		await refresh();
 		toastStore.showSuccess('Entry updated');
@@ -178,34 +178,34 @@
 	async function onSearchSubmit({ grams, note, macros }: { grams: number; note?: string; macros: FoodMacros }) {
 		let foodId = pickedFoodId;
 		if (!foodId && pendingOffBarcode) {
-			foodId = await addFood({
+			foodId = await addFood($state.snapshot({
 				source: 'off',
 				barcode: pendingOffBarcode,
 				name: pickedName,
-				per100g: $state.snapshot(pickedPer100g),
+				per100g: pickedPer100g,
 				lastUsedAt: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
-			});
+			}) as Omit<Food, 'id'>);
 		} else if (!foodId && pickedLivsId) {
-			foodId = await addFood({
+			foodId = await addFood($state.snapshot({
 				source: 'livs',
 				externalId: pickedLivsId,
 				name: pickedName,
-				per100g: $state.snapshot(pickedPer100g),
+				per100g: pickedPer100g,
 				lastUsedAt: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
-			});
+			}) as Omit<Food, 'id'>);
 		} else if (foodId) {
 			await touchFood(foodId);
 		}
-		await addEntry({
+		await addEntry($state.snapshot({
 			date,
 			loggedAt: new Date().toISOString(),
 			foodId,
 			grams,
 			macros,
 			note,
-		});
+		}) as Omit<FoodEntry, 'id'>);
 		closeAdd();
 		await refresh();
 		toastStore.showSuccess('Entry added');
@@ -218,24 +218,24 @@
 		}
 		let foodId: string | undefined;
 		if (saveToLibrary) {
-			foodId = await addFood({
+			foodId = await addFood($state.snapshot({
 				source: 'custom',
 				barcode: pendingOffBarcode,
 				name: pickedName.trim(),
-				per100g: $state.snapshot(pickedPer100g),
+				per100g: pickedPer100g,
 				lastUsedAt: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
-			});
+			}) as Omit<Food, 'id'>);
 		}
-		await addEntry({
+		await addEntry($state.snapshot({
 			date,
 			loggedAt: new Date().toISOString(),
 			foodId,
-			inlineFood: foodId ? undefined : { name: pickedName.trim(), per100g: $state.snapshot(pickedPer100g) as FoodMacros },
+			inlineFood: foodId ? undefined : { name: pickedName.trim(), per100g: pickedPer100g },
 			grams,
 			macros,
 			note,
-		});
+		}) as Omit<FoodEntry, 'id'>);
 		closeAdd();
 		await refresh();
 		toastStore.showSuccess('Entry added');
