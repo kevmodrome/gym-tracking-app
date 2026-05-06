@@ -229,7 +229,27 @@ html.stable-header-transition::view-transition-new(page-header) {
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
 	::view-transition-old(root),
-	::view-transition-new(root) {
+	::view-transition-new(root),
+	::view-transition-old(page-header),
+	::view-transition-new(page-header) {
 		animation: none;
+	}
+
+	.animate-pulse-glow,
+	.animate-pulse-glow-warning {
+		animation: none;
+	}
+
+	.transition-glow {
+		transition: none;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
 	}
 }

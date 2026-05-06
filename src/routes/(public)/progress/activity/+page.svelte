@@ -376,7 +376,7 @@
 		<Card padding="md">
 			{#snippet children()}
 				<p class="text-xs sm:text-sm text-text-secondary mb-1">Sessions</p>
-				<Numeric value={totalSessions} size="hero" tone="focal" />
+				<Numeric value={totalSessions} size="hero" tone="default" />
 			{/snippet}
 		</Card>
 		<Card padding="md">

@@ -126,7 +126,7 @@
 <div class="container mx-auto max-w-3xl px-4 pb-12">
 	<PageHeader title="Train">
 		{#snippet actions()}
-			<Button variant="primary" size="sm" onclick={createNewRoutine}>
+			<Button variant="secondary" size="sm" onclick={createNewRoutine}>
 				<Plus class="w-4 h-4" />
 				New routine
 			</Button>

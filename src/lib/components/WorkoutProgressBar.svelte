@@ -111,7 +111,7 @@
 					onclick={() => handleSetClick(currentExerciseIndex, setIdx)}
 					aria-label="Set {setIdx + 1} - {status}{isWarmup ? ' (warmup)' : ''}"
 					aria-current={status === 'current' ? 'step' : undefined}
-					class="group relative inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+					class="group relative inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
 				>
 					<span
 						class="block w-3.5 h-3.5 rounded-full transition-all
