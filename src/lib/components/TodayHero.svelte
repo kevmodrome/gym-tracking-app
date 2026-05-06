@@ -33,7 +33,7 @@
 		return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 	}
 
-	const lastSessionName = $derived(() => {
+	const lastSessionName = $derived.by(() => {
 		if (!lastSession) return 'last workout';
 		const muscles = lastSession.exercises
 			?.map((e) => e.primaryMuscle)
@@ -79,7 +79,7 @@
 				Pick up where you left off
 			</p>
 			<h2 class="font-display font-bold text-2xl sm:text-3xl text-text-primary mb-2">
-				Repeat <span class="text-focal">{lastSessionName()}</span>
+				Repeat <span class="text-focal">{lastSessionName}</span>
 			</h2>
 			<p class="text-sm text-text-secondary mb-6">
 				Last done {formatLastSessionDate(lastSession.date)} ·

@@ -110,7 +110,6 @@
 		if (inProgressSession) return 'resume' as const;
 		if (sessionToday) return 'done-today' as const;
 		if (lastSession && daysSinceLast >= 2) return 'repeat-last' as const;
-		if (sessions.length === 0) return 'fresh' as const;
 		return 'fresh' as const;
 	});
 
@@ -299,11 +298,11 @@
 								<div class="flex flex-col items-center gap-1.5">
 									<div
 										class="flex h-10 w-full items-center justify-center rounded-lg border text-xs font-semibold {trained
-											? 'bg-accent/15 border-accent/40 text-accent'
+											? 'bg-success/15 border-success/30 text-success'
 											: 'bg-surface-elevated border-border text-text-muted'}"
 									>
 										{#if trained}
-											<span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+											<span class="h-1.5 w-1.5 rounded-full bg-success"></span>
 										{:else}
 											<span class="h-1.5 w-1.5 rounded-full bg-text-muted/30"></span>
 										{/if}
