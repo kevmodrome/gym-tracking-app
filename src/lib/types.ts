@@ -152,6 +152,14 @@ export interface Food {
 	servingSize?: FoodServingSize;
 	lastUsedAt: string;
 	createdAt: string;
+	favorite?: boolean;
+}
+
+export interface WaterEntry {
+	id: string;
+	date: string;          // YYYY-MM-DD, unique
+	count: number;         // number of glasses (250ml each)
+	updatedAt: string;
 }
 
 export interface FoodEntry {

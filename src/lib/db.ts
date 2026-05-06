@@ -107,6 +107,7 @@ const foodsDef = collection('foods', {
 	servingSize: field.optional(foodServingDef),
 	lastUsedAt: field.string(),
 	createdAt: field.string(),
+	favorite: field.optional(field.boolean()),
 }, { indices: ['barcode', 'name', 'lastUsedAt'] });
 
 const foodEntriesDef = collection('foodEntries', {
@@ -133,6 +134,12 @@ const bodyMetricsDef = collection('bodyMetrics', {
 	waistCm: field.optional(field.number()),
 	bodyFatPct: field.optional(field.number()),
 	loggedAt: field.string(),
+}, { indices: ['date'] });
+
+const waterDef = collection('water', {
+	date: field.string(),
+	count: field.number(),
+	updatedAt: field.string(),
 }, { indices: ['date'] });
 
 const nutritionProfileDef = collection('nutritionProfile', {
@@ -162,6 +169,7 @@ const schema = {
 	weights: weightsDef,
 	nutritionProfile: nutritionProfileDef,
 	bodyMetrics: bodyMetricsDef,
+	water: waterDef,
 };
 
 const LEAVE_TIMEOUT_MS = 3000;
