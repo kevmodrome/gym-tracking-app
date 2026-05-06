@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../../app.css';
 	import { onNavigate } from '$app/navigation';
+	import { Settings } from 'lucide-svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
@@ -38,7 +39,25 @@
 
 <Toast />
 <PWAInstallPrompt />
+<a
+	href="/settings"
+	aria-label="Settings"
+	class="settings-fab md:hidden flex items-center justify-center bg-surface border border-border text-text-muted hover:text-text-primary rounded-full transition-colors duration-200"
+>
+	<Settings class="w-5 h-5" strokeWidth={2} />
+</a>
 <div class="pb-16 md:pb-0 md:pt-16 w-full min-w-[320px] min-h-screen bg-bg">
 	{@render children()}
 </div>
 <Navigation />
+
+<style>
+	.settings-fab {
+		position: fixed;
+		top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+		right: 0.75rem;
+		z-index: 30;
+		width: 44px;
+		height: 44px;
+	}
+</style>

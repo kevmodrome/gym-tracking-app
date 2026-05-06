@@ -4,30 +4,29 @@
 	import {
 		Home,
 		Dumbbell,
-		NotebookPen,
-		BarChart3,
+		Apple,
+		TrendingUp,
 		Settings
 	} from 'lucide-svelte';
 
-	const navItems = [
-		{ path: '/', label: 'Home', icon: Home },
-		{ path: '/exercises', label: 'Exercises', icon: Dumbbell },
-		{ path: '/log', label: 'Log', icon: NotebookPen },
-		{ path: '/progress', label: 'Progress', icon: BarChart3 },
-		{ path: '/settings', label: 'Settings', icon: Settings }
+	const navItems: { path: string; label: string; icon: typeof Home }[] = [
+		{ path: '/', label: 'Today', icon: Home },
+		{ path: '/train', label: 'Train', icon: Dumbbell },
+		{ path: '/log', label: 'Fuel', icon: Apple },
+		{ path: '/progress', label: 'Progress', icon: TrendingUp }
 	];
 
 	function isActive(path: string): boolean {
-		const currentPath = page.url?.pathname;
+		const currentPath: string | undefined = page.url?.pathname;
 		if (!currentPath) return false;
 		if (path === '/') {
 			return currentPath === '/';
 		}
-		// Match /exercises and /exercises/new
-		if (path === '/exercises') {
-			return currentPath === '/exercises' || currentPath.startsWith('/exercises/');
+		// Match /train and sub-paths
+		if (path === '/train') {
+			return currentPath === '/train' || currentPath.startsWith('/train/');
 		}
-		// Match /log and /log/
+		// Match /log and /log/scan etc.
 		if (path === '/log') {
 			return currentPath === '/log' || currentPath.startsWith('/log/');
 		}
@@ -36,6 +35,12 @@
 			return currentPath === '/progress' || currentPath.startsWith('/progress/');
 		}
 		return currentPath.startsWith(path);
+	}
+
+	function isSettingsActive(): boolean {
+		const currentPath: string | undefined = page.url?.pathname;
+		if (!currentPath) return false;
+		return currentPath === '/settings' || currentPath.startsWith('/settings/');
 	}
 </script>
 
@@ -68,6 +73,15 @@
 					</a>
 				{/each}
 			</div>
+			<a
+				href="/settings"
+				aria-label="Settings"
+				class="flex items-center justify-center w-10 h-10 rounded-full border border-border transition-all duration-200 {isSettingsActive()
+					? 'bg-accent/10 text-accent border-accent/40'
+					: 'bg-surface text-text-muted hover:text-text-primary hover:bg-surface-hover'}"
+			>
+				<Settings class="w-5 h-5" strokeWidth={isSettingsActive() ? 2.5 : 2} />
+			</a>
 		</div>
 	</div>
 </nav>
