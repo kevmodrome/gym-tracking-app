@@ -1,10 +1,11 @@
 <script lang="ts">
 	type Size = 'inline' | 'hero' | 'display';
+	type Tone = 'default' | 'focal' | 'streak' | 'pr';
 
 	interface NumericProps {
 		value: string | number;
 		size?: Size;
-		accent?: boolean;
+		tone?: Tone;
 		unit?: string;
 		class?: string;
 	}
@@ -12,7 +13,7 @@
 	let {
 		value,
 		size = 'hero',
-		accent = false,
+		tone = 'default',
 		unit,
 		class: className = ''
 	}: NumericProps = $props();
@@ -29,12 +30,19 @@
 		display: 'text-2xl ml-2'
 	};
 
+	const toneClasses: Record<Tone, { number: string; unit: string }> = {
+		default: { number: 'text-text-primary', unit: 'text-text-secondary' },
+		focal: { number: 'text-focal', unit: 'text-focal/60' },
+		streak: { number: 'text-streak', unit: 'text-streak/60' },
+		pr: { number: 'text-pr', unit: 'text-pr/60' }
+	};
+
 	const numberClasses = $derived(
 		[
 			'font-display',
 			'leading-none',
 			sizeStyles[size],
-			accent ? 'text-focal' : 'text-text-primary',
+			toneClasses[tone].number,
 			className
 		]
 			.filter(Boolean)
@@ -45,7 +53,7 @@
 		[
 			'font-display font-semibold align-baseline',
 			unitSizeStyles[size],
-			accent ? 'text-focal/60' : 'text-text-secondary'
+			toneClasses[tone].unit
 		].join(' ')
 	);
 </script>

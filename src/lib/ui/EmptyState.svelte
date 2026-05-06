@@ -35,11 +35,9 @@
 			{@render icon()}
 		</div>
 	{/if}
-	<h3 class="font-display font-bold text-2xl text-text-primary mb-2">{title}</h3>
+	<h3 class="font-display font-bold text-2xl text-text-primary {description ? 'mb-2' : 'mb-6'}">{title}</h3>
 	{#if description}
 		<p class="font-body text-text-secondary max-w-sm mb-6">{description}</p>
-	{:else}
-		<div class="mb-6"></div>
 	{/if}
 	{#if actionLabel && (actionHref || onAction)}
 		<Button variant="primary" href={actionHref} onclick={onAction}>

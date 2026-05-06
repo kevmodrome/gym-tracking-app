@@ -10,7 +10,7 @@
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
-	import { Pencil, Upload, Download } from 'lucide-svelte';
+	import { Pencil, Upload, Download, Info } from 'lucide-svelte';
 	import { Modal } from '$lib/ui';
 
 	type SyncMember = {
@@ -413,6 +413,9 @@
 		</Card>
 
 		<InfoBox type="info" title="Tips">
+			{#snippet icon()}
+				<Info class="text-secondary" />
+			{/snippet}
 			<ul class="space-y-1">
 				<li>You can manually adjust the timer duration during your workout</li>
 				<li>Skip the timer anytime to move to the next set</li>
