@@ -4,7 +4,7 @@
 	import type { PersonalRecord, Exercise, Session } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
 	import { Button, Card, Modal, Select } from '$lib/ui';
-	import { ArrowLeft } from 'lucide-svelte';
+	import { ArrowLeft, Trophy } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
 	import { db } from '$lib/db';
@@ -199,7 +199,7 @@
 				<Card class="mb-6">
 					{#snippet children()}
 						<h2 class="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-							<span class="text-xl">🏆</span> Personal Records
+							<Trophy class="w-5 h-5 text-pr" /> Personal Records
 						</h2>
 						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 							{#each personalRecords as pr}
@@ -210,7 +210,7 @@
 									<div
 										class="w-10 h-10 bg-warning text-bg rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-[0_0_15px_rgba(255,149,0,0.4)]"
 									>
-										🏆
+										<Trophy class="w-5 h-5" />
 									</div>
 									<div class="flex-1 min-w-0">
 										<p class="font-semibold text-text-primary text-sm">
@@ -362,7 +362,7 @@
 							</p>
 						</div>
 						{#if i === 0}
-							<span class="text-xl">🏆</span>
+							<Trophy class="w-5 h-5 text-pr" />
 						{/if}
 					</div>
 				{/each}

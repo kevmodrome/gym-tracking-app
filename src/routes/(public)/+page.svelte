@@ -14,6 +14,7 @@
 	} from '$lib/dashboardMetrics';
 	import { getDateRange, type DateFilter } from '$lib/dateUtils';
 	import { Button, Card, MetricCard, ButtonGroup, PageHeader } from '$lib/ui';
+	import { Dumbbell, Play, BarChart3, Settings, TrendingUp, Timer } from 'lucide-svelte';
 	import { Plot, Line, Dot, AxisX, AxisY, Pointer, Text } from 'svelteplot';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { db } from '$lib/db';
@@ -201,7 +202,7 @@
 			<Card class="mb-4 sm:mb-6 text-center" padding="lg">
 				{#snippet children()}
 					<div class="w-20 h-20 sm:w-24 sm:h-24 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
-						<span class="text-4xl sm:text-5xl">🏋️</span>
+						<Dumbbell class="w-10 h-10 sm:w-12 sm:h-12 text-accent" />
 					</div>
 					<h2 class="text-xl sm:text-2xl font-bold font-display text-text-primary mb-2">Welcome to Your Gym Dashboard!</h2>
 					<p class="text-text-secondary mb-4">Start tracking your sessions to see your daily metrics, volume trends, and progress over time.</p>
@@ -214,22 +215,22 @@
 			<!-- Quick Actions for new users -->
 			<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
 				<a href="/exercises" class="bg-surface border border-border rounded-xl p-4 hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 group">
-					<div class="text-2xl mb-2">💪</div>
+					<Dumbbell class="w-6 h-6 mb-2 text-accent" />
 					<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Exercises</div>
 					<div class="text-xs text-text-muted">Browse & add</div>
 				</a>
 				<a href="/session/new" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
-					<div class="text-2xl mb-2">▶️</div>
+					<Play class="w-6 h-6 mb-2 text-success" />
 					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Session</div>
 					<div class="text-xs text-text-muted">Start now</div>
 				</a>
 				<a href="/progress" class="bg-surface border border-border rounded-xl p-4 hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 group">
-					<div class="text-2xl mb-2">📈</div>
+					<TrendingUp class="w-6 h-6 mb-2 text-secondary" />
 					<div class="font-semibold text-text-primary group-hover:text-secondary transition-colors">Progress</div>
 					<div class="text-xs text-text-muted">Track gains</div>
 				</a>
 				<a href="/settings" class="bg-surface border border-border rounded-xl p-4 hover:border-border-active hover:bg-surface-elevated transition-all duration-200 group">
-					<div class="text-2xl mb-2">⚙️</div>
+					<Settings class="w-6 h-6 mb-2 text-text-secondary" />
 					<div class="font-semibold text-text-primary group-hover:text-text-secondary transition-colors">Settings</div>
 					<div class="text-xs text-text-muted">Preferences</div>
 				</a>
@@ -238,7 +239,7 @@
 			<PageHeader title="Dashboard">
 				{#snippet actions()}
 					<Button variant="primary" href="/session/new">
-						▶ Start Session
+						<Play class="w-4 h-4" /> Start Session
 					</Button>
 				{/snippet}
 			</PageHeader>
@@ -254,22 +255,22 @@
 			<!-- Quick Actions -->
 			<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
 				<a href="/exercises" class="bg-surface border border-border rounded-xl p-4 hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 group">
-					<div class="text-2xl mb-2">💪</div>
+					<Dumbbell class="w-6 h-6 mb-2 text-accent" />
 					<div class="font-semibold text-text-primary group-hover:text-accent transition-colors">Exercises</div>
 					<div class="text-xs text-text-muted">Browse & add</div>
 				</a>
 				<a href="/session/new" class="bg-surface border border-border rounded-xl p-4 hover:border-success/50 hover:bg-success/5 transition-all duration-200 group">
-					<div class="text-2xl mb-2">▶️</div>
+					<Play class="w-6 h-6 mb-2 text-success" />
 					<div class="font-semibold text-text-primary group-hover:text-success transition-colors">Session</div>
 					<div class="text-xs text-text-muted">Start now</div>
 				</a>
 				<a href="/progress" class="bg-surface border border-border rounded-xl p-4 hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 group">
-					<div class="text-2xl mb-2">📈</div>
+					<TrendingUp class="w-6 h-6 mb-2 text-secondary" />
 					<div class="font-semibold text-text-primary group-hover:text-secondary transition-colors">Progress</div>
 					<div class="text-xs text-text-muted">History & PRs</div>
 				</a>
 				<a href="/settings" class="bg-surface border border-border rounded-xl p-4 hover:border-border-active hover:bg-surface-elevated transition-all duration-200 group">
-					<div class="text-2xl mb-2">⚙️</div>
+					<Settings class="w-6 h-6 mb-2 text-text-secondary" />
 					<div class="font-semibold text-text-primary group-hover:text-text-secondary transition-colors">Settings</div>
 					<div class="text-xs text-text-muted">Preferences</div>
 				</a>
@@ -309,15 +310,22 @@
 
 		{#if sessions.length > 0}
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-				<MetricCard label="Sessions" value={totalSessions} icon="📊" iconBgColor="bg-secondary/20" />
-				<MetricCard label="Time" value={formatTime(totalTrainingTime)} icon="⏱️" iconBgColor="bg-success/20" />
-				<MetricCard label="Volume" value="{formatVolume(totalVolume)} {preferencesStore.weightLabel}" icon="🏋️" iconBgColor="bg-accent/20" />
+				<MetricCard label="Sessions" value={totalSessions} iconBgColor="bg-secondary/20">
+					{#snippet icon()}<BarChart3 class="text-secondary" />{/snippet}
+				</MetricCard>
+				<MetricCard label="Time" value={formatTime(totalTrainingTime)} iconBgColor="bg-success/20">
+					{#snippet icon()}<Timer class="text-success" />{/snippet}
+				</MetricCard>
+				<MetricCard label="Volume" value="{formatVolume(totalVolume)} {preferencesStore.weightLabel}" iconBgColor="bg-accent/20">
+					{#snippet icon()}<Dumbbell class="text-accent" />{/snippet}
+				</MetricCard>
 				<MetricCard
 					label="Avg Duration"
 					value={totalSessions > 0 ? formatTime(totalTrainingTime / totalSessions) : '0m'}
-					icon="📈"
 					iconBgColor="bg-warning/20"
-				/>
+				>
+					{#snippet icon()}<TrendingUp class="text-warning" />{/snippet}
+				</MetricCard>
 			</div>
 
 			<Card class="mb-4 sm:mb-6" padding="sm">

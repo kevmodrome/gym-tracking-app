@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/ui';
-	import { ArrowLeft } from 'lucide-svelte';
+	import { ArrowLeft, Check } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { Timer } from '$lib/timer.svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
@@ -71,7 +71,7 @@
 			{#if lastCompletedSetNumber !== undefined}
 				<div class="mb-4 text-center">
 					<div class="flex items-center justify-center gap-2 text-success mb-1">
-						<span class="text-lg">✓</span>
+						<Check class="w-5 h-5" />
 						<span class="font-semibold">Set {lastCompletedSetNumber} complete!</span>
 					</div>
 					{#if lastCompletedReps !== undefined && lastCompletedWeight !== undefined}

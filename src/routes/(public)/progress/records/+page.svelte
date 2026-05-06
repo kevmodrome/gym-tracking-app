@@ -4,6 +4,7 @@
 	import type { Exercise, PersonalRecord } from '$lib/types';
 	import { Card, Modal, Button } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { Trophy } from 'lucide-svelte';
 
 	const exercisesCol = db.collection('exercises');
 	const personalRecordsCol = db.collection('personalRecords');
@@ -63,7 +64,7 @@
 {#if allPRs.length === 0}
 	<Card class="text-center" padding="lg">
 		{#snippet children()}
-			<div class="text-4xl sm:text-6xl mb-3 sm:mb-4 text-warning drop-shadow-[0_0_20px_rgba(255,149,0,0.5)]">🏆</div>
+			<Trophy class="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-pr drop-shadow-[0_0_20px_rgba(255,209,102,0.5)]" />
 			<h2 class="text-xl sm:text-2xl font-bold text-text-primary mb-2">No Personal Records Yet</h2>
 			<p class="text-sm sm:text-base text-text-secondary">
 				Start logging your workouts to track your personal records!
@@ -83,7 +84,7 @@
 							>
 								<div class="flex items-center gap-2 sm:gap-3">
 									<div class="w-9 h-9 sm:w-10 sm:h-10 bg-warning text-bg rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-[0_0_15px_rgba(255,149,0,0.4)]">
-										🏆
+										<Trophy class="w-5 h-5" />
 									</div>
 									<div>
 										<p class="font-semibold text-text-primary text-sm sm:text-base">
@@ -136,7 +137,7 @@
 							</p>
 						</div>
 						{#if i === 0}
-							<span class="text-xl sm:text-2xl drop-shadow-[0_0_10px_rgba(255,149,0,0.5)]">🏆</span>
+							<Trophy class="w-5 h-5 sm:w-6 sm:h-6 text-pr drop-shadow-[0_0_10px_rgba(255,209,102,0.5)]" />
 						{/if}
 					</div>
 				{/each}

@@ -5,7 +5,7 @@
 	import { db } from '$lib/db';
 	import type { Session, Workout } from '$lib/types';
 	import { calculatePersonalRecords } from '$lib/prUtils';
-	import { Search, X, ChevronDown } from 'lucide-svelte';
+	import { Search, X, ChevronDown, Calendar, Timer, Dumbbell, Check } from 'lucide-svelte';
 	import { Button, Card, Modal, ConfirmDialog, Select, TextInput, Textarea, InfoBox, SearchInput, NumberSpinner } from '$lib/ui';
 	import type { SessionExercise, ExerciseSet } from '$lib/types';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
@@ -371,15 +371,15 @@
 								{/if}
 								<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
 									<div class="flex items-center gap-2">
-										<span class="text-text-muted">📅</span>
+										<Calendar class="w-4 h-4 text-text-muted" />
 										<span class="text-sm text-text-secondary">{formatDate(session.date)}</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<span class="text-text-muted">⏱️</span>
+										<Timer class="w-4 h-4 text-text-muted" />
 										<span class="text-sm text-text-secondary">{formatDuration(session.duration)}</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<span class="text-text-muted">💪</span>
+										<Dumbbell class="w-4 h-4 text-text-muted" />
 										<span class="text-sm text-text-secondary">{getSessionSummary(session)}</span>
 									</div>
 								</div>
@@ -475,7 +475,7 @@
 												class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors {set.completed ? 'bg-success text-bg' : 'bg-surface text-text-muted border border-border'}"
 											>
 												{#if set.completed}
-													<span>✓</span>
+													<Check class="w-4 h-4" />
 													<span>Set {setIndex + 1}</span>
 												{:else}
 													<span class="w-5 h-5 rounded-full border border-current"></span>
@@ -566,11 +566,15 @@
 													<td class="py-2 text-sm text-text-secondary">{set.weight} {preferencesStore.weightLabel}</td>
 													<td class="py-2 text-sm">
 														<span
-															class="px-2 py-1 rounded-full text-xs font-medium {set.completed
+															class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium {set.completed
 																? 'bg-success/20 text-success'
 																: 'bg-surface-elevated text-text-muted'}"
 														>
-															{set.completed ? '✓ Completed' : '— Skipped'}
+															{#if set.completed}
+																<Check class="w-3 h-3" /> Completed
+															{:else}
+																— Skipped
+															{/if}
 														</span>
 													</td>
 												</tr>

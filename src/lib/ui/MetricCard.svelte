@@ -1,8 +1,10 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	interface MetricCardProps {
 		label: string;
 		value: string | number;
-		icon?: string;
+		icon?: Snippet;
 		iconBgColor?: string;
 		trend?: { value: number; direction: 'up' | 'down' | 'neutral' };
 		class?: string;
@@ -37,8 +39,8 @@
 			{/if}
 		</div>
 		{#if icon}
-			<div class="w-10 h-10 sm:w-12 sm:h-12 {iconBgColor} rounded-xl flex items-center justify-center">
-				<span class="text-xl sm:text-2xl">{icon}</span>
+			<div class="w-10 h-10 sm:w-12 sm:h-12 {iconBgColor} rounded-xl flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5 sm:[&_svg]:w-6 sm:[&_svg]:h-6">
+				{@render icon()}
 			</div>
 		{/if}
 	</div>

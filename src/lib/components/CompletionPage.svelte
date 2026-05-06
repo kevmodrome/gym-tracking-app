@@ -4,6 +4,7 @@
 	import { Button, Textarea, InfoBox } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import { PartyPopper } from 'lucide-svelte';
 
 	interface CompletionPageProps {
 		sessionDuration: number;
@@ -33,7 +34,7 @@
 		<div class="max-w-md mx-auto">
 			<!-- Header -->
 			<div class="text-center mb-6">
-				<div class="text-4xl mb-2">🎉</div>
+				<PartyPopper class="w-10 h-10 mx-auto mb-2 text-accent" />
 				<h1 class="text-2xl font-bold font-display text-text-primary">
 					Workout Complete!
 				</h1>

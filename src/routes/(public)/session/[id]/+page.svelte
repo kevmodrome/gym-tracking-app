@@ -10,7 +10,7 @@
 	import CompletionPage from '$lib/components/CompletionPage.svelte';
 	import SessionOverflowMenu from '$lib/components/SessionOverflowMenu.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import { ArrowLeft, Undo, Plus, Search, Star, Check } from 'lucide-svelte';
+	import { ArrowLeft, Undo, Plus, Search, Star, Check, Timer } from 'lucide-svelte';
 	import { Button, Modal, ConfirmDialog, Textarea, NumberSpinner, TextInput } from '$lib/ui';
 
 	let { data } = $props();
@@ -803,7 +803,7 @@
 					<Plus class="w-4 h-4" />
 					<span class="hidden sm:inline">Add</span>
 				</button>
-				<span class="text-sm text-accent font-medium">⏱️ {sessionDuration}m</span>
+				<span class="text-sm text-accent font-medium inline-flex items-center gap-1"><Timer class="w-4 h-4" />{sessionDuration}m</span>
 			</div>
 
 			<SessionOverflowMenu

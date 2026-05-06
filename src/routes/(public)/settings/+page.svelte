@@ -10,7 +10,7 @@
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
-	import { Pencil } from 'lucide-svelte';
+	import { Pencil, Upload, Download } from 'lucide-svelte';
 	import { Modal } from '$lib/ui';
 
 	type SyncMember = {
@@ -428,11 +428,11 @@
 				<div class="space-y-4">
 					<div class="flex flex-col sm:flex-row gap-3">
 						<Button onclick={handleExport} disabled={showExportProgress} class="flex-1">
-							<span class="text-lg">📤</span>
+							<Upload class="w-5 h-5" />
 							<span>Export Data</span>
 						</Button>
 						<Button variant="success" onclick={showImportBackupModal} class="flex-1">
-							<span class="text-lg">📥</span>
+							<Download class="w-5 h-5" />
 							<span>Import Data</span>
 						</Button>
 					</div>

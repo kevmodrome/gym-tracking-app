@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { SessionExercise, ExerciseSet } from '$lib/types';
 	import { NumberSpinner, Button } from '$lib/ui';
-	import { Timer } from 'lucide-svelte';
+	import { Timer, Check } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 
@@ -68,7 +68,7 @@
 			<!-- Completed indicator if set was already done -->
 			{#if currentSet?.completed}
 				<div class="flex items-center gap-2 text-success mb-4">
-					<span class="text-xl">✓</span>
+					<Check class="w-5 h-5" />
 					<span class="font-medium">Set completed</span>
 				</div>
 			{/if}
@@ -92,7 +92,7 @@
 				size="lg"
 				onclick={onComplete}
 			>
-				✓ Complete
+				<Check class="w-5 h-5" /> Complete
 			</Button>
 			<Button
 				variant="secondary"
