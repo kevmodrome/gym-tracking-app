@@ -182,7 +182,7 @@
 				source: 'off',
 				barcode: pendingOffBarcode,
 				name: pickedName,
-				per100g: pickedPer100g,
+				per100g: $state.snapshot(pickedPer100g),
 				lastUsedAt: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
 			});
@@ -191,7 +191,7 @@
 				source: 'livs',
 				externalId: pickedLivsId,
 				name: pickedName,
-				per100g: pickedPer100g,
+				per100g: $state.snapshot(pickedPer100g),
 				lastUsedAt: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
 			});
@@ -222,7 +222,7 @@
 				source: 'custom',
 				barcode: pendingOffBarcode,
 				name: pickedName.trim(),
-				per100g: pickedPer100g,
+				per100g: $state.snapshot(pickedPer100g),
 				lastUsedAt: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
 			});
@@ -231,7 +231,7 @@
 			date,
 			loggedAt: new Date().toISOString(),
 			foodId,
-			inlineFood: foodId ? undefined : { name: pickedName.trim(), per100g: pickedPer100g },
+			inlineFood: foodId ? undefined : { name: pickedName.trim(), per100g: $state.snapshot(pickedPer100g) as FoodMacros },
 			grams,
 			macros,
 			note,

@@ -57,7 +57,7 @@ class NutritionProfileStore {
 			activityLevel: this.activityLevel,
 			goal: this.goal,
 			proteinPerKg: this.proteinPerKg,
-			manualOverrides: { ...this.manualOverrides },
+			manualOverrides: $state.snapshot(this.manualOverrides),
 		});
 	}
 
