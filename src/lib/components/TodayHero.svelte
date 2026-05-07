@@ -15,9 +15,10 @@
 		mode: Mode;
 		inProgress?: InProgressInfo | null;
 		lastSession?: Session | null;
+		ondiscard?: (sessionId: string) => void;
 	}
 
-	let { mode, inProgress = null, lastSession = null }: TodayHeroProps = $props();
+	let { mode, inProgress = null, lastSession = null, ondiscard }: TodayHeroProps = $props();
 
 	function formatLastSessionDate(iso: string): string {
 		const d = new Date(iso);
@@ -72,6 +73,15 @@
 				<Play class="w-5 h-5" />
 				Resume
 			</Button>
+			{#if ondiscard}
+				<button
+					type="button"
+					onclick={() => ondiscard?.(inProgress.sessionId)}
+					class="mt-3 w-full text-center text-sm font-medium text-text-muted hover:text-danger transition-colors"
+				>
+					Discard
+				</button>
+			{/if}
 		</div>
 	{:else if mode === 'repeat-last' && lastSession}
 		<div class="p-6 sm:p-8">

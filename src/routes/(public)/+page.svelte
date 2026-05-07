@@ -87,6 +87,13 @@
 		inProgressSession = null;
 	});
 
+	function discardInProgressSession(sessionId: string) {
+		if (typeof localStorage !== 'undefined') {
+			localStorage.removeItem(`gym-app-session-${sessionId}`);
+		}
+		inProgressSession = null;
+	}
+
 	const lastWorkoutDate = $derived(getLastWorkoutDate(sessions));
 
 	const lastSession = $derived(sessions.length > 0 ? sessions[0] : null);
@@ -176,6 +183,7 @@
 					mode={heroMode}
 					inProgress={inProgressSession}
 					lastSession={lastSession}
+					ondiscard={discardInProgressSession}
 				/>
 			</div>
 

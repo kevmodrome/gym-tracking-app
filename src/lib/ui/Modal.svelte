@@ -40,8 +40,7 @@
 		full: 'max-w-[95vw]'
 	};
 
-	function handleBackdropClick(e: MouseEvent) {
-		console.log('[modal] backdrop click', { target: e.target, currentTarget: e.currentTarget });
+	function handleBackdropClick(_e: MouseEvent) {
 		if (closeOnBackdrop) {
 			onclose();
 		}
@@ -54,7 +53,6 @@
 	}
 
 	function handleContainerClick(e: MouseEvent) {
-		console.log('[modal] container click', { target: e.target, currentTarget: e.currentTarget });
 		e.stopPropagation();
 	}
 

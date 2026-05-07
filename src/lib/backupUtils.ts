@@ -409,6 +409,18 @@ export async function importBackupData(
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 		await calculatePersonalRecords();
 
+		// Drop any in-progress session state. Imported sessions get new IDs, so any
+		// pre-existing `gym-app-session-*` localStorage entry now points at stale or
+		// colliding data and would leave the today page stuck on "Resume."
+		if (typeof localStorage !== 'undefined') {
+			const stale: string[] = [];
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				if (key?.startsWith('gym-app-session-')) stale.push(key);
+			}
+			for (const key of stale) localStorage.removeItem(key);
+		}
+
 		return result;
 	} catch (error) {
 		result.success = false;

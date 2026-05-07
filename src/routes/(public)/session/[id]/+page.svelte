@@ -988,7 +988,12 @@
 		title="Exit Session?"
 		message="Your progress will be saved. You can continue this session later."
 		confirmText="Exit"
-		onconfirm={() => goto('/')}
+		onconfirm={() => {
+			if (typeof localStorage !== 'undefined') {
+				localStorage.removeItem(`gym-app-session-${sessionId}`);
+			}
+			goto('/');
+		}}
 		oncancel={() => (showExitConfirm = false)}
 	/>
 
