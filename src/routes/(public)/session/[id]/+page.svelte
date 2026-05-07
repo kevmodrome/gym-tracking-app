@@ -166,7 +166,8 @@
 	}
 
 	onMount(async () => {
-		await loadSessionProgress();
+		const ok = await loadSessionProgress();
+		if (!ok) return;
 
 		if (sessionExercises.length === 0) {
 			currentView = 'picker';
@@ -201,12 +202,17 @@
 		});
 	}
 
-	async function loadSessionProgress() {
-		const row = (await db.collection('sessions').get(sessionId)) as Session | undefined;
+	async function loadSessionProgress(): Promise<boolean> {
+		let row: Session | undefined;
+		try {
+			row = (await db.collection('sessions').get(sessionId)) as Session | undefined;
+		} catch {
+			row = undefined;
+		}
 		if (!row) {
 			// Stale URL (e.g. row was deleted on another device). Bounce home.
 			goto('/');
-			return;
+			return false;
 		}
 		sessionExercises = (row.exercises ?? []).map((ex) => ({
 			...ex,
@@ -218,6 +224,7 @@
 		sessionStartTime = new Date(row.date).getTime();
 		sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000 / 60);
 		startDurationTracking();
+		return true;
 	}
 
 	// Set actions
@@ -445,8 +452,11 @@
 			duration: sessionDuration,
 			notes: sessionNotes.trim() || undefined,
 			status: 'completed',
-			currentExerciseIndex: undefined,
-			currentSetIndex: undefined,
+			// Reset to 0 (not undefined) — Tablinum's sync layer JSON-stringifies
+			// the event payload, which strips undefined keys. Sentinel values
+			// ensure peer devices replay the clear deterministically.
+			currentExerciseIndex: 0,
+			currentSetIndex: 0,
 		});
 		await calculatePersonalRecords();
 		goto('/');
