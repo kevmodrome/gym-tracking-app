@@ -8,9 +8,10 @@
 		type ImportResult
 	} from '$lib/backupUtils';
 	import { Button, Modal, Select, InfoBox } from '$lib/ui';
-	import { AlertTriangle, CheckCircle2, Sparkles, XCircle } from 'lucide-svelte';
+	import { AlertTriangle, CheckCircle2, FileUp, Sparkles, XCircle } from 'lucide-svelte';
 
 	let fileInput = $state<HTMLInputElement>();
+	let selectedFileName = $state('');
 	let errorMessage = $state('');
 	let isParsing = $state(false);
 	let isDetecting = $state(false);
@@ -46,11 +47,16 @@
 		{ value: 'merge', label: 'Merge duplicates (merge if newer)' }
 	];
 
+	function openFilePicker() {
+		fileInput?.click();
+	}
+
 	async function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
 		if (!file) return;
 
+		selectedFileName = file.name;
 		errorMessage = '';
 		isParsing = true;
 		importResult = null;
@@ -129,6 +135,7 @@
 		duplicates = null;
 		importResult = null;
 		importProgress = 0;
+		selectedFileName = '';
 		if (fileInput) {
 			fileInput.value = '';
 		}
@@ -175,21 +182,33 @@
 		{#if !backupData}
 			<div class="space-y-4">
 				<div>
-					<label for="backup-file" class="block text-sm font-medium text-text-secondary mb-2">
-						Select Backup File (JSON)
-					</label>
+					<p class="block text-sm font-medium text-text-secondary mb-2">
+						Select backup file (JSON)
+					</p>
 					<p class="text-sm text-text-muted mb-3">
 						Choose a JSON backup file previously exported from this app.
 					</p>
+					<!-- Hidden native input; we drive the file picker from a real Button so
+					     mobile WebViews and PWAs handle the click reliably and the visual
+					     matches the rest of the design system. -->
 					<input
-						id="backup-file"
 						bind:this={fileInput}
 						type="file"
 						accept=".json,application/json"
 						onchange={handleFileSelect}
-						disabled={isParsing || isImporting}
-						class="w-full px-4 py-2 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary disabled:opacity-50 disabled:cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-accent file:text-bg file:font-medium"
+						class="sr-only"
+						aria-hidden="true"
+						tabindex="-1"
 					/>
+					<Button
+						variant="secondary"
+						onclick={openFilePicker}
+						disabled={isParsing || isImporting}
+						fullWidth
+					>
+						<FileUp class="w-5 h-5" />
+						<span>{selectedFileName || 'Browse for backup file'}</span>
+					</Button>
 				</div>
 
 				{#if isParsing || isDetecting}
