@@ -8,14 +8,9 @@
 		type ImportResult
 	} from '$lib/backupUtils';
 	import { Button, Modal, Select, InfoBox } from '$lib/ui';
-	import { AlertTriangle, CheckCircle2, FileUp, Sparkles, XCircle } from 'lucide-svelte';
-
-	const browseClasses =
-		'inline-flex w-full items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 px-4 py-3 text-base min-h-[44px] bg-surface border border-border text-text-primary hover:bg-surface-elevated hover:border-border-active active:scale-[0.98] cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2 focus-within:ring-offset-bg';
-	const browseDisabledClasses = 'opacity-50 cursor-not-allowed pointer-events-none';
+	import { AlertTriangle, CheckCircle2, Sparkles, XCircle } from 'lucide-svelte';
 
 	let fileInput = $state<HTMLInputElement>();
-	let selectedFileName = $state('');
 	let errorMessage = $state('');
 	let isParsing = $state(false);
 	let isDetecting = $state(false);
@@ -56,7 +51,6 @@
 		const file = target.files?.[0];
 		if (!file) return;
 
-		selectedFileName = file.name;
 		errorMessage = '';
 		isParsing = true;
 		importResult = null;
@@ -135,7 +129,6 @@
 		duplicates = null;
 		importResult = null;
 		importProgress = 0;
-		selectedFileName = '';
 		if (fileInput) {
 			fileInput.value = '';
 		}
@@ -182,32 +175,20 @@
 		{#if !backupData}
 			<div class="space-y-4">
 				<div>
-					<p class="block text-sm font-medium text-text-secondary mb-2">
-						Select backup file (JSON)
-					</p>
+					<label for="backup-file" class="block text-sm font-medium text-text-secondary mb-2">
+						Select Backup File (JSON)
+					</label>
 					<p class="text-sm text-text-muted mb-3">
 						Choose a JSON backup file previously exported from this app.
 					</p>
-					<!-- A <label for> bound to a sr-only file input opens the OS file
-					     picker via the native label-input association. This is more
-					     reliable than calling fileInput.click() programmatically — iOS
-					     PWAs occasionally hang when the synthetic click never resolves
-					     on a hidden input. -->
-					<label
-						for="backup-file-input"
-						class="{browseClasses} {isParsing || isImporting ? browseDisabledClasses : ''}"
-					>
-						<FileUp class="w-5 h-5" />
-						<span>{selectedFileName || 'Browse for backup file'}</span>
-					</label>
 					<input
-						id="backup-file-input"
+						id="backup-file"
 						bind:this={fileInput}
 						type="file"
 						accept=".json,application/json"
 						onchange={handleFileSelect}
 						disabled={isParsing || isImporting}
-						class="sr-only"
+						class="w-full px-4 py-2 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary disabled:opacity-50 disabled:cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-accent file:text-bg file:font-medium"
 					/>
 				</div>
 
