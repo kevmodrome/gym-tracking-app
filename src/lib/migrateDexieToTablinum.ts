@@ -177,3 +177,58 @@ function deleteOldDatabase(): Promise<void> {
 		request.onerror = () => reject(request.error);
 	});
 }
+
+const IN_PROGRESS_MIGRATION_FLAG = 'gym-app-in-progress-migrated';
+const IN_PROGRESS_KEY_PREFIX = 'gym-app-session-';
+
+export async function migrateInProgressSessions(db: Tablinum<any>): Promise<void> {
+	if (typeof localStorage === 'undefined') return;
+	if (localStorage.getItem(IN_PROGRESS_MIGRATION_FLAG)) return;
+
+	const keys: string[] = [];
+	for (let i = 0; i < localStorage.length; i++) {
+		const key = localStorage.key(i);
+		if (key?.startsWith(IN_PROGRESS_KEY_PREFIX)) keys.push(key);
+	}
+
+	for (const key of keys) {
+		const raw = localStorage.getItem(key);
+		if (!raw) continue;
+		let data: any;
+		try {
+			data = JSON.parse(raw);
+		} catch {
+			localStorage.removeItem(key);
+			continue;
+		}
+
+		const start = typeof data.sessionStartTime === 'number'
+			? data.sessionStartTime
+			: Date.now();
+		const isoStart = new Date(start).toISOString();
+
+		try {
+			await db.collection('sessions').add({
+				exercises: Array.isArray(data.sessionExercises) ? data.sessionExercises : [],
+				date: isoStart,
+				duration: typeof data.sessionDuration === 'number' ? data.sessionDuration : 0,
+				notes: data.sessionNotes || undefined,
+				createdAt: isoStart,
+				status: 'in_progress',
+				currentExerciseIndex: typeof data.currentExerciseIndex === 'number'
+					? data.currentExerciseIndex
+					: undefined,
+				currentSetIndex: typeof data.currentSetIndex === 'number'
+					? data.currentSetIndex
+					: undefined,
+			});
+			localStorage.removeItem(key);
+		} catch (e) {
+			console.error('[Migration] Failed to migrate in-progress session', key, e);
+			// Leave the localStorage entry; do not set the flag below if any failed.
+			return;
+		}
+	}
+
+	localStorage.setItem(IN_PROGRESS_MIGRATION_FLAG, 'true');
+}
