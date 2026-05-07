@@ -20,43 +20,15 @@
 	let { data } = $props();
 
 	const sessionId = $derived(data.sessionId);
-	const fromSessionId = $derived(data.fromSessionId);
 
 	const exercisesCol = db.collection('exercises');
-	const sessionsCol = db.collection('sessions');
-
-	async function tryGetSession(id: string): Promise<Session | null> {
-		try {
-			return await sessionsCol.get(id) as Session;
-		} catch {
-			return null;
-		}
-	}
 
 	let exercises = $state<Exercise[]>([]);
-	let existingSession = $state<Session | null>(null);
-	let sourceSession = $state<Session | null>(null);
 
 	$effect(() => {
 		exercisesCol.get().then((data) => {
 			exercises = data as Exercise[];
 		});
-	});
-
-	$effect(() => {
-		tryGetSession(sessionId).then((data) => {
-			existingSession = data;
-		});
-	});
-
-	$effect(() => {
-		if (fromSessionId) {
-			tryGetSession(fromSessionId).then((data) => {
-				sourceSession = data;
-			});
-		} else {
-			sourceSession = null;
-		}
 	});
 
 	// Session state
@@ -193,34 +165,13 @@
 		return preferencesStore.defaultRestSeconds || 90;
 	}
 
-	onMount(() => {
-		// Initialize from source session if copying from an old session
-		if (sourceSession && sessionExercises.length === 0) {
-			sessionExercises = sourceSession.exercises.map((exercise) => ({
-				exerciseId: exercise.exerciseId,
-				exerciseName: exercise.exerciseName,
-				primaryMuscle: exercise.primaryMuscle,
-				sets: exercise.sets.map((set) => ({
-					reps: set.reps,
-					weight: set.weight,
-					completed: false
-				}))
-			}));
-		} else {
-			// Load session progress from localStorage
-			loadSessionProgress();
-		}
+	onMount(async () => {
+		await loadSessionProgress();
 
-		// If no exercises yet, show the picker to start adding
 		if (sessionExercises.length === 0) {
 			currentView = 'picker';
 		} else {
 			currentView = 'set';
-		}
-
-		if (sessionStartTime === 0) {
-			sessionStartTime = Date.now();
-			startDurationTracking();
 		}
 
 		loading = false;
@@ -241,44 +192,32 @@
 	}
 
 	// Session persistence
-	function saveSessionProgress() {
-		localStorage.setItem(
-			`gym-app-session-${sessionId}`,
-			JSON.stringify({
-				sessionExercises,
-				currentExerciseIndex,
-				currentSetIndex,
-				sessionStartTime,
-				sessionDuration,
-				sessionNotes
-			})
-		);
+	async function saveSessionProgress() {
+		await db.collection('sessions').update(sessionId, {
+			exercises: $state.snapshot(sessionExercises),
+			currentExerciseIndex,
+			currentSetIndex,
+			notes: sessionNotes || undefined,
+		});
 	}
 
-	function loadSessionProgress() {
-		const saved = localStorage.getItem(`gym-app-session-${sessionId}`);
-		if (saved) {
-			try {
-				const data = JSON.parse(saved);
-				sessionExercises = data.sessionExercises || sessionExercises;
-				sessionExercises = sessionExercises.map((ex: SessionExercise) => ({
-					...ex,
-					notes: ex.notes || undefined
-				}));
-				currentExerciseIndex = data.currentExerciseIndex || 0;
-				currentSetIndex = data.currentSetIndex || 0;
-				sessionNotes = data.sessionNotes || '';
-				if (data.sessionStartTime) {
-					sessionStartTime = data.sessionStartTime;
-					startDurationTracking();
-				}
-				if (data.sessionDuration !== undefined) {
-					sessionDuration = data.sessionDuration;
-				}
-			} catch (e) {
-				console.error('Failed to load session progress:', e);
-			}
+	async function loadSessionProgress() {
+		const row = (await db.collection('sessions').get(sessionId)) as Session | undefined;
+		if (!row) {
+			// Stale URL (e.g. row was deleted on another device). Bounce home.
+			goto('/');
+			return;
 		}
+		sessionExercises = (row.exercises ?? []).map((ex) => ({
+			...ex,
+			notes: ex.notes || undefined
+		}));
+		currentExerciseIndex = row.currentExerciseIndex ?? 0;
+		currentSetIndex = row.currentSetIndex ?? 0;
+		sessionNotes = row.notes ?? '';
+		sessionStartTime = new Date(row.date).getTime();
+		sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000 / 60);
+		startDurationTracking();
 	}
 
 	// Set actions
@@ -500,28 +439,16 @@
 
 	// Session completion
 	async function completeSession() {
-		const session: Session = {
-			id: sessionId,
-			exercises: sessionExercises,
+		await db.collection('sessions').update(sessionId, {
+			exercises: $state.snapshot(sessionExercises),
 			date: new Date().toISOString(),
 			duration: sessionDuration,
 			notes: sessionNotes.trim() || undefined,
-			createdAt: new Date().toISOString(),
-			status: 'completed'
-		};
-
-		await db.collection('sessions').add({
-			exercises: $state.snapshot(session.exercises),
-			date: session.date,
-			duration: session.duration,
-			notes: session.notes,
-			createdAt: session.createdAt,
 			status: 'completed',
+			currentExerciseIndex: undefined,
+			currentSetIndex: undefined,
 		});
 		await calculatePersonalRecords();
-
-		localStorage.removeItem(`gym-app-session-${sessionId}`);
-
 		goto('/');
 	}
 
@@ -994,12 +921,7 @@
 		title="Exit Session?"
 		message="Your progress will be saved. You can continue this session later."
 		confirmText="Exit"
-		onconfirm={() => {
-			if (typeof localStorage !== 'undefined') {
-				localStorage.removeItem(`gym-app-session-${sessionId}`);
-			}
-			goto('/');
-		}}
+		onconfirm={() => goto('/')}
 		oncancel={() => (showExitConfirm = false)}
 	/>
 

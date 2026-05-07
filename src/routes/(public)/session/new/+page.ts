@@ -1,28 +1,24 @@
 import type { PageLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/db';
-import type { Workout, SessionExercise, Exercise } from '$lib/types';
+import type { Workout, Session, SessionExercise, Exercise } from '$lib/types';
 
 export const prerender = false;
 export const ssr = false;
 
 export const load: PageLoad = async ({ url }) => {
-	// Generate a unique session ID using timestamp + random string
-	const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
 	const routineId = url.searchParams.get('routine');
 	const fromSessionId = url.searchParams.get('from');
 
-	// If a routine is requested, prefill the session in localStorage so the
-	// active session screen picks it up via its existing load logic.
-	if (routineId && typeof localStorage !== 'undefined') {
+	let initialExercises: SessionExercise[] = [];
+
+	if (routineId) {
 		try {
 			const routine = (await db.collection('workouts').get(routineId)) as Workout;
-			if (routine && routine.exercises && routine.exercises.length > 0) {
+			if (routine?.exercises?.length) {
 				const allExercises = (await db.collection('exercises').get()) as Exercise[];
 				const exerciseById = new Map(allExercises.map((ex) => [ex.id, ex]));
-
-				const sessionExercises: SessionExercise[] = routine.exercises.map((er) => {
+				initialExercises = routine.exercises.map((er) => {
 					const exercise = exerciseById.get(er.exerciseId);
 					const targetSets = Math.max(1, er.targetSets || 1);
 					return {
@@ -38,29 +34,42 @@ export const load: PageLoad = async ({ url }) => {
 						notes: er.notes || undefined
 					};
 				});
-
-				const startTime = Date.now();
-				localStorage.setItem(
-					`gym-app-session-${sessionId}`,
-					JSON.stringify({
-						sessionExercises,
-						currentExerciseIndex: 0,
-						currentSetIndex: 0,
-						sessionStartTime: startTime,
-						sessionDuration: 0,
-						sessionNotes: ''
-					})
-				);
 			}
 		} catch (e) {
 			console.error('Failed to prefill session from routine:', e);
 		}
+	} else if (fromSessionId) {
+		try {
+			const prior = (await db.collection('sessions').get(fromSessionId)) as Session;
+			if (prior?.exercises?.length) {
+				initialExercises = prior.exercises.map((ex) => ({
+					exerciseId: ex.exerciseId,
+					exerciseName: ex.exerciseName,
+					primaryMuscle: ex.primaryMuscle,
+					sets: ex.sets.map((s) => ({
+						reps: s.reps,
+						weight: s.weight,
+						completed: false
+					})),
+					notes: ex.notes
+				}));
+			}
+		} catch (e) {
+			console.error('Failed to prefill session from prior session:', e);
+		}
 	}
 
-	// Preserve the existing ?from=<sessionId> behavior by forwarding it
-	const target = fromSessionId
-		? `/session/${sessionId}?from=${encodeURIComponent(fromSessionId)}`
-		: `/session/${sessionId}`;
+	const startTime = new Date().toISOString();
+	const newId = await db.collection('sessions').add({
+		exercises: initialExercises,
+		date: startTime,
+		duration: 0,
+		notes: undefined,
+		createdAt: startTime,
+		status: 'in_progress',
+		currentExerciseIndex: 0,
+		currentSetIndex: 0,
+	});
 
-	redirect(307, target);
+	redirect(307, `/session/${newId}`);
 };
