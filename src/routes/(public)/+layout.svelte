@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { onNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Settings } from 'lucide-svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
@@ -62,15 +61,6 @@
 
 <Toast />
 <PWAInstallPrompt />
-{#if page.url.pathname !== '/onboarding'}
-	<a
-		href="/settings"
-		aria-label="Settings"
-		class="settings-fab md:hidden flex items-center justify-center bg-surface border border-border text-text-muted hover:text-text-primary rounded-full transition-colors duration-200"
-	>
-		<Settings class="w-5 h-5" strokeWidth={2} />
-	</a>
-{/if}
 <div
 	class="w-full min-w-[320px] min-h-screen bg-bg"
 	class:pb-16={page.url.pathname !== '/onboarding'}
@@ -82,14 +72,3 @@
 {#if page.url.pathname !== '/onboarding'}
 	<Navigation />
 {/if}
-
-<style>
-	.settings-fab {
-		position: fixed;
-		top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
-		right: 0.75rem;
-		z-index: 30;
-		width: 44px;
-		height: 44px;
-	}
-</style>

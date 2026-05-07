@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { ButtonGroup, PageHeader } from '$lib/ui';
+	import { ButtonGroup, Page } from '$lib/ui';
 
-	let { children } = $props();
+	let { children: subroute } = $props();
 
 	const tabOptions = [
 		{ value: 'activity', label: 'Activity' },
@@ -23,20 +23,17 @@
 	<title>Progress - Gym Recording App</title>
 </svelte:head>
 
-<div class="min-h-screen bg-bg p-3 sm:p-4 md:p-6 lg:p-8">
-	<div class="max-w-7xl mx-auto w-full">
-		<PageHeader title="Progress">
-			{#snippet actions()}
-				<ButtonGroup
-					options={tabOptions}
-					value={currentTab}
-					onchange={(v) => {
-						goto(`/progress/${v}`);
-					}}
-				/>
-			{/snippet}
-		</PageHeader>
-
-		{@render children()}
-	</div>
-</div>
+<Page title="Progress" maxWidth="7xl">
+	{#snippet actions()}
+		<ButtonGroup
+			options={tabOptions}
+			value={currentTab}
+			onchange={(v) => {
+				goto(`/progress/${v}`);
+			}}
+		/>
+	{/snippet}
+	{#snippet children()}
+		{@render subroute()}
+	{/snippet}
+</Page>

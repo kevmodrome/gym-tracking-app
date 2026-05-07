@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Apple, Droplet, Drumstick, Flame, Minus, Plus, Star, Trash2, Wheat } from 'lucide-svelte';
-	import { Button, Card, EmptyState, Modal, NumberSpinner, PageHeader, TextInput, Toggle } from '$lib/ui';
+	import { Button, Card, EmptyState, Modal, NumberSpinner, Page, TextInput, Toggle } from '$lib/ui';
 	import { ScannerMark } from '$lib/icons';
 	import DateNavigator from '$lib/components/DateNavigator.svelte';
 	import MacroRings from '$lib/components/MacroRings.svelte';
@@ -321,10 +321,9 @@
 	];
 </script>
 
-<div class="min-h-screen bg-bg p-4 md:p-8">
-	<div class="max-w-2xl mx-auto space-y-4 pb-24">
-		<PageHeader title="Fuel" />
-
+<Page title="Fuel" maxWidth="2xl">
+	{#snippet children()}
+		<div class="space-y-4 pb-8">
 		<DateNavigator {date} onChange={(d) => date = d} />
 
 		<!-- Hero macro rings: focal lime kcal moment -->
@@ -513,8 +512,9 @@
 				Recents and favorites will appear here as you log meals.
 			</div>
 		{/if}
-	</div>
-</div>
+		</div>
+	{/snippet}
+</Page>
 
 <Modal open={addOpen} title="Add food" onclose={closeAdd}>
 	{#snippet children()}

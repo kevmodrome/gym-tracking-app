@@ -13,7 +13,7 @@
 		Select,
 		Toggle,
 		Card,
-		PageHeader,
+		Page,
 		NumberSpinner,
 		ConfirmDialog,
 		Modal
@@ -205,10 +205,9 @@
 	const isConnected = $derived((relayStatus.connectedUrls?.length ?? 0) > 0);
 </script>
 
-<div class="min-h-screen bg-bg p-4 md:p-8">
-	<div class="max-w-2xl mx-auto space-y-6">
-		<PageHeader title="Settings" />
-
+<Page title="Settings" maxWidth="3xl">
+	{#snippet children()}
+		<div class="space-y-6">
 		<!-- Profile -->
 		<Card>
 			{#snippet children()}
@@ -684,5 +683,6 @@
 		{#if showJoinInviteModal}
 			<JoinInviteModal onclose={() => (showJoinInviteModal = false)} />
 		{/if}
-	</div>
-</div>
+		</div>
+	{/snippet}
+</Page>

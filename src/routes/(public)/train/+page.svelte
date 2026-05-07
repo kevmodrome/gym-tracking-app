@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { db } from '$lib/db';
 	import type { Workout, Session } from '$lib/types';
-	import { Button, Card, EmptyState, PageHeader, ConfirmDialog } from '$lib/ui';
+	import { Button, Card, EmptyState, Page, ConfirmDialog } from '$lib/ui';
 	import { Plus, Play, Pencil, Copy, Trash2, ChevronRight, Dumbbell, ListChecks } from 'lucide-svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 
@@ -123,16 +123,14 @@
 	}
 </script>
 
-<div class="container mx-auto max-w-3xl px-4 pb-12">
-	<PageHeader title="Train">
-		{#snippet actions()}
-			<Button variant="secondary" size="sm" onclick={createNewRoutine}>
-				<Plus class="w-4 h-4" />
-				New routine
-			</Button>
-		{/snippet}
-	</PageHeader>
-
+<Page title="Train" maxWidth="5xl">
+	{#snippet actions()}
+		<Button variant="secondary" size="sm" onclick={createNewRoutine}>
+			<Plus class="w-4 h-4" />
+			New routine
+		</Button>
+	{/snippet}
+	{#snippet children()}
 	<!-- Routines section -->
 	<section class="mb-8">
 		<div class="flex items-center justify-between mb-4">
@@ -295,7 +293,8 @@
 			</div>
 		{/if}
 	</section>
-</div>
+	{/snippet}
+</Page>
 
 <ConfirmDialog
 	open={confirmDeleteId !== null}

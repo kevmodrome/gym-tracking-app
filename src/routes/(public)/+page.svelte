@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { calculateDailyWorkouts, getLastWorkoutDate, calculateStreakDays } from '$lib/dashboardMetrics';
-	import { Numeric, EmptyState, Card } from '$lib/ui';
+	import { Numeric, EmptyState, Card, Page } from '$lib/ui';
 	import { Check, Scale, UtensilsCrossed } from 'lucide-svelte';
 	import { DumbbellMark } from '$lib/icons';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
@@ -144,8 +144,8 @@
 	}
 </script>
 
-<div class="min-h-screen bg-bg p-4 md:p-6 lg:p-8">
-	<div class="max-w-7xl mx-auto w-full">
+<Page title="Today" maxWidth="7xl">
+	{#snippet children()}
 		{#if isFullyEmpty}
 			<Card padding="lg" class="mb-6">
 				{#snippet children()}
@@ -303,5 +303,5 @@
 				</Card>
 			</section>
 		{/if}
-	</div>
-</div>
+	{/snippet}
+</Page>
