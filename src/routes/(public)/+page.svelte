@@ -90,15 +90,18 @@
 	}
 
 	async function discardAndStart() {
+		const href = pendingStartHref;
 		if (inProgressRow) {
 			await db.collection('sessions').delete(inProgressRow.id);
 		}
 		showStartConfirm = false;
-		if (pendingStartHref) goto(pendingStartHref);
+		pendingStartHref = null;
+		if (href) goto(href);
 	}
 
 	function resumeInsteadOfStart() {
 		showStartConfirm = false;
+		pendingStartHref = null;
 		if (inProgressRow) goto(`/session/${inProgressRow.id}`);
 	}
 
