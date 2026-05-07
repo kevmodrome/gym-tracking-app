@@ -571,7 +571,8 @@
 
 	async function getLastWeightForExercise(exerciseId: string): Promise<SetWeight> {
 		// Get all sessions sorted by date descending (most recent first)
-		const sessions = await db.collection('sessions').orderBy('date').reverse().get() as Session[];
+		const sessions = (await db.collection('sessions').orderBy('date').reverse().get() as Session[])
+			.filter((s) => s.status === 'completed');
 
 		for (const session of sessions) {
 			const exerciseData = session.exercises.find((e) => e.exerciseId === exerciseId);
