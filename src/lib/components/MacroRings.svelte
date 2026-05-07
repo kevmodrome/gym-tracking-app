@@ -42,7 +42,7 @@
 			key: 'kcal',
 			label: 'kcal',
 			unit: 'kcal',
-			radius: 86,
+			radius: 110,
 			stroke: kcalStrokeVar,
 			current: current.kcal,
 			target: target.kcal,
@@ -51,7 +51,7 @@
 			key: 'protein',
 			label: 'P',
 			unit: 'g',
-			radius: 70,
+			radius: 88,
 			stroke: 'var(--color-secondary)',
 			current: current.protein,
 			target: target.protein,
@@ -60,7 +60,7 @@
 			key: 'carbs',
 			label: 'C',
 			unit: 'g',
-			radius: 54,
+			radius: 66,
 			stroke: 'var(--color-warning)',
 			current: current.carbs,
 			target: target.carbs,
@@ -69,15 +69,15 @@
 			key: 'fat',
 			label: 'F',
 			unit: 'g',
-			radius: 38,
+			radius: 44,
 			stroke: 'var(--color-success)',
 			current: current.fat,
 			target: target.fat,
 		},
 	]);
 
-	const STROKE_WIDTH = 10;
-	const SIZE = 220;
+	const STROKE_WIDTH = 14;
+	const SIZE = 260;
 	const CENTER = SIZE / 2;
 </script>
 
