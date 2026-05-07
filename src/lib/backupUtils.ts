@@ -410,9 +410,18 @@ export async function importBackupData(
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 		await calculatePersonalRecords();
 
-		// Drop any in-progress session state. Imported sessions get new IDs, so any
-		// pre-existing `gym-app-session-*` localStorage entry now points at stale or
-		// colliding data and would leave the today page stuck on "Resume."
+		// Drop any in-progress session rows. Imported sessions arrive as completed,
+		// so any pre-existing in-progress row is now stale relative to the imported
+		// snapshot and would leave the Today page stuck on "Resume."
+		const allRows = (await db.collection('sessions').get()) as Session[];
+		for (const row of allRows) {
+			if (row.status === 'in_progress') {
+				await db.collection('sessions').delete(row.id);
+			}
+		}
+
+		// Belt-and-suspenders: also clear localStorage entries that may exist on
+		// intermediate versions where in-progress lived in localStorage.
 		if (typeof localStorage !== 'undefined') {
 			const stale: string[] = [];
 			for (let i = 0; i < localStorage.length; i++) {
