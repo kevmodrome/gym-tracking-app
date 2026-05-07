@@ -5,9 +5,11 @@
 	import { DumbbellMark } from '$lib/icons';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { db } from '$lib/db';
+	import { goto } from '$app/navigation';
 	import TodayHero from '$lib/components/TodayHero.svelte';
 	import RoutineCard from '$lib/components/RoutineCard.svelte';
 	import StreakBadge from '$lib/components/StreakBadge.svelte';
+	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import type { Session, Workout, Weight, FoodEntry } from '$lib/types';
 
 	const sessionsCol = db.collection('sessions');
@@ -73,6 +75,31 @@
 
 	async function discardInProgressSession(sessionId: string) {
 		await db.collection('sessions').delete(sessionId);
+	}
+
+	let showStartConfirm = $state(false);
+	let pendingStartHref = $state<string | null>(null);
+
+	function requestStart(href: string) {
+		if (inProgressRow) {
+			pendingStartHref = href;
+			showStartConfirm = true;
+			return;
+		}
+		goto(href);
+	}
+
+	async function discardAndStart() {
+		if (inProgressRow) {
+			await db.collection('sessions').delete(inProgressRow.id);
+		}
+		showStartConfirm = false;
+		if (pendingStartHref) goto(pendingStartHref);
+	}
+
+	function resumeInsteadOfStart() {
+		showStartConfirm = false;
+		if (inProgressRow) goto(`/session/${inProgressRow.id}`);
 	}
 
 	const lastWorkoutDate = $derived(getLastWorkoutDate(sessions));
@@ -165,6 +192,7 @@
 					inProgress={inProgressSession}
 					lastSession={lastSession}
 					ondiscard={discardInProgressSession}
+					onstart={requestStart}
 				/>
 			</div>
 
@@ -294,3 +322,13 @@
 		{/if}
 	{/snippet}
 </Page>
+
+<ConfirmDialog
+	open={showStartConfirm}
+	title="Workout in progress"
+	message="You have a workout in progress. Discard it and start fresh, or resume?"
+	confirmText="Discard & start fresh"
+	cancelText="Resume"
+	onconfirm={discardAndStart}
+	oncancel={resumeInsteadOfStart}
+/>

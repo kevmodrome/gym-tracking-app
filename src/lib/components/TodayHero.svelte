@@ -16,9 +16,10 @@
 		inProgress?: InProgressInfo | null;
 		lastSession?: Session | null;
 		ondiscard?: (sessionId: string) => void;
+		onstart?: (href: string) => void;
 	}
 
-	let { mode, inProgress = null, lastSession = null, ondiscard }: TodayHeroProps = $props();
+	let { mode, inProgress = null, lastSession = null, ondiscard, onstart }: TodayHeroProps = $props();
 
 	function formatLastSessionDate(iso: string): string {
 		const d = new Date(iso);
@@ -95,15 +96,27 @@
 				Last done {formatLastSessionDate(lastSession.date)} ·
 				{lastSession.exercises.length} exercise{lastSession.exercises.length === 1 ? '' : 's'}
 			</p>
-			<Button
-				variant="primary"
-				size="lg"
-				href={`/session/new?from=${lastSession.id}`}
-				fullWidth
-			>
-				<RotateCcw class="w-5 h-5" />
-				Start workout
-			</Button>
+			{#if onstart}
+				<Button
+					variant="primary"
+					size="lg"
+					onclick={() => onstart?.(`/session/new?from=${lastSession.id}`)}
+					fullWidth
+				>
+					<RotateCcw class="w-5 h-5" />
+					Start workout
+				</Button>
+			{:else}
+				<Button
+					variant="primary"
+					size="lg"
+					href={`/session/new?from=${lastSession.id}`}
+					fullWidth
+				>
+					<RotateCcw class="w-5 h-5" />
+					Start workout
+				</Button>
+			{/if}
 		</div>
 	{:else if mode === 'done-today'}
 		<div class="p-6 sm:p-8">
@@ -116,12 +129,25 @@
 				</h2>
 			</div>
 			<p class="text-sm text-text-secondary mb-2">Nice work. Rest up.</p>
-			<a
-				href="/session/new"
-				class="text-sm font-semibold text-focal hover:underline"
-			>
-				Start another →
-			</a>
+			{#if onstart}
+				<a
+					href="/session/new"
+					onclick={(e) => {
+						e.preventDefault();
+						onstart?.('/session/new');
+					}}
+					class="text-sm font-semibold text-focal hover:underline"
+				>
+					Start another →
+				</a>
+			{:else}
+				<a
+					href="/session/new"
+					class="text-sm font-semibold text-focal hover:underline"
+				>
+					Start another →
+				</a>
+			{/if}
 		</div>
 	{:else}
 		<div class="p-6 sm:p-8">
@@ -132,10 +158,17 @@
 			<p class="text-sm text-text-secondary mb-6">
 				Pick exercises as you go, or kick off from a saved routine below.
 			</p>
-			<Button variant="primary" size="lg" href="/session/new" fullWidth>
-				<Play class="w-5 h-5" />
-				Start workout
-			</Button>
+			{#if onstart}
+				<Button variant="primary" size="lg" onclick={() => onstart?.('/session/new')} fullWidth>
+					<Play class="w-5 h-5" />
+					Start workout
+				</Button>
+			{:else}
+				<Button variant="primary" size="lg" href="/session/new" fullWidth>
+					<Play class="w-5 h-5" />
+					Start workout
+				</Button>
+			{/if}
 		</div>
 	{/if}
 </div>
