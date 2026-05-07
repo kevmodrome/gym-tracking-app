@@ -627,7 +627,7 @@
 		<!-- Export progress -->
 		{#if showExportProgress}
 			<div
-				class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50"
+				class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-[60]"
 				role="presentation"
 			>
 				<div class="bg-surface border border-border rounded-xl shadow-xl max-w-md w-full mx-4 p-6">

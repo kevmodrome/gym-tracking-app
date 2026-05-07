@@ -1,6 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap');
 @import "tailwindcss";
 
+/*
+ * Z-INDEX SCALE
+ * 20: in-page fixed chrome (PageHeader)
+ * 30: in-page sticky controls (SetPage action stack)
+ * 40: above-nav stickies (TimerPage compact bar, ActionBar)
+ * 50: bottom + top Navigation
+ * 55: above-nav non-modal overlays (PWA install prompt, TimerPage expanded full-screen)
+ * 60: modals & confirm dialogs (above everything except toasts)
+ * 100: toasts
+ */
+
 @theme {
 	/* Background colors */
 	--color-bg: #0a0b0f;

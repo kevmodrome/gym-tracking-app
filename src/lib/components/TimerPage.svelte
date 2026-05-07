@@ -126,7 +126,7 @@
 {:else}
 	<!-- Expanded "zen" mode: full-screen overlay -->
 	<div
-		class="timer-expanded fixed inset-0 z-50 bg-bg flex flex-col"
+		class="timer-expanded fixed inset-0 z-[55] bg-bg flex flex-col"
 		role="dialog"
 		aria-modal="true"
 		aria-label="Rest timer"
