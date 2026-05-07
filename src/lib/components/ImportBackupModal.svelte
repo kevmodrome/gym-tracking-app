@@ -10,6 +10,10 @@
 	import { Button, Modal, Select, InfoBox } from '$lib/ui';
 	import { AlertTriangle, CheckCircle2, FileUp, Sparkles, XCircle } from 'lucide-svelte';
 
+	const browseClasses =
+		'inline-flex w-full items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 px-4 py-3 text-base min-h-[44px] bg-surface border border-border text-text-primary hover:bg-surface-elevated hover:border-border-active active:scale-[0.98] cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2 focus-within:ring-offset-bg';
+	const browseDisabledClasses = 'opacity-50 cursor-not-allowed pointer-events-none';
+
 	let fileInput = $state<HTMLInputElement>();
 	let selectedFileName = $state('');
 	let errorMessage = $state('');
@@ -46,10 +50,6 @@
 		{ value: 'replace', label: 'Replace duplicates' },
 		{ value: 'merge', label: 'Merge duplicates (merge if newer)' }
 	];
-
-	function openFilePicker() {
-		fileInput?.click();
-	}
 
 	async function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -188,27 +188,27 @@
 					<p class="text-sm text-text-muted mb-3">
 						Choose a JSON backup file previously exported from this app.
 					</p>
-					<!-- Hidden native input; we drive the file picker from a real Button so
-					     mobile WebViews and PWAs handle the click reliably and the visual
-					     matches the rest of the design system. -->
+					<!-- A <label for> bound to a sr-only file input opens the OS file
+					     picker via the native label-input association. This is more
+					     reliable than calling fileInput.click() programmatically — iOS
+					     PWAs occasionally hang when the synthetic click never resolves
+					     on a hidden input. -->
+					<label
+						for="backup-file-input"
+						class="{browseClasses} {isParsing || isImporting ? browseDisabledClasses : ''}"
+					>
+						<FileUp class="w-5 h-5" />
+						<span>{selectedFileName || 'Browse for backup file'}</span>
+					</label>
 					<input
+						id="backup-file-input"
 						bind:this={fileInput}
 						type="file"
 						accept=".json,application/json"
 						onchange={handleFileSelect}
-						class="sr-only"
-						aria-hidden="true"
-						tabindex="-1"
-					/>
-					<Button
-						variant="secondary"
-						onclick={openFilePicker}
 						disabled={isParsing || isImporting}
-						fullWidth
-					>
-						<FileUp class="w-5 h-5" />
-						<span>{selectedFileName || 'Browse for backup file'}</span>
-					</Button>
+						class="sr-only"
+					/>
 				</div>
 
 				{#if isParsing || isDetecting}
