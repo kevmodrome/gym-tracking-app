@@ -4,6 +4,7 @@ import type {
 	FoodEntry,
 	FoodMacros,
 	NutritionProfile,
+	WaterEntry,
 	Weight,
 } from '$lib/types';
 
@@ -45,6 +46,59 @@ export async function touchFood(id: string): Promise<void> {
 
 export async function deleteFood(id: string): Promise<void> {
 	await db.collection('foods').delete(id);
+}
+
+export async function setFoodFavorite(id: string, favorite: boolean): Promise<void> {
+	await db.collection('foods').update(id, { favorite });
+}
+
+export async function listFavoriteFoods(limit = 50): Promise<Food[]> {
+	const all = await db.collection('foods').get() as Food[];
+	return all
+		.filter((f) => f.favorite === true)
+		.sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))
+		.slice(0, limit);
+}
+
+/**
+ * Recents: distinct foods the user has logged most recently, deduped by foodId
+ * (or inlineFood.name when no foodId). Returns lightweight pick records along
+ * with the source food/inline data needed to open FoodEntryForm.
+ */
+export type RecentFoodPick = {
+	key: string;
+	name: string;
+	per100g: FoodMacros;
+	foodId?: string;
+	favorite?: boolean;
+};
+
+export async function listRecentFoods(date: string | null, limit = 20): Promise<RecentFoodPick[]> {
+	void date; // recents look at all dates, most-recent first
+	const allEntries = await db.collection('foodEntries').get() as FoodEntry[];
+	const sorted = [...allEntries].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
+	const allFoods = await db.collection('foods').get() as Food[];
+	const foodsById = new Map(allFoods.map((f) => [f.id, f]));
+	const seen = new Set<string>();
+	const out: RecentFoodPick[] = [];
+	for (const e of sorted) {
+		const food = e.foodId ? foodsById.get(e.foodId) : undefined;
+		const name = food?.name ?? e.inlineFood?.name ?? 'Entry';
+		const key = e.foodId ?? `inline:${name.toLowerCase()}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		const per100g: FoodMacros | undefined = food?.per100g ?? e.inlineFood?.per100g;
+		if (!per100g) continue;
+		out.push({
+			key,
+			name,
+			per100g,
+			foodId: e.foodId,
+			favorite: food?.favorite,
+		});
+		if (out.length >= limit) break;
+	}
+	return out;
 }
 
 // ---------- foodEntries ----------
@@ -135,4 +189,28 @@ export async function upsertNutritionProfile(
 	} else {
 		await db.collection('nutritionProfile').add({ ...partial, updatedAt });
 	}
+}
+
+// ---------- water ----------
+export async function getWaterForDate(date: string): Promise<WaterEntry | null> {
+	const all = await db.collection('water').where('date').equals(date).get() as WaterEntry[];
+	return all[0] ?? null;
+}
+
+export async function setWaterCountForDate(date: string, count: number): Promise<number> {
+	const safe = Math.max(0, Math.round(count));
+	const existing = await getWaterForDate(date);
+	const updatedAt = new Date().toISOString();
+	if (existing) {
+		await db.collection('water').update(existing.id, { count: safe, updatedAt });
+	} else {
+		await db.collection('water').add({ date, count: safe, updatedAt });
+	}
+	return safe;
+}
+
+export async function incrementWaterForDate(date: string, delta: number): Promise<number> {
+	const existing = await getWaterForDate(date);
+	const next = Math.max(0, (existing?.count ?? 0) + delta);
+	return await setWaterCountForDate(date, next);
 }

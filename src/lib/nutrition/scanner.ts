@@ -58,14 +58,52 @@ async function startWithZxing(
 	return { stop: () => controls.stop() };
 }
 
+export class ScannerError extends Error {
+	constructor(
+		message: string,
+		public readonly reason: 'insecure-context' | 'no-camera-api' | 'permission' | 'no-camera' | 'unknown',
+	) {
+		super(message);
+		this.name = 'ScannerError';
+	}
+}
+
 export async function startScanner(
 	video: HTMLVideoElement,
 	onResult: (r: ScanResult) => void,
 ): Promise<ScanController> {
-	const stream = await navigator.mediaDevices.getUserMedia({
-		video: { facingMode: 'environment' },
-		audio: false,
-	});
+	if (typeof window !== 'undefined' && window.isSecureContext === false) {
+		throw new ScannerError(
+			'Camera access requires HTTPS. Open the deployed app, or run the dev server over HTTPS.',
+			'insecure-context',
+		);
+	}
+	if (!navigator?.mediaDevices?.getUserMedia) {
+		throw new ScannerError(
+			"This browser doesn't expose camera access. Try Safari on iOS, Chrome on Android, or a desktop browser.",
+			'no-camera-api',
+		);
+	}
+
+	let stream: MediaStream;
+	try {
+		stream = await navigator.mediaDevices.getUserMedia({
+			// Prefer the rear camera when available, but don't require it —
+			// desktop webcams and front-facing-only devices still work.
+			video: { facingMode: { ideal: 'environment' } },
+			audio: false,
+		});
+	} catch (e) {
+		const err = e as DOMException;
+		if (err?.name === 'NotAllowedError') {
+			throw new ScannerError('Camera permission denied. Enable it in your browser settings.', 'permission');
+		}
+		if (err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError') {
+			throw new ScannerError('No camera found on this device.', 'no-camera');
+		}
+		throw new ScannerError(err?.message || 'Could not start the camera.', 'unknown');
+	}
+
 	video.srcObject = stream;
 	await video.play();
 

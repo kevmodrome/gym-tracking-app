@@ -31,12 +31,13 @@ export async function init() {
 	}
 
 	const { db, clearStoredInvite, initializeExercises, deduplicateExercises } = await import('$lib/db');
-	const { migrateFromDexieIfNeeded } = await import('$lib/migrateDexieToTablinum');
+	const { migrateFromDexieIfNeeded, migrateInProgressSessions } = await import('$lib/migrateDexieToTablinum');
 	const { preferencesStore } = await import('$lib/stores/preferences.svelte');
 
 	await db.ready;
 	clearStoredInvite();
 	await migrateFromDexieIfNeeded(db);
+	await migrateInProgressSessions(db);
 	await initializeExercises();
 	await deduplicateExercises();
 	await preferencesStore.load();

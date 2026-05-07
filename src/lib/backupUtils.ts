@@ -59,7 +59,8 @@ export async function exportBackupData(
 		onProgress?.(currentItems, totalItems, 'Loading workouts...');
 
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');
-		const sessions = await db.collection('sessions').get() as Session[];
+		const sessions = (await db.collection('sessions').get() as Session[])
+			.filter((s) => s.status === 'completed');
 		currentItems += sessions.length;
 		totalItems += sessions.length;
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');
@@ -385,7 +386,7 @@ export async function importBackupData(
 					exerciseId: exerciseIdMap.get(ex.exerciseId) ?? ex.exerciseId
 				}))
 			};
-			const cleanData = pickSessionFields(remappedSession);
+			const cleanData = { ...pickSessionFields(remappedSession), status: 'completed' };
 			const existing = sessionByDate.get(rawSession.date);
 			if (existing) {
 				result.duplicates.sessions.push(`Session from ${new Date(rawSession.date).toLocaleDateString()}`);
@@ -408,6 +409,27 @@ export async function importBackupData(
 		// references would be stale.
 		if (signal?.aborted) throw new Error('Import cancelled by user');
 		await calculatePersonalRecords();
+
+		// Drop any in-progress session rows. Imported sessions arrive as completed,
+		// so any pre-existing in-progress row is now stale relative to the imported
+		// snapshot and would leave the Today page stuck on "Resume."
+		const allRows = (await db.collection('sessions').get()) as Session[];
+		for (const row of allRows) {
+			if (row.status === 'in_progress') {
+				await db.collection('sessions').delete(row.id);
+			}
+		}
+
+		// Belt-and-suspenders: also clear localStorage entries that may exist on
+		// intermediate versions where in-progress lived in localStorage.
+		if (typeof localStorage !== 'undefined') {
+			const stale: string[] = [];
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				if (key?.startsWith('gym-app-session-')) stale.push(key);
+			}
+			for (const key of stale) localStorage.removeItem(key);
+		}
 
 		return result;
 	} catch (error) {

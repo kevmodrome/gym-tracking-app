@@ -2,7 +2,8 @@ import type { Session, PersonalRecord, PRHistory } from './types';
 import { db } from './db';
 
 export async function calculatePersonalRecords(): Promise<void> {
-	const sessions = await db.collection('sessions').get();
+	const sessions = (await db.collection('sessions').get() as Session[])
+		.filter((s) => s.status === 'completed');
 	const exercisePRs: Map<string, Map<number, Omit<PersonalRecord, 'id'>>> = new Map();
 
 	sessions.forEach((session) => {
@@ -15,6 +16,9 @@ export async function calculatePersonalRecords(): Promise<void> {
 
 			exercise.sets.forEach((set) => {
 				if (!set.completed) return;
+				if (set.warmup) return;
+				// PRs are weight-based; bodyweight sets cannot establish a numeric PR.
+				if (typeof set.weight !== 'number' || !Number.isFinite(set.weight)) return;
 
 				const currentPR = prMap.get(set.reps);
 
@@ -61,7 +65,8 @@ export async function getPRHistoryForExercise(
 	exerciseId: string,
 	reps: number
 ): Promise<PRHistory[]> {
-	const sessions = await db.collection('sessions').get();
+	const sessions = (await db.collection('sessions').get() as Session[])
+		.filter((s) => s.status === 'completed');
 	const history: PRHistory[] = [];
 
 	sessions.forEach((session) => {
@@ -69,7 +74,13 @@ export async function getPRHistoryForExercise(
 		if (!exercise) return;
 
 		exercise.sets.forEach((set) => {
-			if (set.completed && set.reps === reps) {
+			if (
+				set.completed &&
+				!set.warmup &&
+				set.reps === reps &&
+				typeof set.weight === 'number' &&
+				Number.isFinite(set.weight)
+			) {
 				history.push({
 					reps: set.reps,
 					weight: set.weight,
@@ -97,6 +108,8 @@ export async function checkForNewPRs(
 
 	exercise.sets.forEach((set) => {
 		if (!set.completed) return;
+		if (set.warmup) return;
+		if (typeof set.weight !== 'number' || !Number.isFinite(set.weight)) return;
 
 		const existingPR = existingPRs.find((pr) => pr.reps === set.reps);
 

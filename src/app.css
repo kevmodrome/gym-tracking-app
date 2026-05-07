@@ -1,6 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap');
 @import "tailwindcss";
 
+/*
+ * Z-INDEX SCALE
+ * 20: in-page fixed chrome (PageHeader)
+ * 30: in-page sticky controls (SetPage action stack)
+ * 40: above-nav stickies (TimerPage compact bar, ActionBar)
+ * 50: bottom + top Navigation
+ * 55: above-nav non-modal overlays (PWA install prompt, TimerPage expanded full-screen)
+ * 60: modals & confirm dialogs (above everything except toasts)
+ * 100: toasts
+ */
+
 @theme {
 	/* Background colors */
 	--color-bg: #0a0b0f;
@@ -24,6 +35,11 @@
 	--color-danger-muted: #cc3945;
 	--color-success: #00d68f;
 	--color-success-muted: #00a870;
+
+	/* Semantic role tokens (alias / extend the palette above) */
+	--color-focal: #c5ff00;
+	--color-streak: #ff6b35;
+	--color-pr: #ffd166;
 
 	/* Text colors */
 	--color-text-primary: #ffffff;
@@ -60,6 +76,18 @@ html, body {
 body {
 	min-height: 100vh;
 	background-color: var(--color-bg);
+	position: relative;
+}
+
+/* Subtle SVG-noise grain layered behind everything */
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	opacity: 0.035;
+	pointer-events: none;
+	z-index: -1;
 }
 
 /* Noise texture overlay */
@@ -212,7 +240,27 @@ html.stable-header-transition::view-transition-new(page-header) {
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
 	::view-transition-old(root),
-	::view-transition-new(root) {
+	::view-transition-new(root),
+	::view-transition-old(page-header),
+	::view-transition-new(page-header) {
 		animation: none;
+	}
+
+	.animate-pulse-glow,
+	.animate-pulse-glow-warning {
+		animation: none;
+	}
+
+	.transition-glow {
+		transition: none;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
 	}
 }

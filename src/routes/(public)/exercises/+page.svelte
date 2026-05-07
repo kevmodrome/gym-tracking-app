@@ -2,7 +2,7 @@
 	import { db, seedDefaultExercises } from '$lib/db';
 	import type { Exercise, ExerciseCategory, MuscleGroup, PersonalRecord } from '$lib/types';
 	import { getAllPersonalRecords, getRepRangeLabel } from '$lib/prUtils';
-	import { Search, X, Plus } from 'lucide-svelte';
+	import { Search, X, Plus, Trophy } from 'lucide-svelte';
 	import { Button, Card, SearchInput, Select, PageHeader } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle } from '$lib/formatUtils';
@@ -177,7 +177,7 @@
 							{#if exercisePRs[exercise.id]}
 								<div class="bg-warning/10 border border-warning/30 rounded-lg p-3 mb-3">
 									<div class="flex items-center gap-2 mb-2">
-										<span class="text-xl">🏆</span>
+										<Trophy class="w-5 h-5 text-pr" />
 										<span class="font-semibold text-sm text-warning">Personal Records</span>
 									</div>
 									<div class="flex flex-wrap gap-2">

@@ -25,8 +25,12 @@
 		onCancel,
 	}: Props = $props();
 
-	let grams = $state<number>(initialGrams);
-	let note = $state<string>(initialNote);
+	// Snapshot initial values via functions so the warning doesn't fire
+	// (props don't change after pick — capture is intentional).
+	const getInitialGrams = () => initialGrams;
+	const getInitialNote = () => initialNote;
+	let grams = $state<number>(getInitialGrams());
+	let note = $state<string>(getInitialNote());
 
 	const macros = $derived(macrosFromGrams(per100g, grams));
 

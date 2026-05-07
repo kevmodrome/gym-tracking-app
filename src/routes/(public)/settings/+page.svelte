@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
-	import type { AppSettings } from '$lib/types';
 	import ImportBackupModal from '$lib/components/ImportBackupModal.svelte';
 	import InviteModal from '$lib/components/InviteModal.svelte';
 	import JoinInviteModal from '$lib/components/JoinInviteModal.svelte';
@@ -9,9 +8,24 @@
 	import { db, leaveDevice, seedDemoData, resetAllData } from '$lib/db';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import { Button, Select, Toggle, Card, InfoBox, PageHeader, NumberSpinner } from '$lib/ui';
-	import { Pencil } from 'lucide-svelte';
-	import { Modal } from '$lib/ui';
+	import {
+		Button,
+		Select,
+		Toggle,
+		Card,
+		Page,
+		NumberSpinner,
+		ConfirmDialog,
+		Modal
+	} from '$lib/ui';
+	import {
+		Pencil,
+		Upload,
+		Download,
+		AlertTriangle,
+		Github,
+		ExternalLink
+	} from 'lucide-svelte';
 
 	type SyncMember = {
 		readonly [x: string]: unknown;
@@ -22,11 +36,7 @@
 
 	type PendingDangerAction = 'leave' | 'reset' | null;
 
-	let settings = $state<AppSettings>({
-		defaultRestDuration: 90,
-		soundEnabled: true,
-		vibrationEnabled: true
-	});
+	const APP_VERSION = '0.0.1';
 
 	let showInviteModal = $state(false);
 	let showJoinInviteModal = $state(false);
@@ -34,8 +44,6 @@
 	let showExportProgress = $state(false);
 	let exportProgress = $state({ current: 0, total: 0, stage: '' });
 	let exportResult = $state<{ success: boolean; message: string } | null>(null);
-	let hasLoaded = $state(false);
-	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	let showResetModal = $state(false);
 	let showLeaveModal = $state(false);
 	let resetConfirmText = $state('');
@@ -43,7 +51,7 @@
 	let pendingDangerAction = $state<PendingDangerAction>(null);
 	let deviceNameInput = $state<HTMLInputElement | null>(null);
 
-	// Sync status from Tablinum
+	// Sync status (underlying name kept; user-facing copy says "device sync")
 	let syncStatus = $derived(db.syncStatus);
 	let pendingCount = $derived(db.pendingCount);
 	let relayStatus = $derived(db.relayStatus);
@@ -61,47 +69,12 @@
 			members = data as readonly SyncMember[];
 		});
 	});
+
 	let deviceName = $state('');
 	let savedDeviceName = $state('');
 	let isEditingName = $state(false);
 
-	// Data counts for sync diagnostics
-	let sessionCount = $state(0);
-	let exerciseCount = $state(0);
-	let workoutCount = $state(0);
-	let prCount = $state(0);
-
-	$effect(() => {
-		db.collection('sessions').count().then((n: number) => sessionCount = n);
-	});
-	$effect(() => {
-		db.collection('exercises').count().then((n: number) => exerciseCount = n);
-	});
-	$effect(() => {
-		db.collection('workouts').count().then((n: number) => workoutCount = n);
-	});
-	$effect(() => {
-		db.collection('personalRecords').count().then((n: number) => prCount = n);
-	});
-
-	// Auto-save settings when they change (with debounce)
-	$effect(() => {
-		// Read all settings to create dependencies
-		const _ = JSON.stringify(settings);
-
-		// Don't save on initial load
-		if (!hasLoaded) return;
-
-		// Debounce saves
-		if (saveTimeout) clearTimeout(saveTimeout);
-		saveTimeout = setTimeout(() => {
-			localStorage.setItem('gym-app-settings', JSON.stringify(settings));
-		}, 300);
-	});
-
 	onMount(async () => {
-		loadSettings();
-		hasLoaded = true;
 		const profile = await db.getProfile();
 		deviceName = profile.name ?? '';
 		savedDeviceName = deviceName;
@@ -120,18 +93,6 @@
 		savedDeviceName = trimmed;
 		await db.setProfile({ name: trimmed || undefined });
 		toastStore.showSuccess('Device name updated');
-	}
-
-	function loadSettings() {
-		const saved = localStorage.getItem('gym-app-settings');
-		if (saved) {
-			try {
-				const parsed = JSON.parse(saved);
-				settings = { ...settings, ...parsed };
-			} catch (e) {
-				console.error('Failed to parse settings:', e);
-			}
-		}
 	}
 
 	async function handleExport() {
@@ -161,7 +122,7 @@
 	async function handleLoadDemoData() {
 		try {
 			await seedDemoData();
-			toastStore.showSuccess('Demo data loaded! Check your workouts.');
+			toastStore.showSuccess('Demo data loaded.');
 		} catch (e) {
 			console.error('Failed to load demo data:', e);
 			toastStore.showError('Failed to load demo data');
@@ -205,303 +166,385 @@
 		{ value: 'lb', label: 'Pounds (lb)' }
 	];
 
-	const decimalPlacesOptions = [
-		{ value: 0, label: '0 decimal places (whole numbers)' },
-		{ value: 1, label: '1 decimal place' },
-		{ value: 2, label: '2 decimal places' }
+	const goalOptions = [
+		{ value: 'build', label: 'Build muscle' },
+		{ value: 'lose', label: 'Lose fat' },
+		{ value: 'general', label: 'General fitness' }
 	];
+
+	const trackingDepthOptions = [
+		{ value: 'basic', label: 'Basic (sets + reps)' },
+		{ value: 'standard', label: 'Standard (+ RPE)' },
+		{ value: 'full', label: 'Full (+ warmups, notes, PR alerts)' }
+	];
+
+	async function updateGoal(value: string) {
+		await preferencesStore.update({ goal: value as 'build' | 'lose' | 'general' });
+	}
+
+	async function updateTrackingDepth(value: string) {
+		await preferencesStore.update({ trackingDepth: value as 'basic' | 'standard' | 'full' });
+	}
+
+	async function updateWeightUnit() {
+		await preferencesStore.update({ weightUnit: preferencesStore.weightUnit });
+	}
+
+	async function updateDefaultRestSeconds(value: number) {
+		await preferencesStore.update({ defaultRestSeconds: value });
+	}
+
+	async function updateSoundEnabled(value: boolean) {
+		await preferencesStore.update({ soundEnabled: value });
+	}
+
+	async function updateVibrationEnabled(value: boolean) {
+		await preferencesStore.update({ vibrationEnabled: value });
+	}
+
+	const isConnected = $derived((relayStatus.connectedUrls?.length ?? 0) > 0);
 </script>
 
-<div class="min-h-screen bg-bg p-4 md:p-8">
-	<div class="max-w-2xl mx-auto">
-		<PageHeader title="Settings" />
-
-		<Card class="mb-6">
+<Page title="Settings" maxWidth="3xl">
+	{#snippet children()}
+		<div class="space-y-6">
+		<!-- Profile -->
+		<Card>
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">Sync</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Profile</h2>
 
 				<div class="space-y-4">
-					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<div class="flex items-center justify-between mb-2">
-							<h3 class="font-medium text-text-primary">Connection Status</h3>
-							<span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full {relayStatus.connectedUrls?.length > 0 ? 'bg-success/20 text-success' : 'bg-text-muted/20 text-text-muted'}">
-								<span class="w-2 h-2 rounded-full {relayStatus.connectedUrls?.length > 0 ? 'bg-success' : 'bg-text-muted'}"></span>
-								{relayStatus.connectedUrls?.length > 0 ? 'Connected' : 'Disconnected'}
-							</span>
-						</div>
-						{#if relayStatus.connectedUrls?.length > 0}
-							<p class="text-sm text-text-secondary">
-								Connected to {relayStatus.connectedUrls.length} relay{relayStatus.connectedUrls.length > 1 ? 's' : ''}
-							</p>
+					<div>
+						<label for="device-name" class="block text-sm font-medium text-text-primary mb-2">
+							Device name
+						</label>
+						{#if isEditingName}
+							<input
+								id="device-name"
+								bind:this={deviceNameInput}
+								type="text"
+								bind:value={deviceName}
+								onkeydown={(e) => {
+									if (e.key === 'Enter') saveDeviceName();
+									if (e.key === 'Escape') isEditingName = false;
+								}}
+								onblur={saveDeviceName}
+								class="w-full px-3 py-2 text-sm bg-surface-elevated border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-text-primary placeholder:text-text-muted min-h-[44px]"
+								placeholder="My phone"
+							/>
 						{:else}
-							<p class="text-sm text-text-secondary">
-								Not connected to any relays
-							</p>
+							<button
+								onclick={() => (isEditingName = true)}
+								class="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-text-primary bg-surface-elevated border border-border rounded-lg hover:border-border-active transition-colors text-left min-h-[44px]"
+							>
+								<span class="truncate">
+									{deviceName || db.publicKey.slice(0, 12) + '...'}
+								</span>
+								<Pencil class="w-4 h-4 flex-shrink-0 opacity-60" />
+							</button>
 						{/if}
+						<p class="mt-2 text-xs text-text-muted">
+							Shown to your other devices in device sync.
+						</p>
 					</div>
 
-					<div class="flex items-center justify-between">
-						<div>
-							<h3 class="font-medium text-text-primary">Sync Status</h3>
-							<p class="text-sm text-text-secondary">
-								{syncStatus === 'syncing' ? 'Syncing...' : 'Idle'}
-								{#if pendingCount > 0}
-									&bull; {pendingCount} pending change{pendingCount > 1 ? 's' : ''}
-								{/if}
-							</p>
-						</div>
-					</div>
-
-					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<h3 class="font-medium text-text-primary mb-2">Devices</h3>
-						<div class="space-y-1">
-							<div class="flex items-center gap-3 min-h-[44px] bg-success/10 border border-success/20 rounded-lg px-3 -mx-1">
-								<span class="w-3 h-3 rounded-full bg-success flex-shrink-0"></span>
-								{#if isEditingName}
-									<input
-										bind:this={deviceNameInput}
-										type="text"
-										bind:value={deviceName}
-										onkeydown={(e) => { if (e.key === 'Enter') saveDeviceName(); if (e.key === 'Escape') isEditingName = false; }}
-										onblur={saveDeviceName}
-										class="flex-1 min-w-0 px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-text-primary placeholder:text-text-muted min-h-[36px]"
-										placeholder="Device name"
-									/>
-								{:else}
-									<button
-										onclick={() => isEditingName = true}
-										class="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 text-sm text-text-secondary bg-surface border border-transparent rounded-lg hover:border-border hover:text-text-primary transition-colors text-left truncate min-h-[36px]"
-										title="Click to rename this device"
-									>
-										<span class="truncate">{deviceName || db.publicKey.slice(0, 12) + '...'}</span>
-										<Pencil class="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
-									</button>
-								{/if}
-								<span class="text-success text-xs font-medium flex-shrink-0 whitespace-nowrap">(this device)</span>
-							</div>
-							{#each otherMembers as member}
-								<div class="flex items-center gap-3 min-h-[44px]">
-									<span class="w-3 h-3 rounded-full bg-accent flex-shrink-0"></span>
-									<span class="text-text-secondary text-sm truncate">{member.name || member.id}</span>
-								</div>
-							{/each}
-							{#if otherMembers.length === 0}
-								<p class="text-sm text-text-muted min-h-[44px] flex items-center">No other devices connected</p>
-							{/if}
-						</div>
-					</div>
-
-					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<h3 class="font-medium text-text-primary mb-2">Data Counts</h3>
-						<div class="grid grid-cols-2 gap-2">
-							<div class="flex items-center justify-between py-1">
-								<span class="text-sm text-text-secondary">Sessions</span>
-								<span class="text-sm font-medium text-text-primary">{sessionCount}</span>
-							</div>
-							<div class="flex items-center justify-between py-1">
-								<span class="text-sm text-text-secondary">Exercises</span>
-								<span class="text-sm font-medium text-text-primary">{exerciseCount}</span>
-							</div>
-							<div class="flex items-center justify-between py-1">
-								<span class="text-sm text-text-secondary">Workouts</span>
-								<span class="text-sm font-medium text-text-primary">{workoutCount}</span>
-							</div>
-							<div class="flex items-center justify-between py-1">
-								<span class="text-sm text-text-secondary">Personal Records</span>
-								<span class="text-sm font-medium text-text-primary">{prCount}</span>
-							</div>
-						</div>
-						<p class="text-xs text-text-muted mt-2">Compare these counts across devices to verify sync completeness.</p>
-					</div>
-
-					<div class="grid gap-3 sm:grid-cols-2">
-						<Button onclick={() => showInviteModal = true} class="w-full">
-							Connect Another Device
+					<div class="border-t border-border pt-4">
+						<h3 class="text-sm font-medium text-text-primary mb-1">Body & nutrition profile</h3>
+						<p class="text-sm text-text-secondary mb-3">
+							Body measurements, daily protein target, and calorie/macro goals.
+						</p>
+						<Button href="/settings/profile" variant="secondary">
+							Edit profile & targets
 						</Button>
-						<Button
-							variant="secondary"
-							onclick={() => showJoinInviteModal = true}
-							class="w-full"
-						>
-							Join with Invite Code
-						</Button>
-					</div>
-
-					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<h3 class="font-medium text-text-primary mb-2">About Sync</h3>
-						<ul class="text-sm text-text-secondary space-y-1">
-							<li>Your data is encrypted end-to-end</li>
-							<li>Changes sync automatically via Nostr relays</li>
-							<li>Share either the invite link or the invite code to connect another device</li>
-						</ul>
 					</div>
 				</div>
 			{/snippet}
 		</Card>
 
-		<Card class="mb-6">
+		<!-- Goals -->
+		<Card>
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">Nutrition</h2>
-				<p class="text-sm text-text-secondary mb-4">
-					Set your body profile, daily protein target, and calorie/macro goals.
-				</p>
-				<Button href="/settings/profile" variant="secondary">Profile &amp; Targets</Button>
-			{/snippet}
-		</Card>
-
-		<Card class="mb-6">
-			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">Rest Timer</h2>
-
-				<div class="space-y-4">
-					<NumberSpinner
-						bind:value={settings.defaultRestDuration}
-						label="Default Rest Duration (seconds)"
-						id="default-rest-duration"
-						min={10}
-						max={300}
-						step={5}
-						size="sm"
-					/>
-					<p class="mt-1 text-sm text-text-muted">Duration automatically used when rest timer starts</p>
-
-					<div class="border-t border-border pt-4">
-						<Toggle
-							bind:checked={settings.soundEnabled}
-							label="Sound Notifications"
-							description="Play sound when timer completes"
-						/>
-					</div>
-
-					<div class="border-t border-border pt-4">
-						<Toggle
-							bind:checked={settings.vibrationEnabled}
-							label="Vibration"
-							description="Vibrate when timer completes"
-						/>
-					</div>
-				</div>
-			{/snippet}
-		</Card>
-
-		<Card class="mb-6">
-			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">App Preferences</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Goals</h2>
 
 				<div class="space-y-4">
 					<Select
-						bind:value={preferencesStore.weightUnit}
-						options={weightUnitOptions}
-						label="Weight Unit"
-						id="weight-unit"
-						hint="Unit for displaying weight values"
-						onchange={() => preferencesStore.update({ weightUnit: preferencesStore.weightUnit })}
+						value={preferencesStore.goal ?? 'general'}
+						options={goalOptions}
+						label="Primary goal"
+						id="primary-goal"
+						hint="Set during onboarding. Adjust at any time."
+						onchange={(v) => updateGoal(String(v))}
 					/>
 
 					<div class="border-t border-border pt-4">
 						<Select
-							bind:value={preferencesStore.decimalPlaces}
-							options={decimalPlacesOptions}
-							label="Decimal Places"
-							id="decimal-places"
-							hint="Precision for displaying numeric values"
-							onchange={() => preferencesStore.update({ decimalPlaces: preferencesStore.decimalPlaces })}
+							value={preferencesStore.trackingDepth ?? 'standard'}
+							options={trackingDepthOptions}
+							label="Tracking depth"
+							id="tracking-depth"
+							hint="How much detail to capture per set."
+							onchange={(v) => updateTrackingDepth(String(v))}
 						/>
 					</div>
 				</div>
 			{/snippet}
 		</Card>
 
-		<InfoBox type="info" title="Tips">
-			<ul class="space-y-1">
-				<li>You can manually adjust the timer duration during your workout</li>
-				<li>Skip the timer anytime to move to the next set</li>
-				<li>Sound and vibration will alert you when rest period ends</li>
-				<li>Typical rest periods: 2-3 minutes for compound exercises, 1-2 minutes for isolation</li>
-			</ul>
-		</InfoBox>
-
-		<Card class="mb-6 mt-6">
+		<!-- Units -->
+		<Card>
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-text-primary mb-4">Data Management</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Units</h2>
+
+				<Select
+					bind:value={preferencesStore.weightUnit}
+					options={weightUnitOptions}
+					label="Weight unit"
+					id="weight-unit"
+					hint="Used everywhere weights are displayed."
+					onchange={updateWeightUnit}
+				/>
+			{/snippet}
+		</Card>
+
+		<!-- Workout defaults -->
+		<Card>
+			{#snippet children()}
+				<h2 class="text-xl font-bold text-text-primary mb-4">Workout defaults</h2>
+
+				<div class="space-y-4">
+					<div>
+						<NumberSpinner
+							value={preferencesStore.defaultRestSeconds ?? 90}
+							label="Default rest duration (seconds)"
+							id="default-rest-duration"
+							min={10}
+							max={300}
+							step={5}
+							size="sm"
+							onchange={updateDefaultRestSeconds}
+						/>
+						<p class="mt-1 text-sm text-text-muted">
+							Used automatically when the rest timer starts.
+						</p>
+					</div>
+
+					<div class="border-t border-border pt-4">
+						<Toggle
+							checked={preferencesStore.soundEnabled}
+							label="Sound notifications"
+							description="Play a sound when the rest timer completes."
+							onchange={updateSoundEnabled}
+						/>
+					</div>
+
+					<div class="border-t border-border pt-4">
+						<Toggle
+							checked={preferencesStore.vibrationEnabled}
+							label="Vibration"
+							description="Vibrate when the rest timer completes."
+							onchange={updateVibrationEnabled}
+						/>
+					</div>
+				</div>
+			{/snippet}
+		</Card>
+
+		<!-- Data -->
+		<Card>
+			{#snippet children()}
+				<h2 class="text-xl font-bold text-text-primary mb-4">Data</h2>
 
 				<div class="space-y-4">
 					<div class="flex flex-col sm:flex-row gap-3">
 						<Button onclick={handleExport} disabled={showExportProgress} class="flex-1">
-							<span class="text-lg">📤</span>
-							<span>Export Data</span>
+							<Upload class="w-5 h-5" />
+							<span>Export backup</span>
 						</Button>
-						<Button variant="success" onclick={showImportBackupModal} class="flex-1">
-							<span class="text-lg">📥</span>
-							<span>Import Data</span>
+						<Button variant="secondary" onclick={showImportBackupModal} class="flex-1">
+							<Download class="w-5 h-5" />
+							<span>Import backup</span>
 						</Button>
 					</div>
-
-					<div class="bg-surface-elevated border border-border rounded-lg p-4">
-						<h3 class="font-medium text-text-primary mb-2">About Import/Export</h3>
-						<ul class="text-sm text-text-secondary space-y-1">
-							<li>Export creates a backup file with all your workout data</li>
-							<li>Import restores data from a previously exported backup</li>
-							<li>You can choose how to handle duplicate items during import</li>
-							<li>Store backup files in a safe location for data security</li>
-						</ul>
-					</div>
+					<p class="text-sm text-text-muted">
+						Backups include workouts, exercises, sessions, and settings. Store the file somewhere safe.
+					</p>
 
 					{#if dev}
-					<div class="pt-4 border-t border-border">
-						<h3 class="font-medium text-text-primary mb-2">Demo Data</h3>
-						<p class="text-sm text-text-secondary mb-3">Load sample workouts and sessions to test the app.</p>
-						<Button variant="secondary" onclick={handleLoadDemoData}>
-							Load Demo Data
-						</Button>
-					</div>
+						<div class="border-t border-border pt-4">
+							<h3 class="font-medium text-text-primary mb-1">Demo data</h3>
+							<p class="text-sm text-text-secondary mb-3">
+								Load sample workouts and sessions to try the app.
+							</p>
+							<Button variant="secondary" onclick={handleLoadDemoData}>Load demo data</Button>
+						</div>
 					{/if}
 				</div>
 			{/snippet}
 		</Card>
 
-		<Card class="mb-6 border-danger/50">
+		<!-- Sync -->
+		<Card>
 			{#snippet children()}
-				<h2 class="text-xl font-bold text-danger mb-4">Danger Zone</h2>
+				<h2 class="text-xl font-bold text-text-primary mb-4">Device sync</h2>
 
 				<div class="space-y-4">
-					<div class="bg-surface-elevated border border-border rounded-lg p-4 space-y-3">
+					<div class="flex items-center justify-between">
 						<div>
-							<h3 class="font-medium text-text-primary">Leave Sync Group</h3>
-							<p class="text-sm text-text-secondary mt-1">
-								Notify other devices that this device has left, then clear its local synced data and restart the app.
+							<h3 class="font-medium text-text-primary">Connection</h3>
+							<p class="text-sm text-text-secondary">
+								{#if isConnected}
+									Connected to {relayStatus.connectedUrls.length} relay{relayStatus.connectedUrls.length > 1 ? 's' : ''}
+								{:else}
+									Not connected
+								{/if}
+								{#if syncStatus === 'syncing'}
+									&bull; Syncing
+								{/if}
+								{#if pendingCount > 0}
+									&bull; {pendingCount} pending change{pendingCount > 1 ? 's' : ''}
+								{/if}
 							</p>
 						</div>
-						<Button variant="secondary" onclick={openLeaveModal} disabled={isDangerActionPending}>
-							Leave This Device
+						<span
+							class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {isConnected
+								? 'bg-success/20 text-success'
+								: 'bg-text-muted/20 text-text-muted'}"
+						>
+							<span
+								class="w-2 h-2 rounded-full {isConnected ? 'bg-success' : 'bg-text-muted'}"
+							></span>
+							{isConnected ? 'Connected' : 'Offline'}
+						</span>
+					</div>
+
+					<div class="border-t border-border pt-4">
+						<h3 class="font-medium text-text-primary mb-2">Connected devices</h3>
+						<div class="space-y-2">
+							<div
+								class="flex items-center gap-3 min-h-[44px] bg-success/10 border border-success/20 rounded-lg px-3"
+							>
+								<span class="w-2.5 h-2.5 rounded-full bg-success flex-shrink-0"></span>
+								<span class="flex-1 truncate text-sm text-text-primary">
+									{deviceName || db.publicKey.slice(0, 12) + '...'}
+								</span>
+								<span class="text-success text-xs font-medium flex-shrink-0">This device</span>
+							</div>
+							{#each otherMembers as member}
+								<div class="flex items-center gap-3 min-h-[44px] px-3">
+									<span class="w-2.5 h-2.5 rounded-full bg-accent flex-shrink-0"></span>
+									<span class="text-sm text-text-secondary truncate">
+										{member.name || member.id}
+									</span>
+								</div>
+							{/each}
+							{#if otherMembers.length === 0}
+								<p class="text-sm text-text-muted px-3 min-h-[44px] flex items-center">
+									No other devices connected.
+								</p>
+							{/if}
+						</div>
+					</div>
+
+					<div class="border-t border-border pt-4 grid gap-3 sm:grid-cols-2">
+						<Button onclick={() => (showInviteModal = true)} class="w-full">
+							Invite a device
+						</Button>
+						<Button
+							variant="secondary"
+							onclick={() => (showJoinInviteModal = true)}
+							class="w-full"
+						>
+							Join with code
 						</Button>
 					</div>
 
-					<div class="bg-surface-elevated border border-danger/40 rounded-lg p-4 space-y-3">
-						<div>
-							<h3 class="font-medium text-text-primary">Reset App</h3>
-							<p class="text-sm text-text-secondary mt-1">
-								Delete local app data and restart fresh without sending a leave event to other devices.
-							</p>
-						</div>
-						<Button variant="danger" onclick={openResetModal} disabled={isDangerActionPending}>
-							Reset All Data
+					<p class="text-xs text-text-muted">
+						Your data is end-to-end encrypted and synced peer-to-peer through public relays.
+					</p>
+				</div>
+			{/snippet}
+		</Card>
+
+		<!-- About -->
+		<Card>
+			{#snippet children()}
+				<h2 class="text-xl font-bold text-text-primary mb-4">About</h2>
+
+				<div class="space-y-3">
+					<div class="flex items-center justify-between min-h-[44px]">
+						<span class="text-sm text-text-secondary">Version</span>
+						<span class="text-sm font-medium text-text-primary">{APP_VERSION}</span>
+					</div>
+
+					<div class="border-t border-border pt-3">
+						<a
+							href="https://github.com/kevmodrome/gym-recording-app"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="flex items-center justify-between min-h-[44px] text-sm text-text-primary hover:text-accent transition-colors"
+						>
+							<span class="flex items-center gap-2">
+								<Github class="w-4 h-4" />
+								GitHub repository
+							</span>
+							<ExternalLink class="w-4 h-4 opacity-60" />
+						</a>
+					</div>
+				</div>
+			{/snippet}
+		</Card>
+
+		<!-- Danger zone -->
+		<Card class="border-danger/50 bg-danger/5">
+			{#snippet children()}
+				<div class="flex items-center gap-2 mb-4">
+					<AlertTriangle class="w-5 h-5 text-danger" />
+					<h2 class="text-xl font-bold text-danger">Danger zone</h2>
+				</div>
+
+				<div class="space-y-4">
+					<div>
+						<h3 class="font-medium text-text-primary">Leave device sync</h3>
+						<p class="text-sm text-text-secondary mt-1 mb-3">
+							Notify other devices that this one has left, then clear locally synced data and restart the app.
+						</p>
+						<Button
+							variant="secondary"
+							onclick={openLeaveModal}
+							disabled={isDangerActionPending}
+						>
+							Leave sync on this device
+						</Button>
+					</div>
+
+					<div class="border-t border-danger/30 pt-4">
+						<h3 class="font-medium text-text-primary">Reset all data</h3>
+						<p class="text-sm text-text-secondary mt-1 mb-3">
+							Delete local app data and restart fresh. Other devices will not be notified.
+						</p>
+						<Button
+							variant="danger"
+							onclick={openResetModal}
+							disabled={isDangerActionPending}
+						>
+							Reset all data
 						</Button>
 					</div>
 				</div>
 			{/snippet}
 		</Card>
 
+		<!-- Leave confirm -->
 		<Modal
 			open={showLeaveModal}
-			title="Leave Sync Group"
+			title="Leave device sync"
 			size="sm"
-			onclose={() => showLeaveModal = false}
+			onclose={() => (showLeaveModal = false)}
 		>
 			{#snippet children()}
 				<div class="space-y-4">
 					<p class="text-text-secondary">
-						This device will publish a leave event so other connected devices stop showing it in their device list. Local synced data on this device will also be cleared.
+						This device will publish a leave event so other connected devices stop showing it. Locally synced data on this device will also be cleared.
 					</p>
 					<p class="text-sm text-danger font-medium">This action cannot be undone.</p>
 					<div>
@@ -519,25 +562,34 @@
 				</div>
 			{/snippet}
 			{#snippet footer()}
-				<Button variant="secondary" onclick={() => showLeaveModal = false} disabled={isDangerActionPending}>
+				<Button
+					variant="secondary"
+					onclick={() => (showLeaveModal = false)}
+					disabled={isDangerActionPending}
+				>
 					Cancel
 				</Button>
-				<Button variant="danger" disabled={leaveConfirmText !== 'LEAVE' || isDangerActionPending} onclick={handleLeave}>
-					{isLeaving ? 'Leaving...' : 'Leave Device'}
+				<Button
+					variant="danger"
+					disabled={leaveConfirmText !== 'LEAVE' || isDangerActionPending}
+					onclick={handleLeave}
+				>
+					{isLeaving ? 'Leaving...' : 'Leave device'}
 				</Button>
 			{/snippet}
 		</Modal>
 
+		<!-- Reset confirm -->
 		<Modal
 			open={showResetModal}
-			title="Reset All Data"
+			title="Reset all data"
 			size="sm"
-			onclose={() => showResetModal = false}
+			onclose={() => (showResetModal = false)}
 		>
 			{#snippet children()}
 				<div class="space-y-4">
 					<p class="text-text-secondary">
-						This will permanently delete <strong class="text-text-primary">all local</strong> workout data, exercises, sessions, and settings on this device. Other devices will not be notified that this device left.
+						This will permanently delete <strong class="text-text-primary">all local</strong> workout data, exercises, sessions, and settings on this device. Other devices will not be notified.
 					</p>
 					<p class="text-sm text-danger font-medium">This action cannot be undone.</p>
 					<div>
@@ -555,20 +607,32 @@
 				</div>
 			{/snippet}
 			{#snippet footer()}
-				<Button variant="secondary" onclick={() => showResetModal = false} disabled={isDangerActionPending}>
+				<Button
+					variant="secondary"
+					onclick={() => (showResetModal = false)}
+					disabled={isDangerActionPending}
+				>
 					Cancel
 				</Button>
-				<Button variant="danger" disabled={resetConfirmText !== 'RESET' || isDangerActionPending} onclick={handleReset}>
-					{isResetting ? 'Resetting...' : 'Delete Everything'}
+				<Button
+					variant="danger"
+					disabled={resetConfirmText !== 'RESET' || isDangerActionPending}
+					onclick={handleReset}
+				>
+					{isResetting ? 'Resetting...' : 'Delete everything'}
 				</Button>
 			{/snippet}
 		</Modal>
 
+		<!-- Export progress -->
 		{#if showExportProgress}
-			<div class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50" role="presentation">
+			<div
+				class="fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-[60]"
+				role="presentation"
+			>
 				<div class="bg-surface border border-border rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
 					<div class="flex items-center justify-between mb-4">
-						<h3 class="text-xl font-bold text-text-primary">Exporting Data</h3>
+						<h3 class="text-xl font-bold text-text-primary">Exporting backup</h3>
 					</div>
 
 					{#if exportResult === null}
@@ -577,28 +641,30 @@
 								<div class="flex-1 bg-surface-elevated rounded-full h-2 overflow-hidden">
 									<div
 										class="bg-accent h-full transition-all duration-300"
-										style:width={exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%'}
+										style:width={exportProgress.total > 0
+											? `${(exportProgress.current / exportProgress.total) * 100}%`
+											: '0%'}
 									></div>
 								</div>
 								<span class="text-sm text-text-secondary font-medium min-w-[3rem]">
-									{exportProgress.total > 0 ? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%` : '0%'}
+									{exportProgress.total > 0
+										? `${Math.round((exportProgress.current / exportProgress.total) * 100)}%`
+										: '0%'}
 								</span>
 							</div>
 							<p class="text-sm text-text-secondary">{exportProgress.stage}</p>
 						</div>
 					{:else if exportResult.success}
 						<div class="space-y-3">
-							<div class="flex items-center gap-2 text-success">
-								<p class="font-medium">Export Complete!</p>
-							</div>
+							<p class="font-medium text-success">Export complete.</p>
 							<p class="text-sm text-text-secondary">{exportResult.message}</p>
-							<p class="text-sm text-text-muted">File has been downloaded to your default download location.</p>
+							<p class="text-sm text-text-muted">
+								The file has been downloaded to your default download location.
+							</p>
 						</div>
 					{:else}
 						<div class="space-y-3">
-							<div class="flex items-center gap-2 text-danger">
-								<p class="font-medium">Export Failed</p>
-							</div>
+							<p class="font-medium text-danger">Export failed</p>
 							<p class="text-sm text-text-secondary">{exportResult.message}</p>
 						</div>
 					{/if}
@@ -611,11 +677,12 @@
 		{/if}
 
 		{#if showInviteModal}
-			<InviteModal onclose={() => showInviteModal = false} />
+			<InviteModal onclose={() => (showInviteModal = false)} />
 		{/if}
 
 		{#if showJoinInviteModal}
-			<JoinInviteModal onclose={() => showJoinInviteModal = false} />
+			<JoinInviteModal onclose={() => (showJoinInviteModal = false)} />
 		{/if}
-	</div>
-</div>
+		</div>
+	{/snippet}
+</Page>

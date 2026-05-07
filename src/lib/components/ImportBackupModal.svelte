@@ -8,6 +8,7 @@
 		type ImportResult
 	} from '$lib/backupUtils';
 	import { Button, Modal, Select, InfoBox } from '$lib/ui';
+	import { AlertTriangle, CheckCircle2, Sparkles, XCircle } from 'lucide-svelte';
 
 	let fileInput = $state<HTMLInputElement>();
 	let errorMessage = $state('');
@@ -164,7 +165,7 @@
 		{#if errorMessage}
 			<InfoBox type="error" class="mb-6">
 				<div class="flex items-center gap-2">
-					<span class="text-xl">⚠️</span>
+					<AlertTriangle class="w-5 h-5 text-danger" />
 					<p class="font-medium">Error</p>
 				</div>
 				<p class="mt-2">{errorMessage}</p>
@@ -206,7 +207,7 @@
 			<div class="space-y-6">
 				<InfoBox type="success">
 					<div class="flex items-center gap-2">
-						<span class="text-xl">✅</span>
+						<CheckCircle2 class="w-5 h-5 text-success" />
 						<p class="font-medium">File Validated Successfully</p>
 					</div>
 					<p class="mt-2 text-sm">
@@ -237,7 +238,7 @@
 				{#if anyDuplicates()}
 					<InfoBox type="warning">
 						<div class="flex items-center gap-2 mb-4">
-							<span class="text-xl">⚠️</span>
+							<AlertTriangle class="w-5 h-5 text-warning" />
 							<p class="font-medium">{totalDuplicates()} duplicate(s) detected in your database</p>
 						</div>
 
@@ -306,7 +307,7 @@
 				{:else}
 					<InfoBox type="success">
 						<div class="flex items-center gap-2">
-							<span class="text-xl">✨</span>
+							<Sparkles class="w-5 h-5 text-success" />
 							<p class="font-medium">No duplicates found</p>
 						</div>
 						<p class="mt-2 text-sm">
@@ -319,7 +320,7 @@
 			{#if importResult.success}
 				<InfoBox type="success">
 					<div class="flex items-center gap-3 mb-4">
-						<span class="text-3xl">✅</span>
+						<CheckCircle2 class="w-8 h-8 text-success" />
 						<div>
 							<p class="text-lg font-bold">Import Completed Successfully!</p>
 							<p class="text-sm">All data has been imported.</p>
@@ -348,7 +349,7 @@
 			{:else}
 				<InfoBox type="error">
 					<div class="flex items-center gap-3 mb-4">
-						<span class="text-3xl">❌</span>
+						<XCircle class="w-8 h-8 text-danger" />
 						<div>
 							<p class="text-lg font-bold">Import Failed</p>
 							<p class="text-sm">An error occurred during import.</p>

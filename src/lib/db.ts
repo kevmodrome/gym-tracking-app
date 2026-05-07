@@ -1,7 +1,8 @@
 import { field, collection } from 'tablinum';
+import type { FieldDef } from 'tablinum';
 import { Tablinum } from 'tablinum/svelte';
 import type { Invite } from 'tablinum/svelte';
-import type { Exercise, Workout, Session, PersonalRecord, UserPreferences } from './types';
+import type { Exercise, Workout, Session, PersonalRecord, UserPreferences, SetWeight } from './types';
 import {
 	clearAppLocalState,
 	clearServiceWorkerState,
@@ -11,10 +12,15 @@ import {
 
 const INVITE_STORAGE_KEY = 'gym-app-invite';
 
+// Weight is `number | "BW"` (SetWeight). Persisted via json so the schema
+// accepts both shapes; runtime parsing happens in app code.
+const setWeightField = field.json() as FieldDef<SetWeight>;
+
 const exerciseSetDef = field.object({
 	reps: field.number(),
-	weight: field.number(),
+	weight: setWeightField,
 	rpe: field.optional(field.number()),
+	warmup: field.optional(field.boolean()),
 	completed: field.boolean(),
 	notes: field.optional(field.string()),
 });
@@ -44,6 +50,7 @@ const exercisesDef = collection('exercises', {
 	equipment: field.string(),
 	is_custom: field.boolean(),
 	favorited: field.optional(field.boolean()),
+	restSeconds: field.optional(field.number()),
 }, { indices: ['name', 'category', 'primary_muscle', 'is_custom'] });
 
 const workoutsDef = collection('workouts', {
@@ -60,7 +67,10 @@ const sessionsDef = collection('sessions', {
 	duration: field.number(),
 	notes: field.optional(field.string()),
 	createdAt: field.string(),
-}, { indices: ['date', 'createdAt'] });
+	status: field.string(),
+	currentExerciseIndex: field.optional(field.number()),
+	currentSetIndex: field.optional(field.number()),
+}, { indices: ['date', 'createdAt', 'status'] });
 
 const personalRecordsDef = collection('personalRecords', {
 	exerciseId: field.string(),
@@ -75,6 +85,12 @@ const preferencesDef = collection('preferences', {
 	weightUnit: field.string(),
 	distanceUnit: field.string(),
 	decimalPlaces: field.number(),
+	goal: field.optional(field.string()),
+	trackingDepth: field.optional(field.string()),
+	onboardingComplete: field.optional(field.boolean()),
+	defaultRestSeconds: field.optional(field.number()),
+	soundEnabled: field.optional(field.boolean()),
+	vibrationEnabled: field.optional(field.boolean()),
 	updatedAt: field.string(),
 });
 
@@ -100,6 +116,7 @@ const foodsDef = collection('foods', {
 	servingSize: field.optional(foodServingDef),
 	lastUsedAt: field.string(),
 	createdAt: field.string(),
+	favorite: field.optional(field.boolean()),
 }, { indices: ['barcode', 'name', 'lastUsedAt'] });
 
 const foodEntriesDef = collection('foodEntries', {
@@ -119,6 +136,19 @@ const weightsDef = collection('weights', {
 	date: field.string(),
 	kg: field.number(),
 	loggedAt: field.string(),
+}, { indices: ['date'] });
+
+const bodyMetricsDef = collection('bodyMetrics', {
+	date: field.string(),
+	waistCm: field.optional(field.number()),
+	bodyFatPct: field.optional(field.number()),
+	loggedAt: field.string(),
+}, { indices: ['date'] });
+
+const waterDef = collection('water', {
+	date: field.string(),
+	count: field.number(),
+	updatedAt: field.string(),
 }, { indices: ['date'] });
 
 const nutritionProfileDef = collection('nutritionProfile', {
@@ -147,6 +177,8 @@ const schema = {
 	foodEntries: foodEntriesDef,
 	weights: weightsDef,
 	nutritionProfile: nutritionProfileDef,
+	bodyMetrics: bodyMetricsDef,
+	water: waterDef,
 };
 
 const LEAVE_TIMEOUT_MS = 3000;
@@ -326,7 +358,7 @@ export async function seedDemoData(): Promise<void> {
 	];
 
 	for (const s of sessionData) {
-		await db.collection('sessions').add(s);
+		await db.collection('sessions').add({ ...s, status: 'completed' });
 	}
 
 	console.log('Demo data seeded successfully!');

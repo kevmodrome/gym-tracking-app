@@ -126,7 +126,8 @@ describe('Settings Page - E2E Verification', () => {
 	describe('Data persistence testing', () => {
 		it('should save and retrieve settings', () => {
 			const settings = {
-				defaultRestDuration: 90,
+				weightUnit: 'kg',
+				defaultRestSeconds: 90,
 				soundEnabled: true,
 				vibrationEnabled: true
 			};
@@ -135,7 +136,7 @@ describe('Settings Page - E2E Verification', () => {
 			const savedSettings = localStorage.getItem('gym-app-settings');
 			expect(savedSettings).toBeDefined();
 			const parsed = JSON.parse(savedSettings!);
-			expect(parsed.defaultRestDuration).toBe(90);
+			expect(parsed.defaultRestSeconds).toBe(90);
 		});
 
 		it('should save and retrieve user profile', () => {

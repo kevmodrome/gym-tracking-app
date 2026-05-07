@@ -2,57 +2,33 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { db } from '$lib/db';
-	import type { Session, SessionExercise, ExerciseSet, Exercise } from '$lib/types';
-	import { calculatePersonalRecords } from '$lib/prUtils';
+	import type { Session, SessionExercise, ExerciseSet, Exercise, SetWeight } from '$lib/types';
+	import { volumeWeight } from '$lib/types';
+	import { calculatePersonalRecords, getRepRangeLabel } from '$lib/prUtils';
+	import { calculateSessionVolume, calculateStreakDays } from '$lib/dashboardMetrics';
+	import type { PersonalRecord } from '$lib/types';
 	import WorkoutProgressBar from '$lib/components/WorkoutProgressBar.svelte';
 	import SetPage from '$lib/components/SetPage.svelte';
 	import TimerPage from '$lib/components/TimerPage.svelte';
-	import CompletionPage from '$lib/components/CompletionPage.svelte';
+	import WorkoutFinishCelebration from '$lib/components/WorkoutFinishCelebration.svelte';
 	import SessionOverflowMenu from '$lib/components/SessionOverflowMenu.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import { ArrowLeft, Undo, Plus, Search, Star, Check } from 'lucide-svelte';
-	import { Button, Modal, ConfirmDialog, Textarea, NumberSpinner, TextInput } from '$lib/ui';
+	import { preferencesStore } from '$lib/stores/preferences.svelte';
+	import { ArrowLeft, Undo, Plus, Search, Star, Check, Timer } from 'lucide-svelte';
+	import { Button, Modal, ConfirmDialog, TextInput } from '$lib/ui';
 
 	let { data } = $props();
 
 	const sessionId = $derived(data.sessionId);
-	const fromSessionId = $derived(data.fromSessionId);
 
 	const exercisesCol = db.collection('exercises');
-	const sessionsCol = db.collection('sessions');
-
-	async function tryGetSession(id: string): Promise<Session | null> {
-		try {
-			return await sessionsCol.get(id) as Session;
-		} catch {
-			return null;
-		}
-	}
 
 	let exercises = $state<Exercise[]>([]);
-	let existingSession = $state<Session | null>(null);
-	let sourceSession = $state<Session | null>(null);
 
 	$effect(() => {
 		exercisesCol.get().then((data) => {
 			exercises = data as Exercise[];
 		});
-	});
-
-	$effect(() => {
-		tryGetSession(sessionId).then((data) => {
-			existingSession = data;
-		});
-	});
-
-	$effect(() => {
-		if (fromSessionId) {
-			tryGetSession(fromSessionId).then((data) => {
-				sourceSession = data;
-			});
-		} else {
-			sourceSession = null;
-		}
 	});
 
 	// Session state
@@ -64,10 +40,15 @@
 	let sessionDuration = $state(0);
 	let durationInterval: number | null = null;
 	let loading = $state(true);
-	let defaultRestDuration = $state(90);
 
-	// View state: 'set' | 'timer' | 'complete' | 'picker'
-	let currentView = $state<'set' | 'timer' | 'complete' | 'picker'>('picker');
+	// View state: 'set' | 'complete' | 'picker'
+	// Timer is now an overlay (sticky-bar by default, expanded when timerExpanded).
+	let currentView = $state<'set' | 'complete' | 'picker'>('picker');
+
+	// Timer overlay state — runs alongside SetPage, never replaces it.
+	let timerRunning = $state(false);
+	let timerExpanded = $state(false);
+	let activeTimerDuration = $state(90);
 
 	// Exercise picker state
 	let showExercisePicker = $state(false);
@@ -76,27 +57,50 @@
 	let selectedExerciseIds = $state<Set<string>>(new Set());
 
 	// Last completed set info (for timer display)
-	let lastCompletedSet = $state<{ reps: number; weight: number; setNumber: number; exerciseName: string } | null>(null);
+	let lastCompletedSet = $state<{ reps: number; weight: SetWeight; setNumber: number; exerciseName: string } | null>(null);
 
 	// Modal states
 	let showExitConfirm = $state(false);
 
 	// Overflow menu action modals
-	let showNoteModal = $state(false);
-	let showRPEModal = $state(false);
 	let showDeleteSetConfirm = $state(false);
 	let showEditExerciseModal = $state(false);
 	let showDeleteExerciseConfirm = $state(false);
 
 	// Editing state for modals
-	let editingNote = $state('');
-	let editingRPE = $state<number>(5);
 	let editingExerciseName = $state('');
 
 	// Undo state
 	let deletedSet = $state<{ exerciseIndex: number; setIndex: number; set: ExerciseSet } | null>(null);
 	let showUndoToast = $state(false);
 	let undoTimeout: number | null = null;
+
+	// Celebration state — computed once at finish time
+	interface DetectedPR {
+		exerciseName: string;
+		repRange: string;
+		weight: number;
+		reps: number;
+		previousBest?: { weight: number; reps: number };
+	}
+	let celebrationVolumeDelta = $state(0);
+	let celebrationPRs = $state<DetectedPR[]>([]);
+	let celebrationStreakDays = $state(0);
+
+	// PRs by exerciseId, used by SetPage to show PRBadge inline
+	let prsByExerciseId = $state<Record<string, PersonalRecord[]>>({});
+
+	// Load all current PRs once for inline PRBadge detection
+	$effect(() => {
+		db.collection('personalRecords').get().then((records) => {
+			const map: Record<string, PersonalRecord[]> = {};
+			for (const r of records as PersonalRecord[]) {
+				if (!map[r.exerciseId]) map[r.exerciseId] = [];
+				map[r.exerciseId].push(r);
+			}
+			prsByExerciseId = map;
+		});
+	});
 
 	// Derived state
 	const currentExercise = $derived.by(() => {
@@ -111,6 +115,11 @@
 			return null;
 		}
 		return currentExercise.sets[currentSetIndex];
+	});
+
+	const currentExercisePRs = $derived.by(() => {
+		if (!currentExercise) return [] as PersonalRecord[];
+		return prsByExerciseId[currentExercise.exerciseId] ?? [];
 	});
 
 	const isLastSetInExercise = $derived.by(() => {
@@ -130,7 +139,7 @@
 
 	// Next set info for timer
 	const nextSetInfo = $derived.by(() => {
-		if (currentView !== 'timer') return null;
+		if (!timerRunning) return null;
 		const exercise = sessionExercises[currentExerciseIndex];
 		if (!exercise) return null;
 
@@ -143,45 +152,27 @@
 		};
 	});
 
-	onMount(() => {
-		// Load settings
-		const saved = localStorage.getItem('gym-app-settings');
-		if (saved) {
-			try {
-				const settings = JSON.parse(saved);
-				defaultRestDuration = settings.defaultRestDuration || 90;
-			} catch (e) {
-				console.error('Failed to parse settings:', e);
+	// Resolve the rest duration: prefer per-exercise restSeconds (Task 6),
+	// else fall back to user's global default.
+	function resolveRestDuration(): number {
+		const ex = sessionExercises[currentExerciseIndex];
+		if (ex) {
+			const lib = exercises.find((e) => e.id === ex.exerciseId);
+			if (lib?.restSeconds && lib.restSeconds > 0) {
+				return lib.restSeconds;
 			}
 		}
+		return preferencesStore.defaultRestSeconds || 90;
+	}
 
-		// Initialize from source session if copying from an old session
-		if (sourceSession && sessionExercises.length === 0) {
-			sessionExercises = sourceSession.exercises.map((exercise) => ({
-				exerciseId: exercise.exerciseId,
-				exerciseName: exercise.exerciseName,
-				primaryMuscle: exercise.primaryMuscle,
-				sets: exercise.sets.map((set) => ({
-					reps: set.reps,
-					weight: set.weight,
-					completed: false
-				}))
-			}));
-		} else {
-			// Load session progress from localStorage
-			loadSessionProgress();
-		}
+	onMount(async () => {
+		const ok = await loadSessionProgress();
+		if (!ok) return;
 
-		// If no exercises yet, show the picker to start adding
 		if (sessionExercises.length === 0) {
 			currentView = 'picker';
 		} else {
 			currentView = 'set';
-		}
-
-		if (sessionStartTime === 0) {
-			sessionStartTime = Date.now();
-			startDurationTracking();
 		}
 
 		loading = false;
@@ -202,44 +193,38 @@
 	}
 
 	// Session persistence
-	function saveSessionProgress() {
-		localStorage.setItem(
-			`gym-app-session-${sessionId}`,
-			JSON.stringify({
-				sessionExercises,
-				currentExerciseIndex,
-				currentSetIndex,
-				sessionStartTime,
-				sessionDuration,
-				sessionNotes
-			})
-		);
+	async function saveSessionProgress() {
+		await db.collection('sessions').update(sessionId, {
+			exercises: $state.snapshot(sessionExercises),
+			currentExerciseIndex,
+			currentSetIndex,
+			notes: sessionNotes || undefined,
+		});
 	}
 
-	function loadSessionProgress() {
-		const saved = localStorage.getItem(`gym-app-session-${sessionId}`);
-		if (saved) {
-			try {
-				const data = JSON.parse(saved);
-				sessionExercises = data.sessionExercises || sessionExercises;
-				sessionExercises = sessionExercises.map((ex: SessionExercise) => ({
-					...ex,
-					notes: ex.notes || undefined
-				}));
-				currentExerciseIndex = data.currentExerciseIndex || 0;
-				currentSetIndex = data.currentSetIndex || 0;
-				sessionNotes = data.sessionNotes || '';
-				if (data.sessionStartTime) {
-					sessionStartTime = data.sessionStartTime;
-					startDurationTracking();
-				}
-				if (data.sessionDuration !== undefined) {
-					sessionDuration = data.sessionDuration;
-				}
-			} catch (e) {
-				console.error('Failed to load session progress:', e);
-			}
+	async function loadSessionProgress(): Promise<boolean> {
+		let row: Session | undefined;
+		try {
+			row = (await db.collection('sessions').get(sessionId)) as Session | undefined;
+		} catch {
+			row = undefined;
 		}
+		if (!row) {
+			// Stale URL (e.g. row was deleted on another device). Bounce home.
+			goto('/');
+			return false;
+		}
+		sessionExercises = (row.exercises ?? []).map((ex) => ({
+			...ex,
+			notes: ex.notes || undefined
+		}));
+		currentExerciseIndex = row.currentExerciseIndex ?? 0;
+		currentSetIndex = row.currentSetIndex ?? 0;
+		sessionNotes = row.notes ?? '';
+		sessionStartTime = new Date(row.date).getTime();
+		sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000 / 60);
+		startDurationTracking();
+		return true;
 	}
 
 	// Set actions
@@ -260,16 +245,17 @@
 
 		if (isLastSetInExercise) {
 			if (isLastExercise) {
-				currentView = 'complete';
-				stopDurationTracking();
+				timerRunning = false;
+				timerExpanded = false;
+				finishWorkout();
 			} else {
 				currentExerciseIndex++;
 				currentSetIndex = 0;
-				currentView = 'timer';
+				startTimer();
 			}
 		} else {
 			currentSetIndex++;
-			currentView = 'timer';
+			startTimer();
 		}
 	}
 
@@ -281,42 +267,53 @@
 
 		if (isLastSetInExercise) {
 			if (isLastExercise) {
-				currentView = 'complete';
-				stopDurationTracking();
+				timerRunning = false;
+				timerExpanded = false;
+				finishWorkout();
 			} else {
 				currentExerciseIndex++;
 				currentSetIndex = 0;
-				currentView = 'timer';
+				startTimer();
 			}
 		} else {
 			currentSetIndex++;
-			currentView = 'timer';
+			startTimer();
 		}
 	}
 
 	function startTimer() {
-		currentView = 'timer';
+		activeTimerDuration = resolveRestDuration();
+		timerRunning = true;
+		timerExpanded = false;
 	}
 
 	function onTimerComplete() {
-		currentView = 'set';
+		// Auto-collapse the sticky bar when the timer hits zero. Audio +
+		// vibration are handled inside the Timer class.
+		timerRunning = false;
+		timerExpanded = false;
 		lastCompletedSet = null;
 	}
 
 	function onTimerSkip() {
-		currentView = 'set';
+		timerRunning = false;
+		timerExpanded = false;
 		lastCompletedSet = null;
 	}
 
-	function onTimerBack() {
-		currentView = 'set';
+	function expandTimer() {
+		timerExpanded = true;
+	}
+
+	function collapseTimer() {
+		timerExpanded = false;
 	}
 
 	// Navigation
 	function goBack() {
-		if (currentView === 'timer') {
-			// From timer, go back to current set
-			currentView = 'set';
+		// If timer is expanded, collapse it instead of navigating away.
+		if (timerExpanded) {
+			timerExpanded = false;
 			return;
 		}
 
@@ -347,28 +344,121 @@
 		saveSessionProgress();
 	}
 
+	async function finishWorkout() {
+		currentView = 'complete';
+		stopDurationTracking();
+		await computeCelebrationData();
+	}
+
+	async function computeCelebrationData() {
+		// Volume delta vs last completed session (excluding the current/in-progress one)
+		const allSessions = (await db
+			.collection('sessions')
+			.orderBy('date')
+			.reverse()
+			.get()) as Session[];
+
+		const priorSessions = allSessions.filter(
+			(s) => s.id !== sessionId && s.status === 'completed'
+		);
+		const currentVolume = calculateSessionVolume({ exercises: sessionExercises });
+
+		if (priorSessions.length > 0) {
+			const lastVolume = calculateSessionVolume({ exercises: priorSessions[0].exercises });
+			celebrationVolumeDelta = currentVolume - lastVolume;
+		} else {
+			celebrationVolumeDelta = 0;
+		}
+
+		// Detect PRs by comparing current session sets against existing PRs (BEFORE save).
+		// Group new bests per exerciseId+reps so each unique rep/exercise appears only once.
+		const detected: DetectedPR[] = [];
+		const seen = new Set<string>();
+
+		for (const ex of sessionExercises) {
+			const existingPRs = prsByExerciseId[ex.exerciseId] ?? [];
+			// Find the best (heaviest) completed, non-warmup, numeric-weight set per reps
+			const bestPerReps = new Map<number, { weight: number; reps: number }>();
+			for (const set of ex.sets) {
+				if (!set.completed) continue;
+				if (set.warmup) continue;
+				if (typeof set.weight !== 'number' || !Number.isFinite(set.weight)) continue;
+				const cur = bestPerReps.get(set.reps);
+				if (!cur || set.weight > cur.weight) {
+					bestPerReps.set(set.reps, { weight: set.weight, reps: set.reps });
+				}
+			}
+
+			for (const [reps, best] of bestPerReps) {
+				const key = `${ex.exerciseId}-${reps}`;
+				if (seen.has(key)) continue;
+				const existing = existingPRs.find((pr) => pr.reps === reps);
+				if (!existing || best.weight > existing.weight) {
+					seen.add(key);
+					detected.push({
+						exerciseName: ex.exerciseName,
+						repRange: getRepRangeLabel(reps),
+						weight: best.weight,
+						reps: best.reps,
+						previousBest: existing
+							? { weight: existing.weight, reps: existing.reps }
+							: undefined
+					});
+				}
+			}
+		}
+
+		// Sort detected PRs: heaviest first
+		detected.sort((a, b) => b.weight - a.weight);
+		celebrationPRs = detected;
+
+		// Streak: include this session in the calc by appending a synthetic
+		// "today" session if no prior session occurred today.
+		const today = new Date();
+		const todayStr = (() => {
+			const y = today.getFullYear();
+			const m = String(today.getMonth() + 1).padStart(2, '0');
+			const d = String(today.getDate()).padStart(2, '0');
+			return `${y}-${m}-${d}`;
+		})();
+		const hasTodaySession = priorSessions.some((s) => {
+			const d = new Date(s.date);
+			const y = d.getFullYear();
+			const m = String(d.getMonth() + 1).padStart(2, '0');
+			const day = String(d.getDate()).padStart(2, '0');
+			return `${y}-${m}-${day}` === todayStr;
+		});
+		const sessionsForStreak = hasTodaySession
+			? priorSessions
+			: [
+					...priorSessions,
+					{
+						id: sessionId,
+						exercises: sessionExercises,
+						date: today.toISOString(),
+						duration: sessionDuration,
+						createdAt: today.toISOString(),
+						status: 'completed'
+					} satisfies Session
+			  ];
+		celebrationStreakDays = calculateStreakDays(sessionsForStreak, today);
+	}
+
 	// Session completion
 	async function completeSession() {
-		const session: Session = {
-			id: sessionId,
-			exercises: sessionExercises,
+		await db.collection('sessions').update(sessionId, {
+			exercises: $state.snapshot(sessionExercises),
 			date: new Date().toISOString(),
 			duration: sessionDuration,
 			notes: sessionNotes.trim() || undefined,
-			createdAt: new Date().toISOString()
-		};
-
-		await db.collection('sessions').add({
-			exercises: $state.snapshot(session.exercises),
-			date: session.date,
-			duration: session.duration,
-			notes: session.notes,
-			createdAt: session.createdAt,
+			status: 'completed',
+			// Reset to 0 (not undefined) — Tablinum's sync layer JSON-stringifies
+			// the event payload, which strips undefined keys. Sentinel values
+			// ensure peer devices replay the clear deterministically.
+			currentExerciseIndex: 0,
+			currentSetIndex: 0,
 		});
 		await calculatePersonalRecords();
-
-		localStorage.removeItem(`gym-app-session-${sessionId}`);
-
 		goto('/');
 	}
 
@@ -416,9 +506,10 @@
 		selectedExerciseIds = newSet;
 	}
 
-	async function getLastWeightForExercise(exerciseId: string): Promise<number> {
+	async function getLastWeightForExercise(exerciseId: string): Promise<SetWeight> {
 		// Get all sessions sorted by date descending (most recent first)
-		const sessions = await db.collection('sessions').orderBy('date').reverse().get() as Session[];
+		const sessions = (await db.collection('sessions').orderBy('date').reverse().get() as Session[])
+			.filter((s) => s.status === 'completed');
 
 		for (const session of sessions) {
 			const exerciseData = session.exercises.find((e) => e.exerciseId === exerciseId);
@@ -496,36 +587,6 @@
 	function isLibraryExercise(exerciseId: string): boolean {
 		const exercise = exercises.find((e) => e.id === exerciseId);
 		return exercise ? !exercise.is_custom : false;
-	}
-
-	function openNoteModal() {
-		editingNote = currentSet?.notes || '';
-		showNoteModal = true;
-	}
-
-	function saveNote() {
-		if (currentSet) {
-			currentSet.notes = editingNote.trim() || undefined;
-			sessionExercises = [...sessionExercises];
-			saveSessionProgress();
-			toastStore.showSuccess('Note saved');
-		}
-		showNoteModal = false;
-	}
-
-	function openRPEModal() {
-		editingRPE = currentSet?.rpe || 5;
-		showRPEModal = true;
-	}
-
-	function saveRPE() {
-		if (currentSet) {
-			currentSet.rpe = editingRPE;
-			sessionExercises = [...sessionExercises];
-			saveSessionProgress();
-			toastStore.showSuccess('RPE saved');
-		}
-		showRPEModal = false;
 	}
 
 	function confirmDeleteSet() {
@@ -623,8 +684,7 @@
 		showDeleteExerciseConfirm = false;
 
 		if (sessionExercises.length === 0) {
-			currentView = 'complete';
-			stopDurationTracking();
+			finishWorkout();
 		}
 	}
 </script>
@@ -773,13 +833,13 @@
 			</div>
 		</div>
 	{:else if currentView === 'complete'}
-		<!-- Completion Page (Full Screen) -->
-		<CompletionPage
-			{sessionDuration}
-			{sessionExercises}
-			{sessionNotes}
-			onNotesChange={(notes) => (sessionNotes = notes)}
-			onBack={() => (currentView = 'set')}
+		<!-- Workout finish celebration (Full Screen) -->
+		<WorkoutFinishCelebration
+			session={{ exercises: sessionExercises, duration: sessionDuration }}
+			volumeDelta={celebrationVolumeDelta}
+			prs={celebrationPRs}
+			streakDays={celebrationStreakDays}
+			bind:notes={sessionNotes}
 			onSave={completeSession}
 		/>
 	{:else}
@@ -803,15 +863,14 @@
 					<Plus class="w-4 h-4" />
 					<span class="hidden sm:inline">Add</span>
 				</button>
-				<span class="text-sm text-accent font-medium">⏱️ {sessionDuration}m</span>
+				<span class="text-sm text-accent font-medium inline-flex items-center gap-1"><Timer class="w-4 h-4" />{sessionDuration}m</span>
 			</div>
 
 			<SessionOverflowMenu
-				onAddNote={openNoteModal}
-				onSetRPE={openRPEModal}
 				onDeleteSet={confirmDeleteSet}
 				onEditExercise={openEditExerciseModal}
 				onDeleteExercise={confirmDeleteExercise}
+				onCancelWorkout={() => (showExitConfirm = true)}
 				isLibraryExercise={currentExercise ? isLibraryExercise(currentExercise.exerciseId) : false}
 			/>
 		</div>
@@ -829,33 +888,41 @@
 
 		<!-- Main Content -->
 		<div class="flex-1 flex flex-col">
-			{#if currentView === 'timer' && nextSetInfo}
-				<TimerPage
-					duration={defaultRestDuration}
-					nextExerciseName={nextSetInfo.exerciseName}
-					nextSetNumber={nextSetInfo.setNumber}
-					nextTotalSets={nextSetInfo.totalSets}
-					nextTargetReps={nextSetInfo.targetReps}
-					nextTargetWeight={nextSetInfo.targetWeight}
-					lastCompletedReps={lastCompletedSet?.reps}
-					lastCompletedWeight={lastCompletedSet?.weight}
-					lastCompletedSetNumber={lastCompletedSet?.setNumber}
-					onComplete={onTimerComplete}
-					onSkip={onTimerSkip}
-					onBack={onTimerBack}
-				/>
-			{:else if currentExercise}
+			{#if currentExercise}
 				<SetPage
 					exercise={currentExercise}
 					setIndex={currentSetIndex}
 					onComplete={completeSet}
 					onSkip={skipSet}
 					onStartTimer={startTimer}
-					onOpenMenu={() => {}}
 					onSetChange={onSetChange}
+					onFinishWorkout={finishWorkout}
+					timerActive={timerRunning}
+					exercisePRs={currentExercisePRs}
 				/>
 			{/if}
 		</div>
+
+		<!-- Rest timer overlay: sticky bar by default, full-screen when expanded.
+		     SetPage stays interactive underneath. -->
+		{#if timerRunning && nextSetInfo}
+			<TimerPage
+				duration={activeTimerDuration}
+				mode={timerExpanded ? 'expanded' : 'compact'}
+				nextExerciseName={nextSetInfo.exerciseName}
+				nextSetNumber={nextSetInfo.setNumber}
+				nextTotalSets={nextSetInfo.totalSets}
+				nextTargetReps={nextSetInfo.targetReps}
+				nextTargetWeight={nextSetInfo.targetWeight}
+				lastCompletedReps={lastCompletedSet?.reps}
+				lastCompletedWeight={lastCompletedSet?.weight}
+				lastCompletedSetNumber={lastCompletedSet?.setNumber}
+				onComplete={onTimerComplete}
+				onSkip={onTimerSkip}
+				onExpand={expandTimer}
+				onCollapse={collapseTimer}
+			/>
+		{/if}
 	{/if}
 
 	<!-- Exit Confirm Dialog -->
@@ -867,61 +934,6 @@
 		onconfirm={() => goto('/')}
 		oncancel={() => (showExitConfirm = false)}
 	/>
-
-	<!-- Note Modal -->
-	<Modal
-		open={showNoteModal}
-		title="Add Note"
-		onclose={() => (showNoteModal = false)}
-	>
-		{#snippet children()}
-			<Textarea
-				label="Note for this set"
-				bind:value={editingNote}
-				placeholder="Add notes about this set..."
-				rows={3}
-			/>
-		{/snippet}
-		{#snippet footer()}
-			<Button variant="ghost" onclick={() => (showNoteModal = false)}>
-				Cancel
-			</Button>
-			<Button variant="primary" onclick={saveNote}>
-				Save Note
-			</Button>
-		{/snippet}
-	</Modal>
-
-	<!-- RPE Modal -->
-	<Modal
-		open={showRPEModal}
-		title="Set RPE"
-		onclose={() => (showRPEModal = false)}
-	>
-		{#snippet children()}
-			<div class="py-4">
-				<p class="text-sm text-text-secondary mb-4">Rate of Perceived Exertion (1-10)</p>
-				<NumberSpinner
-					bind:value={editingRPE}
-					min={1}
-					max={10}
-					step={0.5}
-					size="lg"
-				/>
-				<p class="text-xs text-text-muted mt-2 text-center">
-					1 = Very easy • 10 = Maximum effort
-				</p>
-			</div>
-		{/snippet}
-		{#snippet footer()}
-			<Button variant="ghost" onclick={() => (showRPEModal = false)}>
-				Cancel
-			</Button>
-			<Button variant="primary" onclick={saveRPE}>
-				Save RPE
-			</Button>
-		{/snippet}
-	</Modal>
 
 	<!-- Edit Exercise Modal -->
 	<Modal

@@ -2,11 +2,13 @@
 	import { getPRHistoryForExercise, getRepRangeLabel } from '$lib/prUtils';
 	import { getPersonalRecordsForExercise } from '$lib/prUtils';
 	import type { PersonalRecord, Exercise, Session } from '$lib/types';
+	import { volumeWeight } from '$lib/types';
 	import { Plot, Line, Dot } from 'svelteplot';
-	import { Button, Card, Modal, Select } from '$lib/ui';
-	import { ArrowLeft } from 'lucide-svelte';
+	import { Button, Card, Modal, Select, NumberSpinner } from '$lib/ui';
+	import { ArrowLeft, Trophy, Timer } from 'lucide-svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
-	import { formatMuscle, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
+	import { formatMuscle, formatSetWeight, getMetricLabel, getMetricUnit } from '$lib/formatUtils';
+	import { toastStore } from '$lib/stores/toast.svelte';
 	import { db } from '$lib/db';
 	import { redirect } from '@sveltejs/kit';
 
@@ -28,7 +30,7 @@
 
 	$effect(() => {
 		sessionsCol.orderBy('date').reverse().get().then((data) => {
-			allSessions = data as Session[];
+			allSessions = (data as Session[]).filter((s) => s.status === 'completed');
 		});
 	});
 
@@ -41,6 +43,31 @@
 	let selectedMetric = $state<'weight' | 'volume' | 'reps'>('weight');
 	let selectedPR = $state<PersonalRecord | null>(null);
 	let prHistory = $state<any[]>([]);
+
+	// Per-exercise rest default (Task 6). Mirrors Exercise.restSeconds; 0 means
+	// "use the global default".
+	let restSecondsDraft = $state(0);
+	let savingRest = $state(false);
+
+	$effect(() => {
+		restSecondsDraft = exercise?.restSeconds ?? 0;
+	});
+
+	async function saveRestSeconds() {
+		if (!exercise) return;
+		savingRest = true;
+		try {
+			const value = restSecondsDraft > 0 ? restSecondsDraft : undefined;
+			await exercisesCol.update(exercise.id, { restSeconds: value });
+			exercise = { ...exercise, restSeconds: value };
+			toastStore.showSuccess(value ? `Default rest set to ${value}s` : 'Default rest cleared');
+		} catch (e) {
+			console.error('Failed to save rest seconds', e);
+			toastStore.showError('Could not save rest default');
+		} finally {
+			savingRest = false;
+		}
+	}
 
 	const exerciseSessions = $derived.by(() => {
 		return [...sessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -55,16 +82,24 @@
 				if (!exerciseInSession || exerciseInSession.sets.length === 0) return null;
 
 				if (selectedMetric === 'weight') {
-					const maxWeight = Math.max(...exerciseInSession.sets.map((set) => set.weight));
+					const numericWeights = exerciseInSession.sets
+						.filter((set) => !set.warmup)
+						.map((set) => volumeWeight(set.weight));
+					const maxWeight = numericWeights.length > 0 ? Math.max(...numericWeights) : 0;
 					return { date: new Date(session.date), value: maxWeight };
 				} else if (selectedMetric === 'volume') {
 					const totalVolume = exerciseInSession.sets.reduce(
-						(sum, set) => sum + (set.completed ? set.weight * set.reps : 0),
+						(sum, set) =>
+							sum +
+							(set.completed && !set.warmup ? volumeWeight(set.weight) * set.reps : 0),
 						0
 					);
 					return { date: new Date(session.date), value: totalVolume };
 				} else {
-					const maxReps = Math.max(...exerciseInSession.sets.map((set) => set.reps));
+					const repCounts = exerciseInSession.sets
+						.filter((set) => !set.warmup)
+						.map((set) => set.reps);
+					const maxReps = repCounts.length > 0 ? Math.max(...repCounts) : 0;
 					return { date: new Date(session.date), value: maxReps };
 				}
 			})
@@ -194,12 +229,48 @@
 				{/snippet}
 			</Card>
 
+			<!-- Default rest (Task 6) -->
+			<Card class="mb-6">
+				{#snippet children()}
+					<div class="flex items-start justify-between gap-4 flex-wrap">
+						<div class="min-w-0">
+							<h2 class="text-base font-semibold text-text-primary flex items-center gap-2">
+								<Timer class="w-4 h-4 text-text-secondary" />
+								Default rest
+							</h2>
+							<p class="text-xs text-text-muted mt-1">
+								Used when starting a rest timer for this exercise. Leave at 0 to use your
+								global default.
+							</p>
+						</div>
+						<div class="flex items-center gap-2">
+							<NumberSpinner
+								bind:value={restSecondsDraft}
+								min={0}
+								max={600}
+								step={15}
+								label="Seconds"
+								size="sm"
+							/>
+							<Button
+								variant="secondary"
+								size="md"
+								onclick={saveRestSeconds}
+								disabled={savingRest || restSecondsDraft === (exercise?.restSeconds ?? 0)}
+							>
+								Save
+							</Button>
+						</div>
+					</div>
+				{/snippet}
+			</Card>
+
 			<!-- Personal Records -->
 			{#if personalRecords.length > 0}
 				<Card class="mb-6">
 					{#snippet children()}
 						<h2 class="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-							<span class="text-xl">🏆</span> Personal Records
+							<Trophy class="w-5 h-5 text-pr" /> Personal Records
 						</h2>
 						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 							{#each personalRecords as pr}
@@ -210,7 +281,7 @@
 									<div
 										class="w-10 h-10 bg-warning text-bg rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-[0_0_15px_rgba(255,149,0,0.4)]"
 									>
-										🏆
+										<Trophy class="w-5 h-5" />
 									</div>
 									<div class="flex-1 min-w-0">
 										<p class="font-semibold text-text-primary text-sm">
@@ -315,7 +386,7 @@
 														? 'bg-success/20 text-success'
 														: 'bg-surface text-text-muted'}"
 												>
-													{set.reps} × {set.weight}{preferencesStore.weightLabel}
+													{set.reps} × {formatSetWeight(set.weight)}
 												</span>
 											{/each}
 										</div>
@@ -362,7 +433,7 @@
 							</p>
 						</div>
 						{#if i === 0}
-							<span class="text-xl">🏆</span>
+							<Trophy class="w-5 h-5 text-pr" />
 						{/if}
 					</div>
 				{/each}

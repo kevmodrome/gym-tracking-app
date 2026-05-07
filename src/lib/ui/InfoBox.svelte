@@ -10,6 +10,7 @@
 		dismissible?: boolean;
 		onclose?: () => void;
 		class?: string;
+		icon?: Snippet;
 		children: Snippet;
 	}
 
@@ -19,33 +20,33 @@
 		dismissible = false,
 		onclose,
 		class: className = '',
+		icon,
 		children
 	}: InfoBoxProps = $props();
 
-	const typeStyles: Record<InfoBoxType, { bg: string; border: string; text: string; icon: string }> = {
+	const typeStyles: Record<
+		InfoBoxType,
+		{ bg: string; border: string; text: string }
+	> = {
 		info: {
 			bg: 'bg-secondary/10',
 			border: 'border-l-4 border-secondary',
-			text: 'text-text-primary',
-			icon: 'ℹ️'
+			text: 'text-text-primary'
 		},
 		success: {
 			bg: 'bg-success/10',
 			border: 'border-l-4 border-success',
-			text: 'text-text-primary',
-			icon: '✅'
+			text: 'text-text-primary'
 		},
 		warning: {
 			bg: 'bg-warning/10',
 			border: 'border-l-4 border-warning',
-			text: 'text-text-primary',
-			icon: '⚠️'
+			text: 'text-text-primary'
 		},
 		error: {
 			bg: 'bg-danger/10',
 			border: 'border-l-4 border-danger',
-			text: 'text-text-primary',
-			icon: '❌'
+			text: 'text-text-primary'
 		}
 	};
 
@@ -56,8 +57,10 @@
 	<div class="flex items-start justify-between gap-2">
 		<div class="flex-1">
 			{#if title}
-				<h3 class="font-semibold {styles.text} mb-2 text-sm sm:text-base flex items-center gap-2">
-					<span>{styles.icon}</span>
+				<h3 class="font-semibold {styles.text} mb-2 text-sm sm:text-base flex items-center gap-2 [&_svg]:w-4 [&_svg]:h-4">
+					{#if icon}
+						{@render icon()}
+					{/if}
 					{title}
 				</h3>
 			{/if}

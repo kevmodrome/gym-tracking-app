@@ -40,7 +40,7 @@
 		full: 'max-w-[95vw]'
 	};
 
-	function handleBackdropClick() {
+	function handleBackdropClick(_e: MouseEvent) {
 		if (closeOnBackdrop) {
 			onclose();
 		}
@@ -68,7 +68,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 {fullScreenMobile ? 'p-0 sm:p-4' : 'p-4'}"
+		class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] {fullScreenMobile ? 'p-0 sm:p-4' : 'p-4'}"
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
 		role="presentation"

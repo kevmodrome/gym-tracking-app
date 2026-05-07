@@ -2,9 +2,8 @@ import type { PageLoad } from './$types';
 
 export const prerender = false;
 
-export const load: PageLoad = async ({ params, url }) => {
+export const load: PageLoad = ({ params }) => {
 	return {
-		sessionId: params.id,
-		fromSessionId: url.searchParams.get('from')
+		sessionId: params.id
 	};
 };
