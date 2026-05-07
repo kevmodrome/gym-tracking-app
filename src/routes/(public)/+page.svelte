@@ -19,11 +19,6 @@
 	let routines = $state<Workout[]>([]);
 	let latestWeight = $state<Weight | null>(null);
 	let todayFoodEntries = $state<FoodEntry[]>([]);
-	let inProgressSession = $state<{
-		sessionId: string;
-		elapsedMinutes: number;
-		exerciseCount: number;
-	} | null>(null);
 	let now = $state(Date.now());
 
 	function toLocalDateString(date: Date): string {
@@ -42,6 +37,20 @@
 	});
 
 	const sessions = $derived(allSessions.filter((s) => s.status === 'completed'));
+
+	const inProgressRow = $derived(
+		allSessions.find((s) => s.status === 'in_progress') ?? null
+	);
+
+	const inProgressSession = $derived.by(() => {
+		if (!inProgressRow) return null;
+		const startTime = new Date(inProgressRow.date).getTime();
+		const elapsedMinutes = Math.max(0, Math.floor((now - startTime) / 1000 / 60));
+		const exerciseCount = (inProgressRow.exercises ?? []).filter((ex) =>
+			ex.sets?.some((s) => s.completed)
+		).length;
+		return { sessionId: inProgressRow.id, elapsedMinutes, exerciseCount };
+	});
 
 	$effect(() => {
 		workoutsCol.orderBy('createdAt').reverse().get().then((data) => {
@@ -62,38 +71,8 @@
 		});
 	});
 
-	// Detect any in-progress session via localStorage
-	$effect(() => {
-		if (typeof localStorage === 'undefined') return;
-		for (let i = 0; i < localStorage.length; i++) {
-			const key = localStorage.key(i);
-			if (!key || !key.startsWith('gym-app-session-')) continue;
-			const raw = localStorage.getItem(key);
-			if (!raw) continue;
-			try {
-				const data = JSON.parse(raw);
-				const sessionId = key.slice('gym-app-session-'.length);
-				const startTime = data.sessionStartTime ?? Date.now();
-				const elapsedMinutes = Math.max(0, Math.floor((Date.now() - startTime) / 1000 / 60));
-				const exerciseCount = Array.isArray(data.sessionExercises)
-					? data.sessionExercises.filter((ex: { sets?: { completed: boolean }[] }) =>
-							ex.sets?.some((s) => s.completed)
-						).length
-					: 0;
-				inProgressSession = { sessionId, elapsedMinutes, exerciseCount };
-				return;
-			} catch {
-				/* skip bad entry */
-			}
-		}
-		inProgressSession = null;
-	});
-
-	function discardInProgressSession(sessionId: string) {
-		if (typeof localStorage !== 'undefined') {
-			localStorage.removeItem(`gym-app-session-${sessionId}`);
-		}
-		inProgressSession = null;
+	async function discardInProgressSession(sessionId: string) {
+		await db.collection('sessions').delete(sessionId);
 	}
 
 	const lastWorkoutDate = $derived(getLastWorkoutDate(sessions));
