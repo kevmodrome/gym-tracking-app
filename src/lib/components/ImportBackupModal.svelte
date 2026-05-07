@@ -47,8 +47,10 @@
 	];
 
 	async function handleFileSelect(event: Event) {
+		console.log('[import] handleFileSelect fired', event);
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
+		console.log('[import] selected file:', file?.name, file?.size);
 		if (!file) return;
 
 		errorMessage = '';
@@ -187,6 +189,8 @@
 						type="file"
 						accept=".json,application/json"
 						onchange={handleFileSelect}
+						onclick={(e) => console.log('[import] input onclick fired', e)}
+						onfocus={() => console.log('[import] input focused')}
 						disabled={isParsing || isImporting}
 						class="w-full px-4 py-2 bg-surface-elevated border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-text-primary disabled:opacity-50 disabled:cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-accent file:text-bg file:font-medium"
 					/>
