@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { db } from '$lib/db';
-	import type { Exercise, PersonalRecord, PRHistory } from '$lib/types';
+	import type { Exercise, PersonalRecord, PRHistory, Session } from '$lib/types';
 	import { Card, SearchInput, Select, Numeric, EmptyState } from '$lib/ui';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { formatMuscle } from '$lib/formatUtils';
@@ -27,7 +27,9 @@
 			allPRs = prs;
 
 			// Build full per-exercise PR timeline (PRs by reps, in chronological order)
-			const sessions = await sessionsCol.get();
+			const sessions = ((await sessionsCol.get()) as Session[]).filter(
+				(s) => s.status === 'completed'
+			);
 			const map = new Map<string, PRHistory[]>();
 
 			for (const pr of prs) {

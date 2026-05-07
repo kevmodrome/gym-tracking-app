@@ -59,7 +59,8 @@ export async function exportBackupData(
 		onProgress?.(currentItems, totalItems, 'Loading workouts...');
 
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');
-		const sessions = await db.collection('sessions').get() as Session[];
+		const sessions = (await db.collection('sessions').get() as Session[])
+			.filter((s) => s.status === 'completed');
 		currentItems += sessions.length;
 		totalItems += sessions.length;
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');

@@ -21,7 +21,7 @@
 			sessionsCol.orderBy('date').reverse().get()
 		]);
 		routines = w as Workout[];
-		sessions = s as Session[];
+		sessions = (s as Session[]).filter((x) => x.status === 'completed');
 		loading = false;
 	}
 

@@ -15,7 +15,7 @@
 	const weightsCol = db.collection('weights');
 	const foodEntriesCol = db.collection('foodEntries');
 
-	let sessions = $state<Session[]>([]);
+	let allSessions = $state<Session[]>([]);
 	let routines = $state<Workout[]>([]);
 	let latestWeight = $state<Weight | null>(null);
 	let todayFoodEntries = $state<FoodEntry[]>([]);
@@ -37,9 +37,11 @@
 
 	$effect(() => {
 		sessionsCol.orderBy('date').reverse().get().then((data) => {
-			sessions = data as Session[];
+			allSessions = data as Session[];
 		});
 	});
+
+	const sessions = $derived(allSessions.filter((s) => s.status === 'completed'));
 
 	$effect(() => {
 		workoutsCol.orderBy('createdAt').reverse().get().then((data) => {

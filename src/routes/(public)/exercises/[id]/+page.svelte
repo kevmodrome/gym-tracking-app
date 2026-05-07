@@ -30,7 +30,7 @@
 
 	$effect(() => {
 		sessionsCol.orderBy('date').reverse().get().then((data) => {
-			allSessions = data as Session[];
+			allSessions = (data as Session[]).filter((s) => s.status === 'completed');
 		});
 	});
 

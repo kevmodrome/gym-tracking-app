@@ -412,7 +412,9 @@
 			.reverse()
 			.get()) as Session[];
 
-		const priorSessions = allSessions.filter((s) => s.id !== sessionId);
+		const priorSessions = allSessions.filter(
+			(s) => s.id !== sessionId && s.status === 'completed'
+		);
 		const currentVolume = calculateSessionVolume({ exercises: sessionExercises });
 
 		if (priorSessions.length > 0) {

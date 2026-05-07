@@ -9,6 +9,7 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import { preferencesStore } from '$lib/stores/preferences.svelte';
 	import { db } from '$lib/db';
+	import type { Session } from '$lib/types';
 
 	let { children } = $props();
 
@@ -35,8 +36,10 @@
 			if (preferencesStore.onboardingComplete) return;
 
 			// If user already has sessions, treat as existing user — skip onboarding
-			const sessions = await db.collection('sessions').get();
-			if (Array.isArray(sessions) && sessions.length > 0) return;
+			const sessions = ((await db.collection('sessions').get()) as Session[]).filter(
+				(s) => s.status === 'completed'
+			);
+			if (sessions.length > 0) return;
 
 			goto('/onboarding');
 		} catch {

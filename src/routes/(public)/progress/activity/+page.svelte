@@ -53,7 +53,7 @@
 			.reverse()
 			.get()
 			.then((data) => {
-				sessions = data as Session[];
+				sessions = (data as Session[]).filter((s) => s.status === 'completed');
 			});
 	});
 
