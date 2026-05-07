@@ -4,13 +4,6 @@ export interface ScanController {
 
 export type ScanResult = { barcode: string; format?: string };
 
-export interface ScanStatus {
-	path: 'native' | 'zxing';
-	framesAnalyzed: number;
-	videoSize: { w: number; h: number };
-	lastError?: string;
-}
-
 declare global {
 	interface Window {
 		BarcodeDetector?: {
@@ -30,33 +23,20 @@ const FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'];
 async function startWithBarcodeDetector(
 	video: HTMLVideoElement,
 	onResult: (r: ScanResult) => void,
-	onStatus?: (s: ScanStatus) => void,
 ): Promise<ScanController> {
 	const Detector = window.BarcodeDetector!;
 	const detector = new Detector({ formats: FORMATS });
 	let stopped = false;
-	let frames = 0;
-	let lastError: string | undefined;
 	const tick = async () => {
 		if (stopped) return;
 		try {
 			const results = await detector.detect(video);
-			frames++;
 			if (results.length > 0) {
 				onResult({ barcode: results[0].rawValue, format: results[0].format });
 				return;
 			}
-		} catch (e) {
-			frames++;
-			lastError = e instanceof Error ? e.message : String(e);
-		}
-		if (frames % 10 === 0) {
-			onStatus?.({
-				path: 'native',
-				framesAnalyzed: frames,
-				videoSize: { w: video.videoWidth, h: video.videoHeight },
-				lastError,
-			});
+		} catch {
+			// ignore frame errors
 		}
 		requestAnimationFrame(tick);
 	};
@@ -67,28 +47,12 @@ async function startWithBarcodeDetector(
 async function startWithZxing(
 	video: HTMLVideoElement,
 	onResult: (r: ScanResult) => void,
-	onStatus?: (s: ScanStatus) => void,
 ): Promise<ScanController> {
 	const { BrowserMultiFormatReader } = await import('@zxing/browser');
 	const reader = new BrowserMultiFormatReader();
-	let frames = 0;
-	let lastError: string | undefined;
-	const controls = await reader.decodeFromVideoElement(video, (result, error) => {
-		frames++;
+	const controls = await reader.decodeFromVideoElement(video, (result) => {
 		if (result) {
 			onResult({ barcode: result.getText(), format: 'zxing' });
-			return;
-		}
-		if (error && error.name !== 'NotFoundException') {
-			lastError = error.message || error.name;
-		}
-		if (frames % 10 === 0) {
-			onStatus?.({
-				path: 'zxing',
-				framesAnalyzed: frames,
-				videoSize: { w: video.videoWidth, h: video.videoHeight },
-				lastError,
-			});
 		}
 	});
 	return { stop: () => controls.stop() };
@@ -107,7 +71,6 @@ export class ScannerError extends Error {
 export async function startScanner(
 	video: HTMLVideoElement,
 	onResult: (r: ScanResult) => void,
-	onStatus?: (s: ScanStatus) => void,
 ): Promise<ScanController> {
 	if (typeof window !== 'undefined' && window.isSecureContext === false) {
 		throw new ScannerError(
@@ -145,8 +108,8 @@ export async function startScanner(
 	await video.play();
 
 	const inner = isBarcodeDetectorSupported()
-		? await startWithBarcodeDetector(video, onResult, onStatus)
-		: await startWithZxing(video, onResult, onStatus);
+		? await startWithBarcodeDetector(video, onResult)
+		: await startWithZxing(video, onResult);
 
 	return {
 		stop: () => {
