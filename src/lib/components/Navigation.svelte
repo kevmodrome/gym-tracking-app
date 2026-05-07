@@ -37,11 +37,11 @@
 		return currentPath.startsWith(path);
 	}
 
-	function isSettingsActive(): boolean {
+	const settingsActive = $derived.by(() => {
 		const currentPath: string | undefined = page.url?.pathname;
 		if (!currentPath) return false;
 		return currentPath === '/settings' || currentPath.startsWith('/settings/');
-	}
+	});
 </script>
 
 <!-- Desktop Navigation Header -->
@@ -60,8 +60,10 @@
 					{@const active = isActive(item.path)}
 					<a
 						href={item.path}
+						aria-current={active ? 'page' : undefined}
+						onclick={(e) => active && e.preventDefault()}
 						class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 {active
-							? 'bg-accent/10 text-accent'
+							? 'bg-accent/10 text-accent cursor-default'
 							: 'text-text-muted hover:text-text-primary hover:bg-surface-hover'}"
 					>
 						<svelte:component
@@ -76,11 +78,13 @@
 			<a
 				href="/settings"
 				aria-label="Settings"
-				class="flex items-center justify-center w-10 h-10 rounded-full border border-border transition-all duration-200 {isSettingsActive()
-					? 'bg-accent/10 text-accent border-accent/40'
+				aria-current={settingsActive ? 'page' : undefined}
+				onclick={(e) => settingsActive && e.preventDefault()}
+				class="flex items-center justify-center w-10 h-10 rounded-full border border-border transition-all duration-200 {settingsActive
+					? 'bg-accent/10 text-accent border-accent/40 cursor-default'
 					: 'bg-surface text-text-muted hover:text-text-primary hover:bg-surface-hover'}"
 			>
-				<Settings class="w-5 h-5" strokeWidth={isSettingsActive() ? 2.5 : 2} />
+				<Settings class="w-5 h-5" strokeWidth={settingsActive ? 2.5 : 2} />
 			</a>
 		</div>
 	</div>
@@ -96,7 +100,9 @@
 			{@const active = isActive(item.path)}
 			<a
 				href={item.path}
-				class="flex flex-col items-center justify-center flex-1 min-w-[44px] min-h-[44px] transition-all duration-200 {active ? 'text-accent' : 'text-text-muted hover:text-text-secondary'}"
+				aria-current={active ? 'page' : undefined}
+				onclick={(e) => active && e.preventDefault()}
+				class="flex flex-col items-center justify-center flex-1 min-w-[44px] min-h-[44px] transition-all duration-200 {active ? 'text-accent cursor-default' : 'text-text-muted hover:text-text-secondary'}"
 			>
 				<div class="relative {active ? 'scale-110' : 'scale-100'} transition-transform duration-200">
 					{#if active}

@@ -27,7 +27,9 @@
 			<a
 				href="/settings"
 				aria-label="Settings"
-				class="md:hidden inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-full hover:bg-surface-elevated transition-colors {isSettingsActive ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'}"
+				aria-current={isSettingsActive ? 'page' : undefined}
+				onclick={(e) => isSettingsActive && e.preventDefault()}
+				class="md:hidden inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-full hover:bg-surface-elevated transition-colors {isSettingsActive ? 'text-text-primary cursor-default' : 'text-text-muted hover:text-text-primary'}"
 			>
 				<Settings class="w-5 h-5" strokeWidth={2} />
 			</a>
