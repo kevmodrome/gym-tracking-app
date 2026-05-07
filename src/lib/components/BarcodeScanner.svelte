@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { Lock, CameraOff } from 'lucide-svelte';
-	import { ScannerError, startScanner, type ScanController } from '$lib/nutrition/scanner';
+	import {
+		ScannerError,
+		startScanner,
+		type ScanController,
+		type ScanStatus,
+	} from '$lib/nutrition/scanner';
 
 	interface Props {
 		onScan: (barcode: string) => void;
@@ -13,13 +18,20 @@
 	let video: HTMLVideoElement | null = $state(null);
 	let controller: ScanController | null = null;
 	let error = $state<{ message: string; reason: ScannerError['reason'] | 'unknown' } | null>(null);
+	let status = $state<ScanStatus | null>(null);
 
 	onMount(async () => {
 		if (!video) return;
 		try {
-			controller = await startScanner(video, (r) => {
-				onScan(r.barcode);
-			});
+			controller = await startScanner(
+				video,
+				(r) => {
+					onScan(r.barcode);
+				},
+				(s) => {
+					status = s;
+				},
+			);
 		} catch (e) {
 			if (e instanceof ScannerError) {
 				error = { message: e.message, reason: e.reason };
@@ -44,6 +56,15 @@
 	<div class="absolute inset-0 pointer-events-none flex items-center justify-center">
 		<div class="w-3/4 h-1/3 border-2 border-accent/80 rounded-lg"></div>
 	</div>
+
+	{#if status && !error}
+		<div class="absolute bottom-2 left-2 right-2 pointer-events-none rounded-md bg-black/60 backdrop-blur-sm px-2.5 py-1.5 text-[11px] leading-snug text-text-secondary font-mono">
+			path={status.path} · frames={status.framesAnalyzed} · video={status.videoSize.w}×{status.videoSize.h}
+			{#if status.lastError}
+				<br />err: {status.lastError}
+			{/if}
+		</div>
+	{/if}
 	{#if error}
 		<div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/90 p-6 text-center text-text-primary">
 			{#if error.reason === 'insecure-context'}
