@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Numeric from '$lib/ui/Numeric.svelte';
 	import type { FoodMacros } from '$lib/types';
 
 	interface Props {
@@ -24,7 +23,7 @@
 	const kcalPct = $derived(clampPct(current.kcal, target.kcal));
 	const kcalOver = $derived(kcalPct > 110);
 	const kcalStrokeVar = $derived(kcalOver ? 'var(--color-warning)' : 'var(--color-focal)');
-	const kcalNumericTone = $derived<'focal' | 'default'>(kcalOver ? 'default' : 'focal');
+	const kcalTextClass = $derived(kcalOver ? 'text-warning' : 'text-focal');
 
 	// Ring geometry (SVG concentric rings).
 	// kcal (outer), protein, carbs, fat (inner).
@@ -84,7 +83,7 @@
 
 <div class="flex flex-col items-center">
 	<div
-		class="relative w-full max-w-[280px] sm:max-w-[260px]"
+		class="relative w-full max-w-[320px] sm:max-w-[360px]"
 		style="aspect-ratio: 1 / 1;"
 	>
 		<svg
@@ -118,9 +117,14 @@
 			{/each}
 		</svg>
 
-		<div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-			<Numeric value={Math.round(current.kcal)} tone={kcalNumericTone} size="hero" unit="kcal" />
-			<div class="text-xs text-text-secondary mt-1 font-display tracking-wide uppercase">
+		<div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none leading-none">
+			<div class="font-display font-bold tracking-tight text-3xl sm:text-4xl {kcalTextClass}">
+				{Math.round(current.kcal)}
+			</div>
+			<div class="mt-1 text-[10px] sm:text-xs uppercase tracking-[0.15em] text-text-secondary font-display">
+				kcal
+			</div>
+			<div class="mt-1.5 text-[10px] sm:text-xs text-text-muted">
 				of {Math.round(target.kcal)}
 			</div>
 		</div>
