@@ -268,7 +268,8 @@
 				date: deletedSession.date,
 				duration: deletedSession.duration,
 				notes: deletedSession.notes,
-				createdAt: deletedSession.createdAt
+				createdAt: deletedSession.createdAt,
+				status: 'completed'
 			});
 			await calculatePersonalRecords();
 			if (undoTimeout) clearTimeout(undoTimeout);

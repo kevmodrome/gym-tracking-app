@@ -385,7 +385,7 @@ export async function importBackupData(
 					exerciseId: exerciseIdMap.get(ex.exerciseId) ?? ex.exerciseId
 				}))
 			};
-			const cleanData = pickSessionFields(remappedSession);
+			const cleanData = { ...pickSessionFields(remappedSession), status: 'completed' };
 			const existing = sessionByDate.get(rawSession.date);
 			if (existing) {
 				result.duplicates.sessions.push(`Session from ${new Date(rawSession.date).toLocaleDateString()}`);

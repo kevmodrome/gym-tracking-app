@@ -67,7 +67,10 @@ const sessionsDef = collection('sessions', {
 	duration: field.number(),
 	notes: field.optional(field.string()),
 	createdAt: field.string(),
-}, { indices: ['date', 'createdAt'] });
+	status: field.string(),
+	currentExerciseIndex: field.optional(field.number()),
+	currentSetIndex: field.optional(field.number()),
+}, { indices: ['date', 'createdAt', 'status'] });
 
 const personalRecordsDef = collection('personalRecords', {
 	exerciseId: field.string(),
@@ -355,7 +358,7 @@ export async function seedDemoData(): Promise<void> {
 	];
 
 	for (const s of sessionData) {
-		await db.collection('sessions').add(s);
+		await db.collection('sessions').add({ ...s, status: 'completed' });
 	}
 
 	console.log('Demo data seeded successfully!');

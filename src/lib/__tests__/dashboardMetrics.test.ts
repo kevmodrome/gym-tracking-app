@@ -32,7 +32,8 @@ describe('calculateTotalVolume', () => {
 				],
 				date: '2024-01-01',
 				duration: 60,
-				createdAt: '2024-01-01'
+				createdAt: '2024-01-01',
+				status: 'completed'
 			}
 		];
 
@@ -57,7 +58,8 @@ describe('calculateTotalVolume', () => {
 				],
 				date: '2024-01-01',
 				duration: 60,
-				createdAt: '2024-01-01'
+				createdAt: '2024-01-01',
+				status: 'completed'
 			}
 		];
 
@@ -87,7 +89,8 @@ describe('calculateTotalVolume', () => {
 				],
 				date: '2024-01-01',
 				duration: 60,
-				createdAt: '2024-01-01'
+				createdAt: '2024-01-01',
+				status: 'completed'
 			}
 		];
 
@@ -104,14 +107,16 @@ describe('calculateAverageDuration', () => {
 				exercises: [],
 				date: '2024-01-01',
 				duration: 60,
-				createdAt: '2024-01-01'
+				createdAt: '2024-01-01',
+				status: 'completed'
 			},
 			{
 				id: '2',
 				exercises: [],
 				date: '2024-01-02',
 				duration: 90,
-				createdAt: '2024-01-02'
+				createdAt: '2024-01-02',
+				status: 'completed'
 			}
 		];
 
@@ -143,7 +148,8 @@ describe('calculateDashboardMetrics', () => {
 				],
 				date: '2024-01-01',
 				duration: 60,
-				createdAt: '2024-01-01'
+				createdAt: '2024-01-01',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -157,7 +163,8 @@ describe('calculateDashboardMetrics', () => {
 				],
 				date: '2024-01-02',
 				duration: 45,
-				createdAt: '2024-01-02'
+				createdAt: '2024-01-02',
+				status: 'completed'
 			}
 		];
 
@@ -177,21 +184,24 @@ describe('filterSessionsByDateRange', () => {
 				exercises: [],
 				date: '2024-01-05T10:00:00Z',
 				duration: 60,
-				createdAt: '2024-01-05'
+				createdAt: '2024-01-05',
+				status: 'completed'
 			},
 			{
 				id: '2',
 				exercises: [],
 				date: '2024-01-10T10:00:00Z',
 				duration: 60,
-				createdAt: '2024-01-10'
+				createdAt: '2024-01-10',
+				status: 'completed'
 			},
 			{
 				id: '3',
 				exercises: [],
 				date: '2024-01-15T10:00:00Z',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			}
 		];
 
@@ -211,7 +221,8 @@ describe('isSessionEmpty', () => {
 			exercises: [],
 			date: '2024-01-01',
 			duration: 0,
-			createdAt: '2024-01-01'
+			createdAt: '2024-01-01',
+			status: 'completed'
 		};
 
 		expect(isSessionEmpty(session)).toBe(true);
@@ -233,7 +244,8 @@ describe('isSessionEmpty', () => {
 			],
 			date: '2024-01-01',
 			duration: 60,
-			createdAt: '2024-01-01'
+			createdAt: '2024-01-01',
+			status: 'completed'
 		};
 
 		expect(isSessionEmpty(session)).toBe(true);
@@ -255,7 +267,8 @@ describe('isSessionEmpty', () => {
 			],
 			date: '2024-01-01',
 			duration: 60,
-			createdAt: '2024-01-01'
+			createdAt: '2024-01-01',
+			status: 'completed'
 		};
 
 		expect(isSessionEmpty(session)).toBe(false);
@@ -270,7 +283,8 @@ describe('getCompletedSessions', () => {
 				exercises: [],
 				date: '2024-01-01',
 				duration: 0,
-				createdAt: '2024-01-01'
+				createdAt: '2024-01-01',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -284,7 +298,8 @@ describe('getCompletedSessions', () => {
 				],
 				date: '2024-01-02',
 				duration: 60,
-				createdAt: '2024-01-02'
+				createdAt: '2024-01-02',
+				status: 'completed'
 			}
 		];
 
@@ -310,7 +325,8 @@ describe('calculateWeeklyAggregate', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -324,7 +340,8 @@ describe('calculateWeeklyAggregate', () => {
 				],
 				date: '2024-01-16',
 				duration: 60,
-				createdAt: '2024-01-16'
+				createdAt: '2024-01-16',
+				status: 'completed'
 			}
 		];
 
@@ -348,7 +365,8 @@ describe('calculateWeeklyAggregate', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -362,7 +380,8 @@ describe('calculateWeeklyAggregate', () => {
 				],
 				date: '2024-01-01',
 				duration: 60,
-				createdAt: '2024-01-01'
+				createdAt: '2024-01-01',
+				status: 'completed'
 			}
 		];
 
@@ -388,7 +407,8 @@ describe('calculateMonthlyAggregate', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -402,7 +422,8 @@ describe('calculateMonthlyAggregate', () => {
 				],
 				date: '2024-01-20',
 				duration: 60,
-				createdAt: '2024-01-20'
+				createdAt: '2024-01-20',
+				status: 'completed'
 			}
 		];
 
@@ -426,7 +447,8 @@ describe('calculateMonthlyAggregate', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -440,7 +462,8 @@ describe('calculateMonthlyAggregate', () => {
 				],
 				date: '2023-12-31',
 				duration: 60,
-				createdAt: '2023-12-31'
+				createdAt: '2023-12-31',
+				status: 'completed'
 			}
 		];
 
@@ -468,7 +491,8 @@ describe('calculateWeeklyComparison', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -482,7 +506,8 @@ describe('calculateWeeklyComparison', () => {
 				],
 				date: '2024-01-08',
 				duration: 60,
-				createdAt: '2024-01-08'
+				createdAt: '2024-01-08',
+				status: 'completed'
 			}
 		];
 
@@ -512,7 +537,8 @@ describe('calculateWeeklyComparison', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			}
 		];
 
@@ -541,7 +567,8 @@ describe('calculateMonthlyComparison', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			},
 			{
 				id: '2',
@@ -555,7 +582,8 @@ describe('calculateMonthlyComparison', () => {
 				],
 				date: '2023-12-15',
 				duration: 60,
-				createdAt: '2023-12-15'
+				createdAt: '2023-12-15',
+				status: 'completed'
 			}
 		];
 
@@ -585,7 +613,8 @@ describe('calculateMonthlyComparison', () => {
 				],
 				date: '2024-01-15',
 				duration: 60,
-				createdAt: '2024-01-15'
+				createdAt: '2024-01-15',
+				status: 'completed'
 			}
 		];
 
@@ -636,7 +665,8 @@ describe('calculateDailyMetrics', () => {
 				],
 				date: now.toISOString(),
 				duration: 60,
-				createdAt: now.toISOString()
+				createdAt: now.toISOString(),
+				status: 'completed'
 			}
 		];
 

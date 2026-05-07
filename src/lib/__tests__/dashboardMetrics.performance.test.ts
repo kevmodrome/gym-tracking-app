@@ -22,7 +22,8 @@ describe('Dashboard Metrics Performance', () => {
 			})),
 			date: new Date(2024, 0, (i % 365) + 1).toISOString(),
 			duration: 45 + (i % 30),
-			createdAt: new Date(2024, 0, (i % 365) + 1).toISOString()
+			createdAt: new Date(2024, 0, (i % 365) + 1).toISOString(),
+			status: 'completed'
 		}));
 	});
 

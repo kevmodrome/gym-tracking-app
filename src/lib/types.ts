@@ -82,6 +82,9 @@ export interface Session {
 	duration: number;
 	notes?: string;
 	createdAt: string;
+	status: 'in_progress' | 'completed';
+	currentExerciseIndex?: number;
+	currentSetIndex?: number;
 }
 
 export interface PersonalRecord {

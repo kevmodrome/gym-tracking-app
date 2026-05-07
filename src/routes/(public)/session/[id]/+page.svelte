@@ -489,7 +489,8 @@
 						exercises: sessionExercises,
 						date: today.toISOString(),
 						duration: sessionDuration,
-						createdAt: today.toISOString()
+						createdAt: today.toISOString(),
+						status: 'completed'
 					} satisfies Session
 			  ];
 		celebrationStreakDays = calculateStreakDays(sessionsForStreak, today);
@@ -503,7 +504,8 @@
 			date: new Date().toISOString(),
 			duration: sessionDuration,
 			notes: sessionNotes.trim() || undefined,
-			createdAt: new Date().toISOString()
+			createdAt: new Date().toISOString(),
+			status: 'completed'
 		};
 
 		await db.collection('sessions').add({
@@ -512,6 +514,7 @@
 			duration: session.duration,
 			notes: session.notes,
 			createdAt: session.createdAt,
+			status: 'completed',
 		});
 		await calculatePersonalRecords();
 

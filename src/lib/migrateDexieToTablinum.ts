@@ -62,7 +62,7 @@ export async function migrateFromDexieIfNeeded(db: Tablinum<any>): Promise<void>
 					exerciseId: exerciseIdMap.get(ex.exerciseId) ?? ex.exerciseId
 				}));
 			}
-			await db.collection('sessions').add(data);
+			await db.collection('sessions').add({ ...data, status: 'completed' });
 		}
 		console.log(`[Migration] Migrated ${oldData.sessions.length} sessions`);
 
