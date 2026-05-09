@@ -2,6 +2,20 @@ import type { Exercise, Workout, Session, PersonalRecord } from './types';
 import { db } from './db';
 import { calculatePersonalRecords } from './prUtils';
 
+// Sync merges and partial updates can leave behind session rows missing
+// required fields (e.g. no `exercises` array). They crash readers and break
+// import remap loops. Treat such rows as un-importable / un-exportable.
+function isWellFormedSession(s: Session): boolean {
+	return (
+		Array.isArray(s.exercises) &&
+		typeof s.date === 'string' &&
+		s.date.length > 0 &&
+		typeof s.duration === 'number' &&
+		typeof s.createdAt === 'string' &&
+		s.createdAt.length > 0
+	);
+}
+
 export interface BackupData {
 	version: string;
 	exportedAt: string;
@@ -60,7 +74,7 @@ export async function exportBackupData(
 
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');
 		const sessions = (await db.collection('sessions').get() as Session[])
-			.filter((s) => s.status === 'completed');
+			.filter((s) => s.status === 'completed' && isWellFormedSession(s));
 		currentItems += sessions.length;
 		totalItems += sessions.length;
 		onProgress?.(currentItems, totalItems, 'Loading sessions...');
@@ -287,6 +301,13 @@ export async function importBackupData(
 		const deduplicatedSessions: Session[] = [];
 		const seenSessionDates = new Set<string>();
 		for (const session of backup.sessions) {
+			if (!isWellFormedSession(session)) {
+				result.errors.push(
+					`Skipped malformed session ${session.id ?? '(no id)'} dated ${session.date ?? '?'}`
+				);
+				result.skippedItems++;
+				continue;
+			}
 			if (seenSessionDates.has(session.date)) {
 				result.skippedItems++;
 			} else {
