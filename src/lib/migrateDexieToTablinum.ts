@@ -232,3 +232,84 @@ export async function migrateInProgressSessions(db: Tablinum<any>): Promise<void
 
 	localStorage.setItem(IN_PROGRESS_MIGRATION_FLAG, 'true');
 }
+
+const SESSION_STATUS_BACKFILL_FLAG = 'gym-app-session-status-backfilled';
+
+/**
+ * One-shot: backfill `status: 'completed'` on sessions that don't have a
+ * valid status.
+ *
+ * PR #55 added a required `status` field to the sessions schema with no
+ * migration. Pre-PR-55 rows were always completed (in-progress lived in
+ * localStorage), so the readers that filter by `status === 'completed'`
+ * silently dropped them — making the data appear gone and prompting users
+ * to re-import a backup, which then duplicated everything via sync.
+ *
+ * Run this BEFORE any reader queries `sessions`.
+ */
+export async function backfillSessionStatus(db: Tablinum<any>): Promise<void> {
+	if (typeof localStorage === 'undefined') return;
+	if (localStorage.getItem(SESSION_STATUS_BACKFILL_FLAG)) return;
+
+	const sessions = (await db.collection('sessions').get()) as Array<{
+		id: string;
+		status?: unknown;
+	}>;
+
+	for (const s of sessions) {
+		if (s.status !== 'completed' && s.status !== 'in_progress') {
+			try {
+				await db.collection('sessions').update(s.id, { status: 'completed' });
+			} catch (e) {
+				console.error('[Migration] Failed to backfill status on session', s.id, e);
+				// Don't set the flag — retry on next boot.
+				return;
+			}
+		}
+	}
+
+	localStorage.setItem(SESSION_STATUS_BACKFILL_FLAG, 'true');
+}
+
+const MALFORMED_SESSIONS_FLAG = 'gym-app-malformed-sessions-cleaned';
+
+/**
+ * One-shot: delete session rows that are missing required fields.
+ *
+ * Sync merges and partial updates have produced stub rows like
+ * {id, status, date, currentExerciseIndex, currentSetIndex} with no
+ * `exercises`, `duration`, or `createdAt`. They crash any reader that calls
+ * .reduce/.map on session.exercises and break backup import. Drop them.
+ */
+export async function cleanupMalformedSessions(db: Tablinum<any>): Promise<void> {
+	if (typeof localStorage === 'undefined') return;
+	if (localStorage.getItem(MALFORMED_SESSIONS_FLAG)) return;
+
+	const all = (await db.collection('sessions').get()) as Array<{
+		id: string;
+		exercises?: unknown;
+		date?: unknown;
+		duration?: unknown;
+		createdAt?: unknown;
+	}>;
+
+	for (const s of all) {
+		const malformed =
+			!Array.isArray(s.exercises) ||
+			typeof s.date !== 'string' ||
+			!s.date ||
+			typeof s.duration !== 'number' ||
+			typeof s.createdAt !== 'string' ||
+			!s.createdAt;
+		if (malformed) {
+			try {
+				await db.collection('sessions').delete(s.id);
+			} catch (e) {
+				console.error('[Migration] Failed to delete malformed session', s.id, e);
+				return;
+			}
+		}
+	}
+
+	localStorage.setItem(MALFORMED_SESSIONS_FLAG, 'true');
+}
